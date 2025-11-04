@@ -1,7 +1,7 @@
 #' Specify scenario shock
 #'
 #' @importFrom rlang trace_back
-#' @description `ems_shock.custom()` loads scenario shocks for
+#' @description `ems_shock.scenario()` loads scenario shocks for
 #'   processing as well as conducts a series of compatibility
 #'   checks. A scenario shock is one which allows for granular
 #'   control over heterogenous shocks that are allocated on a
