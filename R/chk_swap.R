@@ -47,6 +47,7 @@
   }
 
   swap <- swap[[1]]
+  
   if (!swap$var %in% var_extract$name) {
     var_name <- swap$var
     .cli_action(swap_err$no_var,
@@ -67,7 +68,7 @@
     swap <- swap[[1]]
   }
   call <- attr(swap, "call")
-
+  
   if (!swap$var %in% var_extract$name) {
     var_name <- swap$var
     .cli_action(swap_err$no_var,
