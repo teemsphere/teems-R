@@ -6,6 +6,7 @@
                         model_dir,
                         set_path,
                         call) {
+
   sets <- .unite_csvs(
     target = "set_csvs",
     paths = bin_csv_paths
@@ -14,11 +15,12 @@
     sets_out = sets,
     paths = bin_csv_paths
   )
+  tab_sets <- lapply(set_path, function(s) {
+    tail(head(readLines(s), -1), -1)
+  })
+  names(tab_sets) <- gsub("\\.csv", "", basename(set_path))
+  
   if (.o_post_set_check()) {
-    tab_sets <- lapply(set_path, function(s) {
-      tail(head(readLines(s), -1), -1)
-    })
-    names(tab_sets) <- gsub("\\.csv", "", basename(set_path))
     .check_set_consistency(
       bin_sets = sets,
       tab_sets = tab_sets,
@@ -26,6 +28,12 @@
     )
   }
 
+  r_idx <- match(sets$setname, tolower(names(tab_sets)))
+  sets$setname <- ifelse(!is.na(r_idx),
+                         names(tab_sets)[r_idx],
+                         sets$setname)
+  
+  names(sets$ele) <- sets$setname
   if (any(sets$intertemp == 1L)) {
     sets$ele <- purrr::map2(
       sets$intertemp,
