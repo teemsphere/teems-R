@@ -1,7 +1,8 @@
 #' @importFrom tibble is_tibble
 .validate_deploy_args <- function(a,
                                   sets,
-                                  call) {
+                                  call,
+                                  data_call) {
 
   checklist <- list(
     data = "list",
@@ -13,7 +14,7 @@
     closure_file = c("NULL", "character"),
     shock_file = c("NULL", "character")
   )
-  
+
   .check_arg_class(
     args_list = a,
     checklist = checklist,
@@ -28,25 +29,27 @@
         call = call
       )
     }
-  } else {
-    unlink(a$write_dir,
-      recursive = TRUE
-    )
 
-    dir.create(a$write_dir,
-      recursive = TRUE
-    )
+    a$write_dir <- file.path(a$write_dir, "teems")
   }
 
-  int_sets <- subset(a$model,
-                     qualifier_list == "(intertemporal)",
-                     name,
-                     1)
-  
-  if (nrow(int_sets) %=% 0L) {
+  unlink(a$write_dir,
+    recursive = TRUE
+  )
+
+  dir.create(a$write_dir,
+    recursive = TRUE
+  )
+
+  if (attr(sets, "intertemporal")) {
+    int_sets <- subset(a$model,
+                       qualifier_list == "(intertemporal)",
+                       name,
+                       1)
+  } else {
     int_sets <- NULL
   }
-  
+
   if (!is.null(a$shock)) {
     a$shock <- .expand_ele(input = a$shock)
     a$shock <- lapply(
@@ -66,11 +69,9 @@
     )
   }
 
-  a$closure <- .check_closure_file(
+  a$closure <- .load_closure(
     closure_file = a$closure_file,
     tab_file = attr(a$model, "tab_file"),
-    var_omit = attr(a$model, "var_omit"),
-    var_extract = subset(a$model, type %in% "Variable"),
     call = call
   )
 
@@ -108,5 +109,18 @@
       call = call
     )
   }
+  
+  non_int_req <- setdiff(subset(a$model, !is.na(header), header, 1),
+                         c(.o_n_timestep_header(), .o_timestep_header()))
+  
+  if (any(!non_int_req %in% names(data))) {
+    missing_headers <- setdiff(non_int_req, names(data))
+    # add inform about how to load aux data
+    .cli_action(data_err$missing_header,
+      action = "abort",
+      call = data_call
+    )
+  }
+  
   return(a)
 }
