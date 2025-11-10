@@ -5,7 +5,7 @@
 .parse_tab_sets <- function(tab_extract,
                             call) {
   sets <- subset(tab_extract, tolower(type) %in% "set")
-
+  sets$type <- "Set"
   sets$qualifier_list <- ifelse(
     substr(sets$remainder, 1, 1) == "(",
     .get_element(
@@ -54,6 +54,10 @@
       )
     )
   ))
+  
+  sets$name <- ifelse(grepl("\\s", sets$name),
+                      purrr::map_chr(strsplit(sets$name, "\\s"), 1),
+                      sets$name)
 
   sets$remainder <- .advance_remainder(
     remainder = sets$remainder,
@@ -282,6 +286,12 @@
     }
   }
 
+  if (any(grepl(":", sets$definition))) {
+    .cli_action(model_err$binary_switch,
+                action = "abort",
+                call = call)
+  }
+  
   sets$ls_upper_idx <- NA
   sets$ls_mixed_idx <- NA
   sets <- subset(sets, select = c(type, name, label, qualifier_list, ls_upper_idx, ls_mixed_idx, header, file, definition, subsets, comp1, comp2, row_id))
