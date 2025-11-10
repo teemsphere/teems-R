@@ -81,6 +81,7 @@
     "null_set",
     var_extract$ls_upper_idx
   )
+
   lax_check <- all(unlist(purrr::map2(
     var_extract$ls_upper_idx,
     purrr::map(data_dt, colnames),
@@ -138,6 +139,8 @@
     label = var_extract$label[r_idx],
     dat = data_dt
   )
+  
+  names(f_var$dat) <- f_var$name
 
   if (!is.null(time_steps)) {
     f_var$dat <- lapply(f_var$dat,
