@@ -61,7 +61,8 @@ ems_compose <- function(cmf_path,
     isTRUE(attr(s, "intertemporal"))}))) {
     timesteps <- .get_timesteps(paths,
       cmf_path,
-      timestep_header = .o_timestep_header()
+      timestep_header = .o_timestep_header(),
+      call = call
     )
   } else {
     timesteps <- NULL
