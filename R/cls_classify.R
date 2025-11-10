@@ -6,9 +6,10 @@
 .classify_cls <- function(closure,
                           sets) {
 
-  set_pattern <- paste(toupper(sets$name), collapse = "|")
+  #set_pattern <- paste(toupper(sets$name), collapse = "|")
+  set_pattern <- paste(sets$name, collapse = "|")
   closure <- purrr::map(closure, function(c) {
-    var_name <- tolower(strsplit(c, "\\(")[[1]][1])
+    var_name <- strsplit(c, "\\(")[[1]][1]
     
     new_class <- if (!grepl("\\(|\"", c)) {
       c("full", class(c))
