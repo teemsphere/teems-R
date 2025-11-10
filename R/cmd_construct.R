@@ -51,8 +51,8 @@
     "-laD", laD,
     paste("-maxthreads", 1),
     "-nox",
-    "| tee",
-    paste0(docker_diagnostic_out, '"')
+    "2>&1 | tee",
+    paste0(docker_diagnostic_out, "\"")
   )
 
   solve_cmd <- paste(exec_preamble, solver_param)
