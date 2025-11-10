@@ -4,6 +4,7 @@
                               which,
                               select = NULL,
                               call) {
+
   model_dir <- dirname(normalizePath(cmf_path))
   if ("tab_path" %in% names(attributes(cmf_path))) {
     tab_path <- attr(cmf_path, "tab_path")
