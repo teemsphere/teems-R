@@ -59,8 +59,6 @@
 
   coeff_tib$set_nmes <- coeff_extract$ls_mixed_idx[r_idx]
 
-  # if there is a gap in the coefficient declaration like (all, r, REG) we have
-  # an error. This should be fixed in the tab parsing section
   coeff_tib$dat <- purrr::pmap(
     .l = list(
       dimen = coeff_tib$dim,
@@ -71,7 +69,7 @@
       dim_length <- length(dimen)
 
       if (!col_nmes %=% NA_character_) {
-        plain_col <- toupper(.dock_tail(string = col_nmes))
+        plain_col <- .dock_tail(string = col_nmes)
         r_idx <- match(plain_col, names(sets))
         setele <- sets[r_idx]
         if (is.null(setele)) {
