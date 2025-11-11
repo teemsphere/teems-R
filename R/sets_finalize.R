@@ -6,10 +6,12 @@
 #' @noRd
 .finalize_sets <- function(sets,
                            set_extract,
+                           coeff_extract,
                            time_steps,
                            reference_year,
                            call,
-                           data_call) {
+                           data_call,
+                           model_call) {
 
   if (!all(stats::na.omit(set_extract$header) %in% names(sets))) {
     m_map <- setdiff(stats::na.omit(set_extract$header), names(sets))
@@ -17,7 +19,7 @@
                action = "abort",
                call = data_call) 
   }
-  
+
   intertemporal <- if (any(grepl(
     "\\(intertemporal\\)",
     set_extract$qualifier_list
@@ -44,6 +46,7 @@
                            Value = reference_year + time_steps)
     attr(set_extract, "time_steps") <- time_steps
     attr(set_extract, "CYRS") <- CYRS
+    n_timestep_coeff <- coeff_extract$name[match(.o_n_timestep_header(), coeff_extract$header)]
     set_extract$mapping <- purrr::map2(
       set_extract$qualifier_list,
       set_extract$definition,
@@ -54,7 +57,7 @@
           .convert_int_sets(
             expr = d,
             n_timestep = length(time_steps),
-            n_timestep_header = .o_n_timestep_header()
+            n_timestep_coeff = n_timestep_coeff
           )
         }
       }
@@ -125,7 +128,7 @@
             if (!nrow(data.table::fintersect(x, y)) %=% 0L) {
               .cli_action(set_err$invalid_plus,
                           action = "abort",
-                          call = call)
+                          call = model_call)
             }
             m <- data.table::funion(x, y)
           } else if (grepl("\\-", d)) {
@@ -145,5 +148,6 @@
     unique(s$mapping)
   })
 
+  attr(set_extract, "intertemporal") <- intertemporal
   return(set_extract)
 }
