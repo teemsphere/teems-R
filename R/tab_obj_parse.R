@@ -51,16 +51,28 @@
     pattern = obj$qualifier_list
   )
 
-  obj$name <- purrr::map_chr(
+  parsed_remander <- regmatches(obj$remainder,
+                                regexec("^((?:\\([^()]*(?:\\([^()]*\\)[^()]*)*\\)\\s*)+)(.*)$",
+                                        obj$remainder))
+
+  obj$name <- purrr::map2_chr(
+    parsed_remander,
     obj$remainder,
-    function(r) {
-      if (grepl(" ", r)) {
-        purrr::map_chr(strsplit(r, " "), 2)
+    function(pr, r) {
+      if (length(pr != 0)) {
+        purrr::pluck(pr, length(pr))
       } else {
         r
       }
     }
   )
+  
+  obj$remainder <- .advance_remainder(
+    remainder = obj$remainder,
+    pattern = obj$name
+  )
+  
+  obj$name <- gsub("\\s", "", obj$name)
 
   obj$lower_idx <- purrr::map_chr(obj$name, function(n) {
     if (grepl("\\(", n)) {
@@ -77,10 +89,6 @@
     }
   ))
 
-  obj$remainder <- .advance_remainder(
-    remainder = obj$remainder,
-    pattern = obj$name
-  )
 
   obj$name <- purrr::map_chr(
     obj$name,
@@ -96,16 +104,34 @@
     NA
   )
 
-  obj$upper_idx <- purrr::map(
-    obj$ls_upper_idx,
-    function(s) {
-      if (!s %=% NA) {
-        paste0("(", paste0(s, collapse = ","), ")")
-      } else {
-        NA
-      }
-    }
-  )
+  # obj$upper_idx <- purrr::map(
+  #   obj$ls_upper_idx,
+  #   function(s) {
+  #     if (!s %=% NA) {
+  #       paste0("(", paste0(s, collapse = ","), ")")
+  #     } else {
+  #       NA
+  #     }
+  #   }
+  # )
+  
+  order_test <- purrr::map(strsplit(obj$remainder, ")"), function(r) {
+    purrr::map_chr(purrr::list_flatten(strsplit(r, ",")), 2)
+  })
+
+  if (!all(purrr::map2_lgl(
+    obj$ls_lower_idx,
+    order_test,
+    identical
+  ))) {
+    s_idx <- purrr::map2(obj$ls_lower_idx, order_test, match)
+    obj$ls_upper_idx <- purrr::map2(obj$ls_upper_idx,
+                                    s_idx,
+                                    function(upper, id) {
+                                      upper[id]
+                                    })
+    
+  }
 
   obj$mixed_idx <- unlist(x = purrr::map2(
     obj$ls_upper_idx,
@@ -124,15 +150,23 @@
   obj$ls_mixed_idx <- strsplit(obj$mixed_idx, ",")
   obj$mixed_idx <- paste0("(", obj$mixed_idx, ")")
 
+
   if (obj_type %=% "coefficient") {
     r <- subset(extract, tolower(type) == "read")
 
-    r$name <- trimws(purrr::map_chr(purrr::map(purrr::map(
-      toupper(r$remainder),
-      strsplit,
-      "FROM FILE"
-    ), 1), 1))
+    if (!all(grepl("from file", tolower(r$remainder)))) {
+      .cli_action(model_err$missing_file,
+                  action = "abort",
+                  call = call)
+    }
+    
+    r$name <- purrr::map_chr(strsplit(r$remainder, " "), 1)
 
+    r$remainder <- gsub("from file",
+                        "from file",
+                        r$remainder,
+                        ignore.case = TRUE)
+    
     r$remainder <- .advance_remainder(
       remainder = r$remainder,
       pattern = paste(r$name, "from file")
@@ -149,7 +183,6 @@
     obj$header <- r$header[r_idx]
     obj$file <- r$file[r_idx]
   } else if (obj_type %=% "variable") {
-    obj$name <- tolower(obj$name)
     obj$header <- NA
     obj$file <- NA
   }
