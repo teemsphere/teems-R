@@ -54,7 +54,7 @@ list(
       class(tab) <- nme
       return(tab)
     })
-    
+
     names(x = tabs) <- tab_names
     return(tabs)
   }),
@@ -74,7 +74,7 @@ list(
       "levels"
     )
   }),
-  
+
   # parameter related ------------------------------------------------
   # static ===========================================================
   tar_target(v6.2_weights, {
@@ -101,11 +101,13 @@ list(
   tar_target(param_weights, {
     list(v6.2 = v6.2_weights, v7.0 = v7.0_weights)
   }),
-  
+
   # closures ---------------------------------------------------------
   tar_target(closure_repo, {
-    list.files(path = file.path("../teems-closures/"),
-               full.names = TRUE)
+    list.files(
+      path = file.path("../teems-closures/"),
+      full.names = TRUE
+    )
   }),
   tar_target(closure_files, {
     list.files(
@@ -122,11 +124,11 @@ list(
         readLines(closure)
       }
     )
-    
+
     cls_names <- lapply(closure_files, function(cls) {
       tools::file_path_sans_ext(x = basename(path = cls))
     })
-    
+
     names(x = cls) <- cls_names
     return(cls)
   }),
@@ -140,36 +142,38 @@ list(
   tar_target(set_conversion, {
     set_table <- tabulapdf::extract_tables(file = GTAPv7_manual, pages = 83)
     c_names <- c("name", "header", "description")
-    
+
     v6.2_sets <- set_table[[1]][, c(1:4)]
     colnames(x = v6.2_sets) <- c("idx", paste0("v6.2", c_names))
     v7.0_sets <- set_table[[1]][, c(5:8)]
     colnames(x = v7.0_sets) <- c("idx", paste0("v7.0", c_names))
-    
+
     # always inconsistencies in GTAP outputs
     v7.0_sets[5:13, "idx"] <- 5:13
     v7.0_sets[12:13, "idx"] <- 13:14
-    
+
     sets <- merge(v6.2_sets, v7.0_sets, by = "idx", all = TRUE)
   }),
   tar_target(param_conversion, {
     param_table <- tabulapdf::extract_tables(file = GTAPv7_manual, pages = 84)
-    
+
     v7.0_param <- param_table[[1]][, c(5:8)]
-    
+
     # missing ESBQ
-    ESBQ <- tibble::tibble(14,
-                           "ESBQ",
-                           "COMM*REG",
-                           "1/CES elasticity for commodity sourcing")
+    ESBQ <- tibble::tibble(
+      14,
+      "ESBQ",
+      "COMM*REG",
+      "1/CES elasticity for commodity sourcing"
+    )
     colnames(x = ESBQ) <- colnames(x = v7.0_param)
-    
+
     # missing ESBI
     # ESBI <- tibble::tibble(15, "ESBI", "REG", "Investment expenditure CES elasticity")
     # colnames(x = ESBI) <- colnames(x = v7.0_param)
-    
+
     v7.0_param <- rbind(v7.0_param, ESBQ)
-    
+
     v7.0_param <- .table_fix(
       single = c(11, 12, 27),
       double = c(1, 3, 5, 7, 9, 13, 15, 17, 19, 25),
@@ -178,11 +182,11 @@ list(
       prefix = "v7.0",
       data_type = "par"
     )
-    
+
     v7.0_param[10:14, "idx"] <- 11:15
-    
+
     v6.2_param <- param_table[[1]][, c(1:4)]
-    
+
     v6.2_param <- .table_fix(
       single = c(11, 12),
       double = c(1, 3, 5, 7, 9, 13, 15, 17),
@@ -190,16 +194,16 @@ list(
       prefix = "v6.2",
       data_type = "par"
     )
-    
+
     param <- merge(v6.2_param, v7.0_param, by = "idx", all = TRUE)
     param[["data_type"]] <- "par"
     return(param)
   }),
   tar_target(dat_conversion, {
     coeff_table <- tabulapdf::extract_tables(file = GTAPv7_manual, pages = 85:86)
-    
+
     coeff_table <- data.table::rbindlist(l = coeff_table)
-    
+
     v7.0_coeff <- coeff_table[, c(4:6)]
     double <- c(3, 18, 20, 22, 24, 26, 30, 32, 35, 37, 41, 49, 51, 54)
     single <- setdiff(seq(1, nrow(v7.0_coeff)), double)
@@ -212,11 +216,11 @@ list(
       prefix = "v7.0",
       data_type = "dat"
     )
-    
+
     v6.2_coeff <- coeff_table[, c(1:3)]
     double <- c(18, 20, 22, 24, 26, 30, 32, 35, 37, 41)
     single <- setdiff(seq(1, nrow(v6.2_coeff)), double)
-    
+
     NAs <- which(is.na(v6.2_coeff[, 1]))
     single <- setdiff(single, NAs)
     v6.2_coeff <- .table_fix(
@@ -226,7 +230,7 @@ list(
       prefix = "v6.2",
       data_type = "dat"
     )
-    
+
     coeff <- merge(v6.2_coeff, v7.0_coeff, by = "idx", all = TRUE)
     coeff[["v6.2set"]] <- NA
     coeff[["v7.0set"]] <- NA
@@ -284,7 +288,8 @@ list(
       data_set_mismatch = "The expected number of data entries on {.field {class(dt)[1]}} ({.val {expected}}) is not equal to the number found ({.val {nrow(dt)}}).",
       missing_tsteps = "{.arg time_steps} have not been provided to an intertemporal model. See {.fun teems::ems_data}.",
       nonreq_tsteps = "{.arg time_steps} have been provided yet no intertemporal sets have been detected in the provided model. See {.fun teems::ems_data}.",
-      missing_mapping = "Some model sets that are read as headers are missing mappings: {.field {m_map}}."
+      missing_mapping = "Some model sets that are read as headers are missing mappings: {.field {m_map}}.",
+      missing_header = "The following headers are designated as read-in but are missing from the loaded data: {.val {missing_headers}}."
     )
   }),
   tar_target(data_wrn, {
@@ -326,13 +331,24 @@ list(
     list(ETRE = "The {.arg ETREtoENDW} value for {.fun teems::ems_option_get()} is set to `TRUE` however no dedicated sluggish endowment set has been detected for {.field ETRE}.")
   }),
   tar_target(model_err, {
-    list(unsupported_tab = "Unsupported Tablo declarations detected: {.val {unsupported}}.")
+    list(
+      unsupported_tab = "Unsupported Tablo declarations detected: {.val {unsupported}}.",
+      invalid_int_header = c(
+        "The {header_descr} required is currently set as {.val {timestep_header}} but this header is not loaded within the Tablo file.",
+        "See {.fun teems::ems_option_set} {.arg {arg_name}} for setting the {header_descr}."
+      ),
+      missing_file = "Read statements missing \"from file\" detected",
+      binary_switch = "A colon was detected within a {.field Set} definition indicating the use of an unsupported binary switch. Declare sets explicitly within the Tablo file (e.g.,  ENDWM # mobile endowment # (capital,unsklab,sklab); {.emph not} ENDWM # mobile endowments # = (all,e,ENDW:ENDOWFLAG(e,\"mobile\") ne 0);"
+    )
   }),
   tar_target(deploy_err, {
     list(invalid_write_dir = "The path provided for {.arg write_dir}, {.path {a$write_dir}}, does not exist.")
   }),
   tar_target(set_err, {
-    list(while_loop = "Construction of dependent sets has failed on: {null_sets}.", invalid_plus = "The set operator `+` was used where there are overlapping set elements {.field {d}}, violating the condition that the sets be disjoint.")
+    list(
+      while_loop = "Construction of dependent sets has failed on: {null_sets}.",
+      invalid_plus = "The set operator `+` was used where there are overlapping set elements {.field {d}}, violating the condition that the sets be disjoint."
+    )
   }),
   tar_target(cls_err, {
     list(
@@ -349,7 +365,8 @@ list(
       mixed_invalid = "{n_invalid_entries} closure entry element{?s} in {.field {cls_entry}} do not belong to the respective variable sets: {invalid_entries}.",
       subset_invalid = "Some entries from {.field {cls_entry}} do not belong to the respective variables sets indicating an invalid subset.",
       invalid_full = "A full swap on the variable {.val {var_name}} is not possible as the variable is not fully exogenous.",
-      no_var_cls = "There is no closure entry for the selected swap-out variable {.val {var_name}}."
+      no_var_cls = "There is no closure entry for the selected swap-out variable {.val {var_name}}.",
+      missing_specification = "The closure provided must contain both an \"Exogenous\" entry and a \"Rest Endogenous\" entry. Note that the inverse approach is not currently supported."
     )
   }),
   tar_target(shk_err, {
@@ -392,9 +409,11 @@ list(
     list(uni_named_lst = "Note that set names consist of the concatenation of the set name and variable-specific lowercase index.")
   }),
   tar_target(shk_url, {
-    list(custom = NULL,
-         scenario = NULL,
-         uniform = NULL)
+    list(
+      custom = NULL,
+      scenario = NULL,
+      uniform = NULL
+    )
   }),
   tar_target(swap_err, {
     list(
@@ -514,28 +533,4 @@ list(
       internal = TRUE
     )
   })
-  
-  # external data ====================================================
-  # teems_dat()
-  
-  # tab files
-  # readLines used instead of readChar for readability (user-facing)
-  # tar_target(external_tab,
-  #            {
-  #              tabs <- lapply(X = tab_files,
-  #                             FUN = readLines)
-  #
-  #              names(x = tabs) <- tab_names
-  #              return(tabs)
-  #            }),
-  #
-  # tar_target(external_data,
-  #            {
-  #              purrr::map2(.x = external_tab,
-  #                          .y = names(external_tab),
-  #                          .f = function(t, n) {
-  #                            file_path <- paste0("./data/", n, ".rda")
-  #                            save(t, file = file_path)
-  #                          })
-  #            })
 )
