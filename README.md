@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/badge/License-GPL-blue.svg)](LICENSE)
 <!-- [![Version](https://img.shields.io/badge/version-0.9-green.svg)](https://github.com/username/repo/releases) -->
 
-Beta version 0.0.0.97 - use with caution, currently under development!
+Beta version 0.0.0.98 - use with caution, currently under development!
 Beta manual available [here](https://teemsphere.github.io/) - also under development!
 
 Note that the [teems-solver](https://github.com/teemsphere/teems-solver) must be built to gain full functionality from this package.
@@ -18,9 +18,9 @@ Install the R package {remotes} and any dependencies flagged
 install.packages("remotes")
 ```
 
-Install the latest release "v0.0.0.97" using {remotes}
+Install the latest release "v0.0.0.98" using {remotes}
 ```R
-remotes::install_github("teemsphere/teems-R@v0.0.0.97")
+remotes::install_github("teemsphere/teems-R@v0.0.0.98")
 ```
 
 The installation may fail, citing "there is no package called ...". Install those packages and try again.
