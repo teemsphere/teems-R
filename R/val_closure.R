@@ -1,4 +1,5 @@
 #' @importFrom purrr map
+#' @importFrom utils capture.output
 #' 
 #' @keywords internal
 #' @note Move to S3 to skip checks on internal closures
@@ -59,7 +60,7 @@
     if (any(duplicated(over_check))) {
       overlap <- over_check[duplicated(over_check)]
       n_overlap <- nrow(overlap)
-      overlap <- capture.output(print(overlap))[-c(1, 2)]
+      overlap <- utils::capture.output(print(overlap))[-c(1, 2)]
       .cli_action(swap_err$overlap_ele,
         action = "abort",
         call = call

@@ -1,4 +1,5 @@
 #' @importFrom purrr map2
+#' @importFrom utils tail head
 #' 
 #' @keywords internal
 #' @noRd
@@ -16,7 +17,7 @@
     paths = bin_csv_paths
   )
   tab_sets <- lapply(set_path, function(s) {
-    tail(head(readLines(s), -1), -1)
+    utils::tail(utils::head(readLines(s), -1), -1)
   })
   names(tab_sets) <- gsub("\\.csv", "", basename(set_path))
   

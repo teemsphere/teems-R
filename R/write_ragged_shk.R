@@ -1,4 +1,5 @@
 #' @importFrom data.table dcast fwrite setorder
+#' @importFrom utils head
 #'
 #' @keywords internal
 #' @noRd
@@ -64,7 +65,7 @@
       append = TRUE
     )
   } else {
-    input <- input[, c(rev(head(seq_len(idx), -1)), idx), with = FALSE]
+    input <- input[, c(rev(utils::head(seq_len(idx), -1)), idx), with = FALSE]
     data.table::setorder(input)
     arr <- array(input[[idx]], dim_sizes)
 

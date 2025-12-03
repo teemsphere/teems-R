@@ -1,11 +1,12 @@
 #' @importFrom purrr map_chr
+#' @importFrom utils capture.output
 #' 
 #' @keywords internal
 #' @noRd
 .format_closure <- function(closure,
                             tab_readline = 15000) {
   closure <- purrr::map_chr(closure, 1)
-  final_closure <- capture.output(cat(
+  final_closure <- utils::capture.output(cat(
     "exogenous",
     closure,
     ";",

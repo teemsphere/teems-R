@@ -1,5 +1,6 @@
 #' @importFrom purrr pluck map
 #' @importFrom data.table CJ setkey setnames fintersect
+#' @importFrom utils type.convert
 #' 
 #' @keywords internal
 #' @noRd
@@ -44,7 +45,7 @@
   var_sets <- purrr::pluck(var_extract, "ls_upper_idx", attr(cls_entry, "var_name"))
 
   entry_ele <- purrr::map(entry_ele, function(e) {
-    type.convert(gsub("\"", "", e), as.is = TRUE)
+    utils::type.convert(gsub("\"", "", e), as.is = TRUE)
   })
 
   full_entry <- do.call(
@@ -86,7 +87,7 @@
       # we could check subsets directly but need better set-subset mapping
       with(sets, get(e))
     } else {
-      type.convert(gsub("\"", "", e), as.is = TRUE)
+      utils::type.convert(gsub("\"", "", e), as.is = TRUE)
     }
   })
 

@@ -9,6 +9,8 @@
   UseMethod(".check_swap")
 }
 
+#' @noRd
+#' @keywords internal
 #' @export
 #' @method .check_swap list
 .check_swap.list <- function(swap,
@@ -18,6 +20,8 @@
   UseMethod(".check_swap", swap)
 }
 
+#' @noRd
+#' @keywords internal
 #' @export
 #' @method .check_swap ems
 .check_swap.ems <- function(swap,
@@ -26,6 +30,8 @@
   NextMethod()
 }
 
+#' @noRd
+#' @keywords internal
 #' @export
 #' @method .check_swap default
 .check_swap.default <- function(swap,
@@ -35,12 +41,15 @@
   UseMethod(".check_swap", swap)
 }
 
+#' @noRd
+#' @keywords internal
 #' @export
 #' @method .check_swap full
 .check_swap.full <- function(swap,
                              var_extract,
                              sets,
-                             call) {
+                             call,
+                             ...) {
   if (is.null(attr(swap[[1]], "call"))) {
     swap <- ems_swap(swap)
     attr(swap[[1]], "call") <- NULL
@@ -58,12 +67,15 @@
   return(swap$var)
 }
 
+#' @noRd
+#' @keywords internal
 #' @export
 #' @method .check_swap partial
 .check_swap.partial <- function(swap,
                                 var_extract,
                                 sets,
-                                call) {
+                                call,
+                                ...) {
   if (is.null(attr(swap, "call"))) {
     swap <- swap[[1]]
   }

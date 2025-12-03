@@ -1,6 +1,7 @@
 #' @importFrom tibble tibble
 #' @importFrom purrr pluck pmap list_flatten map2 compact
 #' @importFrom data.table CJ
+#' @importFrom utils capture.output
 #' 
 #' @keywords internal
 #' @noRd
@@ -12,6 +13,8 @@
   UseMethod(".swap_out")
 }
 
+#' @keywords internal
+#' @noRd
 #' @method .swap_out full
 #' @export
 .swap_out.full <- function(swap_out,
@@ -56,6 +59,8 @@
   }
 }
 
+#' @keywords internal
+#' @noRd
 #' @method .swap_out default
 #' @export
 .swap_out.default <- function(swap_out,
@@ -70,7 +75,7 @@
   check <- data.table::rbindlist(purrr::map(var_entries, attr, "ele"))
   if (!nrow(data.table::fsetdiff(attr(swap_out, "ele"), check)) %=% 0L) {
     invalid_tuples <- cli::cli_format(data.table::fsetdiff(attr(swap_out, "ele"), check))
-    invalid_tuples <- capture.output(print(invalid_tuples))[-c(1, 2)]
+    invalid_tuples <- utils::capture.output(print(invalid_tuples))[-c(1, 2)]
     n_invalid_tuples <- nrow(invalid_tuples)
     .cli_action(swap_err$invalid_tup,
       action = "abort",
@@ -104,12 +109,3 @@
   }
   return(closure)
 }
-
-
-# .swap_out.ele <- function(swap_out,
-#                           closure,
-#                           sets,
-#                           var_extract,
-#                           call) {
-#   browser()
-# }

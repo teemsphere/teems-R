@@ -2,6 +2,7 @@
 #' @importFrom purrr pluck map
 #' @importFrom tibble tibble
 #' @importFrom rlang abort
+#' @importFrom utils capture.output
 #' 
 #' @noRd
 #' @keywords internal
@@ -28,7 +29,7 @@
     if (!data.table::fsetequal(template_shk, value[, !"Value"])) {
       missing_tuples <- data.table::fsetdiff(template_shk, value[, !"Value"])
       n_missing_tuples <- nrow(missing_tuples)
-      missing_tuples <- capture.output(print(missing_tuples))[-c(1:3)]
+      missing_tuples <- utils::capture.output(print(missing_tuples))[-c(1:3)]
       .cli_action(
         shk_err$scen_missing_tup,
         action = c("abort", "inform"),

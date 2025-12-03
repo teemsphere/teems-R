@@ -1,4 +1,5 @@
 #' @importFrom data.table fwrite setorder
+#' @importFrom utils head
 #'
 #' @keywords internal
 #' @noRd
@@ -30,7 +31,7 @@
       append = TRUE
     )
   } else if (idx %=% 3L) {
-    input <- input[, c(rev(head(seq_len(idx), -1)), idx), with = FALSE]
+    input <- input[, c(rev(utils::head(seq_len(idx), -1)), idx), with = FALSE]
     data.table::setorder(input)
     arr <- array(input$Value, dim_sizes)
 
@@ -41,7 +42,7 @@
       append = TRUE
     )
   } else {
-    input <- input[, c(rev(head(seq_len(idx), -1)), idx), with = FALSE]
+    input <- input[, c(rev(utils::head(seq_len(idx), -1)), idx), with = FALSE]
     data.table::setorder(input)
     arr <- array(input[[idx]], dim_sizes)
 

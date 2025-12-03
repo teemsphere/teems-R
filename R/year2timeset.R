@@ -1,5 +1,6 @@
 #' @importFrom purrr pluck
 #' @importFrom data.table setnames
+#' @importFrom utils capture.output
 #' 
 #' @noRd
 #' 
@@ -17,7 +18,7 @@
   if (!all(value$Year %in% CYRS$Value)) {
     errant_year_tuples <- value[!value$Year %in% CYRS$Value]
     n_errant_year_tuples <- nrow(errant_year_tuples)
-    errant_year_tuples <- capture.output(print(errant_year_tuples))[-c(1, 2)]
+    errant_year_tuples <- utils::capture.output(print(errant_year_tuples))[-c(1, 2)]
     .cli_action(
       shk_err$cust_invalid_year,
       action = "abort",

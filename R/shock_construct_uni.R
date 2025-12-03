@@ -1,9 +1,14 @@
+#' @importFrom utils capture.output
+#' 
+#' @noRd
+#' @keywords internal
 #' @method .construct_shock uniform
 #' @export
 .construct_shock.uniform <- function(raw_shock,
                                      closure,
+                                     sets,
                                      var_extract,
-                                     sets) {
+                                     ...) {
 
   if (attr(raw_shock, "full_var")) {
     if (.o_check_shock_status()) {
@@ -101,7 +106,7 @@
 
         if (!nrow(data.table::fsetdiff(attr(expanded_shk, "ele"), check)) %=% 0L) {
           errant_tup <- data.table::fsetdiff(attr(expanded_shk, "ele"), check)
-          errant_tup <- capture.output(print(errant_tup))[-c(1, 2)]
+          errant_tup <- utils::capture.output(print(errant_tup))[-c(1, 2)]
           .cli_action(
             shk_err$x_part_exo,
             action = "abort",

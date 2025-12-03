@@ -1,6 +1,7 @@
 #' @importFrom data.table fread as.data.table setnames CJ fsetequal fsetdiff rbindlist
 #' @importFrom purrr pluck list_flatten
 #' @importFrom tibble tibble
+#' @importFrom utils capture.output
 #' 
 #' @noRd
 #' @keywords internal
@@ -64,7 +65,7 @@
   } else {
     if (!nrow(data.table::fsetdiff(value[, !"Value"], template_shk)) %=% 0L) {
       errant_tuples <- data.table::fsetdiff(value[, !"Value"], template_shk)
-      errant_tuples <- capture.output(print(errant_tuples))
+      errant_tuples <- utils::capture.output(print(errant_tuples))
       errant_tuples <- errant_tuples[-c(1, 2)]
       .cli_action(shk_err$cust_invalid_tup,
         action = "abort",
@@ -90,7 +91,7 @@
             value[, ..key_names],
             all_exo_parts
           )
-          x_exo_parts <- trimws(capture.output(print(x_exo_parts)))
+          x_exo_parts <- trimws(utils::capture.output(print(x_exo_parts)))
           x_exo_parts <- x_exo_parts[-c(1, 2)]
 
           .cli_action(shk_err$cust_endo_tup,
