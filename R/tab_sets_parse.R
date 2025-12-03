@@ -1,4 +1,5 @@
 #' @importFrom purrr map
+#' @importFrom utils tail
 #'
 #' @keywords internal
 #' @noRd
@@ -239,7 +240,7 @@
   })
 
   subsets$set <- purrr::map_chr(subsets$remainder, function(s) {
-    tail(strsplit(s, " ")[[1]], 1)
+    utils::tail(strsplit(s, " ")[[1]], 1)
   })
 
   sets$subsets <- vector("list", nrow(sets))
