@@ -1,6 +1,6 @@
 #' Specify scenario shock
 #'
-#' @importFrom rlang trace_back
+#' @importFrom rlang trace_back check_dots_empty
 #' @description `ems_shock.scenario()` loads scenario shocks for
 #'   processing as well as conducts a series of compatibility
 #'   checks. A scenario shock is one which allows for granular
@@ -31,18 +31,13 @@
 #'   shock.
 #' @export
 ems_shock.scenario <- function(var,
+                               type = "scenario",
                                input,
-                               ...) {
-
+                               ...)
+{
   call <- rlang::trace_back()$call[[1]]
-  if (!names(list(...)) %=% "type") {
-    .cli_action(shk_err$unneeded_dots,
-                action = "abort",
-                call = call)
-  }
+  rlang::check_dots_empty()
   shock <- mget(names(formals()))
-  shock["..."] <- NULL
-  class(shock) <- c("scenario", class(shock))
   config <- .validate_shock(shock = shock,
                             call = call)
   config
