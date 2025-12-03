@@ -1,4 +1,5 @@
 #' @importFrom rlang current_env
+#' @importFrom utils packageVersion
 #'
 #' @keywords internal
 #' @noRd
@@ -19,7 +20,7 @@
                                     call,
                                     quiet) {
   if (!provided %in% vetted) {
-    teems_version <- packageVersion("teems")
+    teems_version <- utils::packageVersion("teems")
     .cli_action(gen_wrn$db_version,
                 action = c("warn", "inform"),
                 call = call
