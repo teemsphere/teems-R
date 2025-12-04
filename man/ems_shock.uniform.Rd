@@ -4,10 +4,25 @@
 \alias{ems_shock.uniform}
 \title{Specify uniform shock}
 \usage{
-\method{ems_shock}{uniform}(var, value, ...)
+\method{ems_shock}{uniform}(var, type = "uniform", value, ...)
 }
 \arguments{
 \item{var}{Character of length 1, the variable to be shocked.}
+
+\item{type}{Character of length 1, the type of shock. Choices:
+\itemize{
+\item \code{"uniform"}: a homogenous shock applied to the specified
+variable \code{"var"} or variable elements (using \code{...}) at the
+specified \code{"value"}.
+\item \code{"custom"}: a user-specified granular shock applied to
+variable \code{"var"} and aggregated set-specific variable tuples
+according to percentage-change values.
+\item \code{"scenario"}: a user-specified granular shock for temporally dynamic
+models applied to variable \code{"var"} and unaggregated tuples
+according to values specified in \code{"input"}. \code{"scenario"}
+shocks must encompass all values associated with tuples
+corresponding to unaggregated set elements. Values in
+}}
 
 \item{value}{Numeric length 1, value of uniform shock.}
 
