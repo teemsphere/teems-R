@@ -5,3 +5,4 @@
 ^local$
 .Rhistory
 ^README\.Rmd$
+^beta$
