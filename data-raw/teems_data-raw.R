@@ -5,7 +5,7 @@ lapply(fun, source)
 
 # databases
 db_version <- c("GTAPv9", "GTAPv10", "GTAPv11", "GTAPv12")
-vetted_db_versions <- c("GTAPv9A", "GTAPv10A", "GTAPv11a", "GTAPv11c", "GTAPv12")
+vetted_db_versions <- c("GTAPv9A", "GTAPv10A", "GTAPv11a", "GTAPv11c", "GTAPv12", "GTAPv12a")
 data_format <- c("GTAPv6", "GTAPv7")
 
 # models
