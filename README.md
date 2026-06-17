@@ -12,8 +12,6 @@ TEEMS provides a complete pipeline from raw GTAP data through model solution:
 data loading, aggregation, model parsing, shock specification, and
 Docker-based solving --- all from R.
 
-> **Status:** Beta (v0.1.1)
-
 ## Overview
 
 | Function | Purpose |
@@ -38,11 +36,11 @@ Docker-based solving --- all from R.
 - **Docker** --- required for `ems_solve()` (see [teems-solver](https://github.com/teemsphere/teems-solver))
 - **Solver build** --- required for `ems_solve()` (see [teems-solver](https://github.com/teemsphere/teems-solver))
 
-### Install from GitHub
+### Install from CRAN
 
 ```r
-# install.packages("remotes")
-remotes::install_github("teemsphere/teems-R@v0.1.1")
+# install package
+install.package("teems")
 ```
 
 If the installation fails citing a missing package, install that package first
