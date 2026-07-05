@@ -17,7 +17,9 @@
 #'   performs multiple passes. See: \href{https://www.copsmodels.com/gpmanual.htm#gpd3.12.2}{modified
 #'   midpoint}
 #' @param matrix_method Character of length 1, matrix solution
-#'   method (default is `"LU"`). Choices:
+#'   method (default is `"auto"`). Choices:
+#'   * `"auto"`: Selects the method from the model type and size
+#'   (see Details). The selection is reported at run time.
 #'   * `"LU"`: Standard LU decomposition, the most robust and
 #'   potentially slowest for a large model. For use with both
 #'   static and dynamic models.
@@ -47,7 +49,17 @@
 #'   parameter (%) for `"DBBD"` and `"NDBBD"`.
 #' @param laDi Integer length 1 (default is `500L`). Memory
 #'   parameter (%) for `"NDBBD"` only.
-#' @details Increase `laA`, `laD`, or `laDi` gradually if the
+#' @details `matrix_method = "auto"` selects `"SBBD"` for
+#'   intertemporal models (fastest on every benchmarked shape,
+#'   including single-task runs) and `"LU"` for static models,
+#'   switching to `"DBBD"` when `n_tasks >= 2` and the deployed
+#'   system is large (roughly 2 million or more equations, or 1.5
+#'   million with 100+ regions). The selection is reported at run
+#'   time; set `matrix_method` explicitly to override it. Runs
+#'   without deploy metadata (e.g. [`solve_in_situ()`]) fall back
+#'   to `"LU"` for static models regardless of size.
+#'
+#'   Increase `laA`, `laD`, or `laDi` gradually if the
 #'   solver returns "Error return from MA48B/BD because LA is
 #'   ...". The relevant parameter depends on the `matrix_method`
 #'   in use (see above).
@@ -86,7 +98,7 @@
 #' }
 ems_solve <- function(cmf_path,
                       solution_method = c("Johansen", "mod_midpoint"),
-                      matrix_method = c("LU", "DBBD", "SBBD", "NDBBD"),
+                      matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
                       n_subintervals = 1L,
                       steps = c(2L, 4L, 8L),
                       n_tasks = 1L,

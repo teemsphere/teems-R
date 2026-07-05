@@ -35,6 +35,13 @@
     call = call,
     model_call = model_call
   )
+  size_metadata <- .compute_size_metadata(
+    var_extract = var_extract,
+    sets = sets,
+    closure = closure
+  )
+  metadata$system_size <- size_metadata$system_size
+  metadata$n_reg <- size_metadata$n_reg
   shocks <- .finalize_shocks(
     shock = v$shock,
     closure = closure,

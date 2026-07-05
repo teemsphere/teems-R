@@ -37,6 +37,9 @@ build_solve_wrn <- function() {
 build_solve_info <- function() {
   list(
     in_situ = "\"solve-in-situ\" mode activated.",
+    # test-ems_solve.R: "matrix_method auto resolves by model type"
+    auto_method = "{.arg matrix_method} {.val auto}: using {.val {chosen}} for this {model_type} model.",
+    auto_dbbd_hint = "This static model's size favors {.val DBBD}: {.code n_tasks = 4} with {.arg matrix_method} {.val DBBD} (or {.val auto}) may solve faster than single-task {.val LU}.",
     terminal_run = "{.arg terminal_run} activated. To solve and compose outputs:",
     terminal_run_steps = c("Run the above command in your OS terminal.",
                            "If errors are present in the terminal output during an ongoing run, it is possible to stop the relevant {.field {hsl}} process early according to your OS-specific system activity monitor.",

@@ -16,7 +16,7 @@
   matrix_method <- a$matrix_method
   a$matrix_method <- rlang::arg_match(
     arg = matrix_method,
-    values = c("LU", "DBBD", "SBBD", "NDBBD"),
+    values = c("LU", "DBBD", "SBBD", "NDBBD", "auto"),
     error_call = call
   )
   
@@ -86,14 +86,6 @@
     )
   }
 
-  a$matsol <- switch(
-    EXPR = a$matrix_method,
-    "LU" = 0,
-    "SBBD" = 1,
-    "DBBD" = 2,
-    "NDBBD" = 3
-  )
-
   if ("tab_path" %in% names(attributes(paths$cmf))) {
     tab <- readLines(attr(paths$cmf, "tab_path"))
   } else {
@@ -110,14 +102,31 @@
     a$enable_time <- FALSE
   }
 
+  if (a$matrix_method %=% "auto") {
+    a$matrix_method <- .resolve_auto_method(
+      enable_time = a$enable_time,
+      n_tasks = a$n_tasks,
+      cmf_path = paths$cmf
+    )
+  }
+
   if (a$matrix_method %in% c("SBBD", "NDBBD") && !a$enable_time) {
+    matrix_method <- a$matrix_method
     .cli_action(solve_err$invalid_method,
       action = "abort",
       call = call
     )
   }
 
-  if (matrix_method %=% "NDBBD") {
+  a$matsol <- switch(
+    EXPR = a$matrix_method,
+    "LU" = 0,
+    "SBBD" = 1,
+    "DBBD" = 2,
+    "NDBBD" = 3
+  )
+
+  if (a$matrix_method %=% "NDBBD") {
     a$nesteddbbd <- 1
   } else {
     a$nesteddbbd <- 0

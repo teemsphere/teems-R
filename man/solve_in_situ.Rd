@@ -11,7 +11,7 @@ solve_in_situ(
   closure_file,
   shock_file,
   solution_method = c("Johansen", "mod_midpoint"),
-  matrix_method = c("LU", "DBBD", "SBBD", "NDBBD"),
+  matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
   n_subintervals = 1L,
   steps = c(2L, 4L, 8L),
   n_tasks = 1L,
@@ -65,8 +65,10 @@ midpoint}
 }}
 
 \item{matrix_method}{Character of length 1, matrix solution
-method (default is \code{"LU"}). Choices:
+method (default is \code{"auto"}). Choices:
 \itemize{
+\item \code{"auto"}: Selects the method from the model type and size
+(see Details). The selection is reported at run time.
 \item \code{"LU"}: Standard LU decomposition, the most robust and
 potentially slowest for a large model. For use with both
 static and dynamic models.

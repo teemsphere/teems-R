@@ -136,6 +136,62 @@ test_that("ems_solve informs terminal run", {
   )
 })
 
+test_that("matrix_method auto resolves by model type", {
+  nest_temp("solve_auto_static", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  expect_snapshot(
+    ems_solve(cmf_path, matrix_method = "auto", terminal_run = TRUE),
+    transform = function(lines) {
+      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
+    },
+    variant = variant
+  )
+  nest_temp("solve_auto_dynamic", write_dir)
+  cmf_path <- ems_deploy(dynamic_data, dynamic_model)
+  expect_snapshot(
+    ems_solve(cmf_path,
+      solution_method = "mod_midpoint",
+      matrix_method = "auto",
+      terminal_run = TRUE
+    ),
+    transform = function(lines) {
+      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
+    },
+    variant = variant
+  )
+})
+
+test_that("matrix_method auto selects DBBD for large static deployments", {
+  nest_temp("solve_auto_dbbd", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  metadata_path <- file.path(dirname(cmf_path), "metadata.rds")
+  metadata <- readRDS(metadata_path)
+  metadata$system_size <- 2.5e6
+  saveRDS(metadata, metadata_path)
+  expect_snapshot(
+    ems_solve(cmf_path, n_tasks = 2L, terminal_run = TRUE),
+    transform = function(lines) {
+      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
+    },
+    variant = variant
+  )
+  expect_snapshot(
+    ems_solve(cmf_path, terminal_run = TRUE),
+    transform = function(lines) {
+      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
+    },
+    variant = variant
+  )
+})
+
+test_that("deploy metadata records system size", {
+  nest_temp("solve_size_meta", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  metadata <- readRDS(file.path(dirname(cmf_path), "metadata.rds"))
+  expect_identical(metadata$system_size, 3485)
+  expect_identical(metadata$n_reg, 3L)
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)

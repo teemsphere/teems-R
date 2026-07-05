@@ -7,7 +7,7 @@
 ems_solve(
   cmf_path,
   solution_method = c("Johansen", "mod_midpoint"),
-  matrix_method = c("LU", "DBBD", "SBBD", "NDBBD"),
+  matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
   n_subintervals = 1L,
   steps = c(2L, 4L, 8L),
   n_tasks = 1L,
@@ -36,8 +36,10 @@ midpoint}
 }}
 
 \item{matrix_method}{Character of length 1, matrix solution
-method (default is \code{"LU"}). Choices:
+method (default is \code{"auto"}). Choices:
 \itemize{
+\item \code{"auto"}: Selects the method from the model type and size
+(see Details). The selection is reported at run time.
 \item \code{"LU"}: Standard LU decomposition, the most robust and
 potentially slowest for a large model. For use with both
 static and dynamic models.
@@ -103,6 +105,16 @@ Runs singularity, accuracy, and error checks on the results
 and structures outputs with \code{\link[=ems_compose]{ems_compose()}}.
 }
 \details{
+\code{matrix_method = "auto"} selects \code{"SBBD"} for
+intertemporal models (fastest on every benchmarked shape,
+including single-task runs) and \code{"LU"} for static models,
+switching to \code{"DBBD"} when \code{n_tasks >= 2} and the deployed
+system is large (roughly 2 million or more equations, or 1.5
+million with 100+ regions). The selection is reported at run
+time; set \code{matrix_method} explicitly to override it. Runs
+without deploy metadata (e.g. \code{\link[=solve_in_situ]{solve_in_situ()}}) fall back
+to \code{"LU"} for static models regardless of size.
+
 Increase \code{laA}, \code{laD}, or \code{laDi} gradually if the
 solver returns "Error return from MA48B/BD because LA is
 ...". The relevant parameter depends on the \code{matrix_method}
