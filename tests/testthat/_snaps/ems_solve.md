@@ -18,6 +18,22 @@
 
     x `matrix_method` "SBBD" only applicable to intertemporal model runs.
 
+# ems_solve errors when inmemory is not a logical scalar
+
+    x `inmemory` must be a NULL or logical, not a string.
+
+---
+
+    x `inmemory` must be logical of length 1.
+
+# ems_solve errors when verbosity is invalid
+
+    x `verbosity` must be integer-like.
+
+---
+
+    x `verbosity` must be 0, 1, or 2.
+
 # ems_solve warns when poor accuracy
 
     ! Only 45% of variables accurate to at least 4 digits, below the 80% threshold.

@@ -15,6 +15,8 @@
                            matsol,
                            steps,
                            enable_time,
+                           inmemory = NULL,
+                           verbosity = NULL,
                            append_args) {
   docker_preamble <- paste(
     "docker run --rm --mount",
@@ -49,6 +51,12 @@
     "-laA", laA,
     "-laDi", laDi,
     "-laD", laD,
+    if (!is.null(inmemory)) {
+      paste("-inmemory", as.integer(inmemory))
+    },
+    if (!is.null(verbosity)) {
+      paste("-verbosity", as.integer(verbosity))
+    },
     paste("-maxthreads", 1),
     "-nox"
   )

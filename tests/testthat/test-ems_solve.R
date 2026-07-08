@@ -83,6 +83,42 @@ test_that("ems_solve errors when SBBD used with static model", {
   expect_snapshot_error(ems_solve(cmf_path, matrix_method = "SBBD"))
 })
 
+test_that("ems_solve errors when inmemory is not a logical scalar", {
+  nest_temp("solve_err_inmemory", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  expect_snapshot_error(ems_solve(cmf_path, inmemory = "yes"))
+  expect_snapshot_error(ems_solve(cmf_path, inmemory = c(TRUE, FALSE)))
+})
+
+test_that("ems_solve errors when verbosity is invalid", {
+  nest_temp("solve_err_verbosity", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  expect_snapshot_error(ems_solve(cmf_path, verbosity = 1.5))
+  expect_snapshot_error(ems_solve(cmf_path, verbosity = 3L))
+})
+
+test_that("inmemory and verbosity reach the solver command", {
+  nest_temp("solve_flags_cmd", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  run_dir <- dirname(cmf_path)
+  suppressMessages(
+    ems_solve(cmf_path,
+      inmemory = FALSE,
+      verbosity = 0L,
+      terminal_run = TRUE
+    )
+  )
+  cmd <- readLines(file.path(run_dir, "model_exec.txt"), warn = FALSE)
+  expect_match(paste(cmd, collapse = " "), "-inmemory 0", fixed = TRUE)
+  expect_match(paste(cmd, collapse = " "), "-verbosity 0", fixed = TRUE)
+
+  # defaults: neither flag is passed, the solver decides
+  suppressMessages(ems_solve(cmf_path, terminal_run = TRUE))
+  cmd <- readLines(file.path(run_dir, "model_exec.txt"), warn = FALSE)
+  expect_no_match(paste(cmd, collapse = " "), "-inmemory", fixed = TRUE)
+  expect_no_match(paste(cmd, collapse = " "), "-verbosity", fixed = TRUE)
+})
+
 test_that("ems_solve errors when solution errors detected", {
   nest_temp("solve_err_error", write_dir)
   shock <- ems_uniform_shock("pop", 1e6)

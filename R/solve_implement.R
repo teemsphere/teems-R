@@ -34,6 +34,8 @@
     n_subintervals = v$n_subintervals,
     nesteddbbd = v$nesteddbbd,
     enable_time = v$enable_time,
+    inmemory = v$inmemory,
+    verbosity = v$verbosity,
     append_args = v$append_args
   )
 

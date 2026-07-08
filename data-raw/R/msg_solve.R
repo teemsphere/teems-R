@@ -21,7 +21,11 @@ build_solve_err <- function() {
     docker_x_image = "The {.val {image_name}} Docker image is not present.",
     no_model_dir = "The {.arg model_dir} provided {.path {model_dir}} does not exist.",
     no_arg_name = "Additional arguments to be passed to the solver must be named: {.code smllthreads = 1}",
-    no_input_names = "Input files provided to {.arg ...} must be named as the appear within the {.arg model_file}."
+    no_input_names = "Input files provided to {.arg ...} must be named as the appear within the {.arg model_file}.",
+    # test-ems_solve.R: "ems_solve errors when inmemory is not a logical scalar"
+    logical_scalar = "{.arg {arg}} must be logical of length 1.",
+    # test-ems_solve.R: "ems_solve errors when verbosity is out of range"
+    verbosity_range = "{.arg verbosity} must be 0, 1, or 2."
   )
 }
 

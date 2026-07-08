@@ -13,6 +13,8 @@
                                      laA,
                                      laD,
                                      laDi,
+                                     inmemory,
+                                     verbosity,
                                      suppress_outputs,
                                      terminal_run,
                                      append_args,
@@ -36,6 +38,8 @@
     laA = laA,
     laD = laD,
     laDi = laDi,
+    inmemory = inmemory,
+    verbosity = verbosity,
     suppress_outputs = suppress_outputs,
     terminal_run = terminal_run,
     append_args = append_args

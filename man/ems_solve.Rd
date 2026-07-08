@@ -14,6 +14,8 @@ ems_solve(
   laA = 300L,
   laD = 200L,
   laDi = 500L,
+  inmemory = NULL,
+  verbosity = NULL,
   suppress_outputs = FALSE,
   terminal_run = FALSE,
   append_args = NULL
@@ -76,6 +78,21 @@ parameter (\%) for \code{"DBBD"} and \code{"NDBBD"}.}
 
 \item{laDi}{Integer length 1 (default is \code{500L}). Memory
 parameter (\%) for \code{"NDBBD"} only.}
+
+\item{inmemory}{Logical length 1 or \code{NULL} (default). When
+\code{TRUE}, the solver keeps value arrays and block factors
+resident in memory instead of spilling them to scratch
+files; when \code{FALSE}, scratch files are used. The default
+(\code{NULL}) lets the solver choose per matrix method (currently
+in-memory for all methods except \code{"NDBBD"}). The solver
+falls back to scratch files with a warning if the estimated
+memory requirement exceeds what is available.}
+
+\item{verbosity}{Integer length 1 (\code{0}, \code{1}, or \code{2}) or \code{NULL}
+(default, equivalent to the solver default of \code{1}). Solver
+log detail: \code{0} restricts output to errors, warnings, and
+the accuracy summary; \code{1} adds phase progress and timings;
+\code{2} adds per-rank and per-block debug detail.}
 
 \item{suppress_outputs}{Logical length 1 (default is \code{FALSE}).
 When \code{TRUE} solver outputs are not automatically converted

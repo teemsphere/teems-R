@@ -49,6 +49,19 @@
 #'   parameter (%) for `"DBBD"` and `"NDBBD"`.
 #' @param laDi Integer length 1 (default is `500L`). Memory
 #'   parameter (%) for `"NDBBD"` only.
+#' @param inmemory Logical length 1 or `NULL` (default). When
+#'   `TRUE`, the solver keeps value arrays and block factors
+#'   resident in memory instead of spilling them to scratch
+#'   files; when `FALSE`, scratch files are used. The default
+#'   (`NULL`) lets the solver choose per matrix method (currently
+#'   in-memory for all methods except `"NDBBD"`). The solver
+#'   falls back to scratch files with a warning if the estimated
+#'   memory requirement exceeds what is available.
+#' @param verbosity Integer length 1 (`0`, `1`, or `2`) or `NULL`
+#'   (default, equivalent to the solver default of `1`). Solver
+#'   log detail: `0` restricts output to errors, warnings, and
+#'   the accuracy summary; `1` adds phase progress and timings;
+#'   `2` adds per-rank and per-block debug detail.
 #' @details `matrix_method = "auto"` selects `"SBBD"` for
 #'   intertemporal models (fastest on every benchmarked shape,
 #'   including single-task runs) and `"LU"` for static models,
@@ -105,6 +118,8 @@ ems_solve <- function(cmf_path,
                       laA = 300L,
                       laD = 200L,
                       laDi = 500L,
+                      inmemory = NULL,
+                      verbosity = NULL,
                       suppress_outputs = FALSE,
                       terminal_run = FALSE,
                       append_args = NULL

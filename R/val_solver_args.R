@@ -30,6 +30,8 @@
     laA = c("numeric", "integer"),
     laD = c("numeric", "integer"),
     laDi = c("numeric", "integer"),
+    inmemory = c("NULL", "logical"),
+    verbosity = c("NULL", "numeric", "integer"),
     suppress_outputs = "logical",
     terminal_run = "logical",
     append_args = c("NULL", "character")
@@ -71,6 +73,37 @@
       action = "abort",
       call = call
     )
+  }
+
+  if (!is.null(a$inmemory) && (as.integer(length(a$inmemory)) %!=% 1L || is.na(a$inmemory))) {
+    arg <- "inmemory"
+    .cli_action(solve_err$logical_scalar,
+      action = "abort",
+      call = call
+    )
+  }
+
+  if (!is.null(a$verbosity)) {
+    if (!rlang::is_integerish(a$verbosity)) {
+      arg <- "verbosity"
+      .cli_action(solve_err$x_integerish,
+        action = "abort",
+        call = call
+      )
+    }
+    if (as.integer(length(a$verbosity)) %!=% 1L) {
+      arg <- "verbosity"
+      .cli_action(solve_err$invalid_length,
+        action = "abort",
+        call = call
+      )
+    }
+    if (!a$verbosity %in% c(0, 1, 2)) {
+      .cli_action(solve_err$verbosity_range,
+        action = "abort",
+        call = call
+      )
+    }
   }
 
   if (!(all(a$steps %% 2 == 0) || all(a$steps %% 2 == 1))) {
