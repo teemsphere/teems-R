@@ -251,6 +251,37 @@ test_that("set expressions solve identically to pairwise forms", {
   expect_equal(expr_out, base)
 })
 
+test_that("set equality solves identically through an equation quantifier", {
+  nest_temp("solve_set_eq_base", write_dir)
+  cmf_base <- ems_deploy(static_data, static_model)
+  base <- ems_solve(cmf_base)
+
+  nest_temp("solve_set_eq", write_dir)
+  eq_file <- write_modified_model(
+    static_model_file,
+    NULL,
+    .fn = function(m, t) {
+      old1 <- "ENDWC is subset of ENDWMS;"
+      old2 <- paste0(
+        "# defines the real (tax-inclusive) return to mobile and sluggish factor e in r #\r\n",
+        "(all,e,ENDWMS)(all,r,REG)"
+      )
+      stopifnot(grepl(old1, m, fixed = TRUE), grepl(old2, m, fixed = TRUE))
+      m <- sub(
+        old1,
+        paste0(old1, "\r\nSet\r\n    ENDWMS2 # identical to ENDWMS # = ENDWMS;"),
+        m,
+        fixed = TRUE
+      )
+      sub(old2, sub("ENDWMS)", "ENDWMS2)", old2, fixed = TRUE), m, fixed = TRUE)
+    }
+  )
+  eq_model <- ems_model(eq_file, static_closure_file)
+  cmf_eq <- ems_deploy(static_data, eq_model)
+  eq_out <- ems_solve(cmf_eq)
+  expect_equal(eq_out, base)
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)

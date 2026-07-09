@@ -27,12 +27,13 @@ build_model_err <- function() {
     binary_switch = c("Unsupported binary switch detected in a {.field Set} definition.",
                       "Declare sets explicitly within the Tablo file or using {.arg ...} within {.fun teems::ems_model}.",
                       "For example, {.field Set ENDWM # mobile endowment # (capital,unsklab,sklab);} {.emph not} {.field Set ENDWM # mobile endowments # = (all,e,ENDW:ENDOWFLAG(e,\"mobile\") ne 0);}."),
-    # test-ems_model.R: "identical set assignment"
-    identical_set_fail = c(
-      "A set appears to be defined as identical to another: {.field Set SET_B # example Set B # = SET_A;}.",
-      "For duplicate sets, use multiple {.field Read} statements.",
-      "For example {.field Set SET_A # example set A # maximum size 5 read elements from file GTAPSETS header \"H2\";} {.emph and} {.field Set SET_B # example set B # maximum size 5 read elements from file GTAPSETS header \"H2\";)}"
+    # test-ems_model.R: "intertemporal set equality"
+    int_set_eq_fail = c(
+      "Set equality involving an intertemporal set detected: {.field {eq_statement}}.",
+      "Converting between intertemporal and non-intertemporal sets via set equality is not supported."
     ),
+    # test-ems_model.R: "unparseable set definition"
+    invalid_set_def = "Unparseable {.field Set} definition detected: {.field {bad_def}}.",
     # test-ems_model.R: "invalid set qualifier"
     invalid_set_qual = "Invalid set qualifier detected: {.field {invalid_qual}}.",
     # not in tests

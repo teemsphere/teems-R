@@ -75,11 +75,14 @@
     i Declare sets explicitly within the Tablo file or using `...` within `teems::ems_model()`.
     i For example, Set ENDWM # mobile endowment # (capital,unsklab,sklab); not Set ENDWM # mobile endowments # = (all,e,ENDW:ENDOWFLAG(e,"mobile") ne 0);.
 
-# identical set assignment
+# intertemporal set equality
 
-    x A set appears to be defined as identical to another: Set SET_B # example Set B # = SET_A;.
-    i For duplicate sets, use multiple Read statements.
-    i For example Set SET_A # example set A # maximum size 5 read elements from file GTAPSETS header "H2"; and Set SET_B # example set B # maximum size 5 read elements from file GTAPSETS header "H2";)
+    x Set equality involving an intertemporal set detected: Set ALLTIME2 = ALLTIME.
+    i Converting between intertemporal and non-intertemporal sets via set equality is not supported.
+
+# unparseable set definition
+
+    x Unparseable Set definition detected: = ENDWM ENDWS.
 
 # invalid set qualifier
 

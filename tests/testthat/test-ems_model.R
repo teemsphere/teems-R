@@ -256,8 +256,21 @@ test_that("invalid binary set switch statement", {
   expect_snapshot_error(ems_model(err_model, closure_file))
 })
 
-test_that("identical set assignment", {
-  err_model <- write_modified_model(model_file, "Set ENDWM2 # mobile endowments 2 # = ENDWM;")
+test_that("set equality (GEMPACK manual 10.1.2.1)", {
+  ok_model <- write_modified_model(model_file, "Set ENDWM2 # mobile endowments 2 # = ENDWM;")
+  expect_s3_class(
+    ems_model(ok_model, closure_file),
+    "data.frame"
+  )
+})
+
+test_that("intertemporal set equality", {
+  err_model <- write_modified_model(model_file, "Set ALLTIME2 # all time copy # = ALLTIME;")
+  expect_snapshot_error(ems_model(err_model, closure_file))
+})
+
+test_that("unparseable set definition", {
+  err_model <- write_modified_model(model_file, "Set BADSET # bad definition # = ENDWM ENDWS;")
   expect_snapshot_error(ems_model(err_model, closure_file))
 })
 

@@ -169,7 +169,28 @@
                 call = call)
   }
 
-  lapply(sets$definition, function(entry) {
+  # set equality (GEMPACK manual 10.1.2.1): Set B = A; keeps its "="
+  # so downstream code can tell the bare set name from an explicit
+  # single-element list. The (Intertemporal)/(Non_Intertemporal)
+  # conversion forms (manual 13.3.1) are not supported.
+  is_set_eq <- !is.na(sets$definition) &
+    grepl("^\\s*=\\s*[A-Za-z_][A-Za-z0-9_]*\\s*$", sets$definition)
+
+  for (i in which(is_set_eq)) {
+    rhs_nm <- trimws(sub("^\\s*=\\s*", "", sets$definition[i]))
+    rhs_idx <- match(rhs_nm, sets$name)
+    if (tolower(sets$qualifier_list[i]) %=% "(intertemporal)" ||
+      (!is.na(rhs_idx) &&
+        tolower(sets$qualifier_list[rhs_idx]) %=% "(intertemporal)")) {
+      eq_statement <- paste("Set", sets$name[i], sets$definition[i])
+      .cli_action(model_err$int_set_eq_fail,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+  }
+
+  lapply(sets$definition[!is_set_eq], function(entry) {
     if (!is.na(entry)) {
       if (!any(grepl(
         '\\+|\\-|\\^|&|\\(|\\)|"|union|intersect',
@@ -177,8 +198,9 @@
         ignore.case = TRUE
       ))) {
         if (grepl(pattern = "=", x = entry)) {
-          .cli_action(model_err$identical_set_fail,
-            action = c("abort", "inform", "inform"),
+          bad_def <- entry
+          .cli_action(model_err$invalid_set_def,
+            action = "abort",
             call = call
           )
         }
@@ -188,9 +210,12 @@
 
   is_expr <- .is_set_expr(sets$definition) &
     sets$qualifier_list != "(intertemporal)"
-  sets$definition <- ifelse(is_expr,
+  sets$definition <- ifelse(is_expr & !is_set_eq,
     trimws(sub("^\\s*=\\s*", "", sets$definition)),
-    trimws(gsub("\\(|=|\\)", "", sets$definition))
+    ifelse(is_set_eq,
+      trimws(sets$definition),
+      trimws(gsub("\\(|=|\\)", "", sets$definition))
+    )
   )
   sets$definition <- ifelse(!is_expr & grepl(",", sets$definition),
     strsplit(sets$definition, ","),
@@ -260,6 +285,12 @@
     fo <- expr_info[[i]]
     if (!is.list(fo)) next
     nm <- sets$name[i]
+    if (is_set_eq[i]) {
+      # set equality generates SUBSET statements both ways (manual 10.1.2.1)
+      sets <- add_subs(sets, nm, fo$named[1])
+      sets <- add_subs(sets, fo$named[1], nm)
+      next
+    }
     if (fo$simple_complement) {
       sets <- add_subs(sets, fo$named[1], c(nm, fo$named[2]))
     } else if (fo$all_plus_union) {
@@ -286,16 +317,24 @@
 
   names(sets$subsets) <- sets$name
 
+  # transitive closure over direct subset relations; visited-set based
+  # because set equality creates mutual (cyclic) subset pairs
+  direct_subs <- sets$subsets
   for (i in seq_len(nrow(sets))) {
     nm <- sets$name[i]
-    e_ss <- sets$subsets[[nm]]
-    if (!all(is.na(e_ss))) {
-      ss <- with(sets$subsets, mget(e_ss))
-      while (!all(is.na(ss))) {
-        ss <- unlist(ss[!is.na(ss)], use.names = FALSE)
-        sets$subsets[i] <- list(unique(c(sets$subsets[[i]], ss)))
-        ss <- with(sets$subsets, mget(ss, ifnotfound = NA))
-      }
+    closure <- character(0)
+    frontier <- direct_subs[[nm]]
+    frontier <- frontier[!is.na(frontier)]
+    while (length(frontier) > 0) {
+      closure <- c(closure, frontier)
+      nxt <- unlist(
+        direct_subs[intersect(frontier, names(direct_subs))],
+        use.names = FALSE
+      )
+      frontier <- setdiff(nxt[!is.na(nxt)], c(closure, nm))
+    }
+    if (length(closure) > 0) {
+      sets$subsets[i] <- list(unique(closure))
     }
   }
 

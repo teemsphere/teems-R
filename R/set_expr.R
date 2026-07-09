@@ -8,6 +8,8 @@
 #' @keywords internal
 #' @noRd
 .set_expr_tokens <- function(d) {
+  # set-equality definitions arrive with their leading "=" preserved
+  d <- sub("^\\s*=\\s*", "", d)
   d <- gsub("\\\\", "-", d)
   d <- gsub("union", " ^ ", d, ignore.case = TRUE)
   d <- gsub("intersect", " & ", d, ignore.case = TRUE)
