@@ -14,6 +14,8 @@ build_deploy_err <- function() {
     data_set_mismatch = "{.field {class(dt)[1]}} has {.val {nrow(dt)}} entries; {.val {expected}} expected.",
     # not in tests
     invalid_plus = "Set operator {.code +} requires disjoint sets; overlapping elements: {.field {d}}.",
+    # test-ems_model.R: "set expression operator validity"
+    invalid_minus = "Set operator {.code -} may only remove elements that are present; missing: {.field {d}}.",
     # test-ems_deploy.R: "ems_deploy errors when aggregated inputs are incomplete"
     agg_missing_tup = "{n} tuple{?s} in the provided input file for {.val {nme}} were missing: {.field {missing}}.",
     # test-ems_deploy.R: "ems_deploy errors when shock_file and shock are both provided"

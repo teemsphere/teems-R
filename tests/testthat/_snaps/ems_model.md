@@ -85,12 +85,6 @@
 
     x Invalid set qualifier detected: (static).
 
-# multiple set operators
-
-    x Multiple "+" and/or "-" were detected within a single Tablo Set statement.
-    i For compatibility, split into multiple statements.
-    i Instead of Set ENDWCFS # multiple op # = ENDWC + ENDWF + ENDWS;, Set ENDWCF # one op # = ENDWC + ENDWF; and Set ENDWCFS # second op # = ENDWCF + ENDWS;.
-
 # partial read statement
 
     x Partial Read statements are not supported.

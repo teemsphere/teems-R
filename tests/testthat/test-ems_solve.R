@@ -228,6 +228,29 @@ test_that("deploy metadata records system size", {
   expect_identical(metadata$n_reg, 3L)
 })
 
+test_that("set expressions solve identically to pairwise forms", {
+  nest_temp("solve_set_expr_base", write_dir)
+  cmf_base <- ems_deploy(static_data, static_model)
+  base <- ems_solve(cmf_base)
+
+  nest_temp("solve_set_expr", write_dir)
+  expr_file <- write_modified_model(
+    static_model_file,
+    NULL,
+    .fn = function(m, t) {
+      old1 <- "COSTS # industry cost summary # = ENDW + NENDWCOSTS;"
+      old2 <- "ENDWM # mobile endowments # = ENDW - ENDWFS;"
+      stopifnot(grepl(old1, m, fixed = TRUE), grepl(old2, m, fixed = TRUE))
+      m <- sub(old1, "COSTS # industry cost summary # = (ENDW UNION NENDWCOSTS);", m, fixed = TRUE)
+      sub(old2, "ENDWM # mobile endowments # = ENDW - ENDWF - ENDWS;", m, fixed = TRUE)
+    }
+  )
+  expr_model <- ems_model(expr_file, static_closure_file)
+  cmf_expr <- ems_deploy(static_data, expr_model)
+  expr_out <- ems_solve(cmf_expr)
+  expect_equal(expr_out, base)
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)

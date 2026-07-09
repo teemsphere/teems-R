@@ -37,12 +37,6 @@ build_model_err <- function() {
     invalid_set_qual = "Invalid set qualifier detected: {.field {invalid_qual}}.",
     # not in tests
     set_parse_fail = "Remnant set label detected during Tablo parsing.",
-    # test-ems_model.R: "multiple set operators"
-    set_op_fail = c(
-      "Multiple {.val +} and/or {.val -} were detected within a single Tablo Set statement.",
-      "For compatibility, split into multiple statements.",
-      'Instead of {.field Set ENDWCFS # multiple op # = ENDWC + ENDWF + ENDWS;}, {.field Set ENDWCF # one op # = ENDWC + ENDWF;} {.emph and} {.field Set ENDWCFS # second op # = ENDWCF + ENDWS;}.'
-    ),
     # test-ems_model.R: "data frame input missing a set"
     injection_missing_col = c(
       "Input for {.field {nme}} is missing required columns.",

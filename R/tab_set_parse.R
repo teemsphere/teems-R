@@ -163,21 +163,6 @@
     )
   }
 
-  if (any(sapply(
-    sets$definition,
-    function(entry) {
-      sum(grepl(
-        pattern = "\\+",
-        x = unlist(strsplit(entry, ""))
-      )) >= 2
-    }
-  ))) {
-    .cli_action(model_err$set_op_fail,
-      action = c("abort", "inform", "inform"),
-      call = call
-    )
-  }
-  
   if (any(grepl(":", sets$definition))) {
     .cli_action(model_err$binary_switch,
                 action = c("abort", "inform", "inform"),
@@ -187,7 +172,7 @@
   lapply(sets$definition, function(entry) {
     if (!is.na(entry)) {
       if (!any(grepl(
-        "\\+|\\-|union|intersect",
+        '\\+|\\-|\\^|&|\\(|\\)|"|union|intersect',
         entry,
         ignore.case = TRUE
       ))) {
@@ -201,37 +186,36 @@
     }
   })
 
-  sets$definition <- trimws(gsub("\\(|=|\\)", "", sets$definition))
-  sets$definition <- ifelse(grepl(",", sets$definition),
+  is_expr <- .is_set_expr(sets$definition) &
+    sets$qualifier_list != "(intertemporal)"
+  sets$definition <- ifelse(is_expr,
+    trimws(sub("^\\s*=\\s*", "", sets$definition)),
+    trimws(gsub("\\(|=|\\)", "", sets$definition))
+  )
+  sets$definition <- ifelse(!is_expr & grepl(",", sets$definition),
     strsplit(sets$definition, ","),
     sets$definition
   )
   sets$definition <- lapply(sets$definition, trimws)
   names(sets$definition) <- sets$name
 
-  sets$operator <- ifelse(grepl("UNION", sets$definition, ignore.case = TRUE), "union",
-                          ifelse(grepl("\\+", sets$definition), "+",
-                                 ifelse(grepl("\\-", sets$definition), "-",
-                                        ifelse(grepl("INTERSECT", sets$definition, ignore.case = TRUE), "intersect",
-                                               NA))))
+  expr_info <- purrr::map2(sets$definition, is_expr, function(d, e) {
+    if (isTRUE(e)) .set_expr_info(d) else NA
+  })
 
-  sets$comp <- purrr::list_flatten(purrr::pmap(
-    list(
-      sets$operator,
-      sets$definition,
-      sets$qualifier_list
-    ),
-    function(o, d, q) {
-      if (!is.na(x = o) && q != "(intertemporal)") {
-        purrr::map(strsplit(d, "(?i)UNION|\\+|\\-|INTERSECT"), trimws)
-      } else {
-        NA
-      }
+  sets$operator <- purrr::map_chr(expr_info, function(fo) {
+    if (!is.list(fo) || length(fo$ops) %=% 0L) {
+      return(NA_character_)
     }
-  ))
+    switch(fo$ops[1], "^" = "union", "&" = "intersect", fo$ops[1])
+  })
 
-  sets$comp1 <- purrr::map_chr(sets$comp, 1)
-  sets$comp2 <- purrr::map_chr(sets$comp, purrr::pluck, 2, .default = NA)
+  sets$comp1 <- purrr::map_chr(expr_info, function(fo) {
+    if (is.list(fo) && length(fo$named) >= 1L) fo$named[1] else NA_character_
+  })
+  sets$comp2 <- purrr::map_chr(expr_info, function(fo) {
+    if (is.list(fo) && length(fo$named) >= 2L) fo$named[2] else NA_character_
+  })
 
   subsets <- extract[tolower(extract$type) %in% "subset",]
   if (any(grepl(pattern = "\\(by numbers\\)", subsets$remainder))) {
@@ -258,26 +242,37 @@
     sets$subsets[[id]] <- c(sets$subsets[[id]], subsets$subset[[pos]])
   }
 
+  # implied SUBSET statements (GEMPACK manual): all UNION/'+' makes
+  # every named operand a subset of the result; all INTERSECT makes the
+  # result a subset of every operand; a trailing top-level UNION
+  # (INTERSECT) term is a subset (superset) of the result; the simple
+  # two-set complement keeps the legacy rule (result and subtrahend are
+  # subsets of the minuend). Anything else needs an explicit Subset.
+  add_subs <- function(sets, set_nm, new) {
+    r <- which(sets$name == set_nm)[1]
+    if (is.na(r)) {
+      return(sets)
+    }
+    sets$subsets[r] <- purrr::list_flatten(list(unique(c(sets$subsets[[r]], new))))
+    sets
+  }
   for (i in seq_len(nrow(sets))) {
+    fo <- expr_info[[i]]
+    if (!is.list(fo)) next
     nm <- sets$name[i]
-    o <- sets$operator[i]
-    c1 <- sets$comp1[i]
-    c2 <- sets$comp2[i]
-    if (o %=% "-") {
-      c1_row <- which(sets$name == c1)
-      existing_subsets <- sets$subsets[[c1_row[1]]]
-      new_subsets <- c(existing_subsets, nm)
-      if (!is.na(c2)) {
-        new_subsets <- c(new_subsets, c2)
+    if (fo$simple_complement) {
+      sets <- add_subs(sets, fo$named[1], c(nm, fo$named[2]))
+    } else if (fo$all_plus_union) {
+      sets <- add_subs(sets, nm, fo$named)
+    } else if (fo$all_intersect) {
+      for (tnm in fo$named) sets <- add_subs(sets, tnm, nm)
+    } else {
+      if (isTRUE(fo$last_top_op %=% "^") && !is.na(fo$last_term)) {
+        sets <- add_subs(sets, nm, fo$last_term)
       }
-      sets$subsets[c1_row[1]] <- purrr::list_flatten(list(unique(new_subsets)))
-    } else if (o %in% c("union", "+")) {
-      existing_subsets <- sets$subsets[[i]]
-      if (is.null(existing_subsets)) {
-        existing_subsets <- character(0)
+      if (isTRUE(fo$last_top_op %=% "&") && !is.na(fo$last_term)) {
+        sets <- add_subs(sets, fo$last_term, nm)
       }
-      new_subsets <- c(existing_subsets, c1, c2)
-      sets$subsets[i] <- purrr::list_flatten(list(unique(new_subsets)))
     }
   }
   

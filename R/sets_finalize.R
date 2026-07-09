@@ -74,7 +74,7 @@
   }
   # check for correct sets
   names(set_extract$mapping) <- set_extract$name
-  set_op_pattern <- paste0("UNION|\\+|\\-|\\INTERSECT")
+  set_op_pattern <- 'union|intersect|[+^&()"\\\\-]'
   set_extract$mapping <- purrr::map2(
     set_extract$definition,
     set_extract$mapping,
@@ -106,29 +106,16 @@
       list(
         set_extract$mapping,
         set_extract$definition,
-        set_extract$comp1,
-        set_extract$comp2
+        set_extract$name
       ),
-      function(m, d, c1, c2) {
+      function(m, d, nm) {
         if (is.null(m)) {
-          x <- purrr::pluck(set_extract[set_extract$name %in% c1, "mapping"], 1, 1)
-          y <- purrr::pluck(set_extract[set_extract$name %in% c2, "mapping"], 1, 1)
-          if (any(is.null(x), is.null(y))) {
-            return(NULL)
-          } else if (grepl("\\+", d)) {
-            if (nrow(data.table::fintersect(x, y)) %!=% 0L) {
-              .cli_action(deploy_err$invalid_plus,
-                          action = "abort",
-                          call = model_call)
-            }
-            m <- data.table::funion(x, y)
-          } else if (grepl("\\-", d)) {
-            m <- data.table::fsetdiff(x, y, all = TRUE)
-          } else if (grepl("union", d, ignore.case = TRUE)) {
-            m <- data.table::funion(x, y)
-          } else if (grepl("intersect", d, ignore.case = TRUE)) {
-            m <- data.table::fintersect(x, y)
-          }
+          m <- .eval_set_expr(
+            d = d,
+            mappings = set_extract$mapping,
+            owner = nm,
+            call = model_call
+          )
         }
         return(m)
       }

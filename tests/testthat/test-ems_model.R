@@ -270,11 +270,24 @@ test_that("invalid set qualifier", {
 })
 
 test_that("multiple set operators", {
-  err_model <- write_modified_model(
+  ok_model <- write_modified_model(
     model_file,
     "Set ENDWCFS # multiple op # = ENDWC + ENDWF + ENDWS;"
   )
-  expect_snapshot_error(ems_model(err_model, closure_file))
+  expect_no_error(ems_model(ok_model, closure_file))
+})
+
+test_that("set expressions parse (GEMPACK manual 10.1.1.1)", {
+  expr_model <- write_modified_model(
+    model_file,
+    paste(
+      "Set TESTA # three-term plus # = ENDWC + ENDWF + ENDWS;",
+      "Set TESTB # brackets with intersect # = (ENDW - ENDWC) INTERSECT ENDWMS;",
+      'Set TESTC # union with quoted elements # = ENDWF UNION "land" UNION "capital";',
+      sep = "\n"
+    )
+  )
+  expect_no_error(ems_model(expr_model, closure_file))
 })
 
 test_that("partial read statement", {
