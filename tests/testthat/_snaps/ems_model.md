@@ -91,16 +91,17 @@
 # unsupported IF placement
 
     x Unsupported IF placement detected: Formula (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) = 2 * IF[r in REG, VTRPROV(r,t)].
-    i IF terms must enter a Formula additively at the top level of the right-hand side.
+    i IF terms must enter Formula and Equation statements additively at the top level of an expression.
 
 # unsupported IF condition
 
     x Unsupported IF condition detected: VTRPROV(r,t) gt VT(t).
     i Supported forms: <index> in <set>, <index> = "<element>", and <coefficient> <op> <constant>.
 
-# IF in equation
+# multiple membership IF conditions in an equation
 
-    x IF conditionals in Equation statements are not supported yet.
+    x Multiple set-membership or element IF conditions detected in one Equation: Equation E_iftest # bad # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) = IF[c in MARG, qst(c,r,t)] + IF[r in REG, pds(c,r,t)].
+    i An Equation supports one such condition (it splits the equation domain); comparison conditions are unrestricted.
 
 # partial read statement
 

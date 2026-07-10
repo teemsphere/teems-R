@@ -346,12 +346,29 @@ test_that("unsupported IF condition", {
   expect_snapshot_error(ems_model(err_model, closure_file))
 })
 
-test_that("IF in equation", {
+test_that("IF in equation RHS (GEMPACK manual 11.4.7)", {
+  ok_model <- write_modified_model(
+    model_file,
+    paste(
+      "Variable (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) # if test var #;",
+      "Equation E_iftest # in-set split # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) = pds(c,r,t) + IF[c in MARG, qst(c,r,t)];",
+      "Variable (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest2(c,r,t) # if test var 2 #;",
+      "Equation E_iftest2 # comparison indicator # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest2(c,r,t) = IF[VDB(c,r,t) gt 0, pds(c,r,t)];",
+      sep = "\n"
+    )
+  )
+  model <- ems_model(ok_model, closure_file)
+  expect_s3_class(model, "data.frame")
+  # membership IF splits the equation; comparison IF synthesizes an indicator
+  expect_true(all(c("E_iftestA", "E_iftestB", "IFC1") %in% model$name))
+})
+
+test_that("multiple membership IF conditions in an equation", {
   err_model <- write_modified_model(
     model_file,
     paste(
-      "Variable (all,r,REG)(all,t,ALLTIME) ifbad(r,t) # bad if #;",
-      "Equation E_ifbad # bad if # (all,r,REG)(all,t,ALLTIME) ifbad(r,t) = IF[r in REG, yp(r,t)];",
+      "Variable (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) # if test var #;",
+      "Equation E_iftest # bad # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) = IF[c in MARG, qst(c,r,t)] + IF[r in REG, pds(c,r,t)];",
       sep = "\n"
     )
   )

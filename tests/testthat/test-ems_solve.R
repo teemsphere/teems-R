@@ -326,6 +326,87 @@ test_that("IF formulas solve identically to their hand adaptations", {
   expect_equal(if_out, base)
 })
 
+test_that("IF equations solve identically to their hand adaptations", {
+  nest_temp("solve_ifeq_base", write_dir)
+  cmf_base <- ems_deploy(static_data, static_model)
+  base <- ems_solve(cmf_base)
+
+  nest_temp("solve_ifeq", write_dir)
+  if_file <- write_modified_model(
+    static_model_file,
+    NULL,
+    .fn = function(m, t) {
+      # E_qca / E_pca: indicator-coefficient adaptations -> original IF
+      old_qca <- paste0(
+        "qca(c,a,r) = MAKESUNIT(c,a,r) * qo(a,r) - ",
+        "MAKESUNIT(c,a,r) * ETRAQ(a,r) * [ps(c,a,r) - po(a,r)];"
+      )
+      new_qca <- paste0(
+        "qca(c,a,r) = IF[MAKES(c,a,r) gt 0, ",
+        "qo(a,r) - ETRAQ(a,r) * [ps(c,a,r) - po(a,r)]];"
+      )
+      old_pca <- paste0(
+        "pca(c,a,r) = MAKEBUNIT(c,a,r) * pds(c,r) - ",
+        "MAKEBUNIT(c,a,r) * ESUBQ(c,r) * [qca(c,a,r) - qc(c,r)];"
+      )
+      new_pca <- paste0(
+        "pca(c,a,r) = IF[MAKEB(c,a,r) gt 0, ",
+        "pds(c,r) - ESUBQ(c,r) * [qca(c,a,r) - qc(c,r)]];"
+      )
+      # E_pdsm / E_pdsnm: hand domain split -> original in-set IF
+      new_pds <- paste0(
+        "Equation E_pds\r\n",
+        "# assures market clearing for commodities #\r\n",
+        "(all,c,COMM)(all,r,REG)\r\n",
+        "    qc(c,r) = DSSHR(c,r) * qds(c,r) + sum(d,REG, XSSHR(c,r,d) * qxs(c,r,d))\r\n",
+        "            + IF[c in MARG, STSHR(c,r) * qst(c,r)]\r\n",
+        "            + tradslack(c,r);"
+      )
+      pds_span <- "(?s)Equation E_pdsm.*?Equation E_pdsnm.*?tradslack\\(c,r\\);"
+      stopifnot(
+        grepl(old_qca, m, fixed = TRUE),
+        grepl(old_pca, m, fixed = TRUE),
+        grepl(pds_span, m, perl = TRUE)
+      )
+      m <- sub(old_qca, new_qca, m, fixed = TRUE)
+      m <- sub(old_pca, new_pca, m, fixed = TRUE)
+      m <- sub(pds_span, new_pds, m, perl = TRUE)
+      # element-condition probe, value-checked below
+      paste(
+        m,
+        "Coefficient (all,r,REG) IFELEM(r) # element condition probe #;",
+        'Formula (all,r,REG) IFELEM(r) = 2 + IF[r="chn", 1];',
+        sep = "\n"
+      )
+    }
+  )
+  if_model <- ems_model(if_file, static_closure_file)
+  cmf_if <- ems_deploy(static_data, if_model)
+  if_out <- ems_solve(cmf_if)
+
+  # the synthesized indicators are ordinary coefficients and appear in
+  # the composed output (as MAKESUNIT does in the base model)
+  expect_setequal(
+    setdiff(if_out$name, base$name),
+    c("IFC1", "IFC2", "IFELEM")
+  )
+  common <- intersect(base$name, if_out$name)
+  b2 <- base[match(common, base$name), ]
+  i2 <- if_out[match(common, if_out$name), ]
+  attr(b2, "row.names") <- attr(i2, "row.names") <- seq_along(common)
+  expect_equal(i2, b2)
+
+  run_dir <- dirname(cmf_if)
+  probe <- read.csv(
+    file.path(run_dir, "out", "coefficients", "IFELEM.csv"),
+    skip = 1,
+    header = FALSE
+  )
+  reg <- readLines(file.path(run_dir, "out", "sets", "REG.csv"))[-1]
+  reg <- reg[nzchar(reg)]
+  expect_equal(probe[[1]], ifelse(reg == "chn", 3, 2))
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)

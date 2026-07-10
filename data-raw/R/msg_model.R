@@ -37,15 +37,18 @@ build_model_err <- function() {
     # test-ems_model.R: "unsupported IF placement"
     invalid_if_placement = c(
       "Unsupported {.field IF} placement detected: {.field {if_statement}}.",
-      "{.field IF} terms must enter a {.field Formula} additively at the top level of the right-hand side."
+      "{.field IF} terms must enter {.field Formula} and {.field Equation} statements additively at the top level of an expression."
     ),
     # test-ems_model.R: "unsupported IF condition"
     invalid_if_cond = c(
       "Unsupported {.field IF} condition detected: {.field {if_cond}}.",
       "Supported forms: {.field <index> in <set>}, {.field <index> = \"<element>\"}, and {.field <coefficient> <op> <constant>}."
     ),
-    # test-ems_model.R: "IF in equation"
-    invalid_if_eq = "{.field IF} conditionals in {.field Equation} statements are not supported yet.",
+    # test-ems_model.R: "multiple membership IF conditions in an equation"
+    invalid_if_multi = c(
+      "Multiple set-membership or element {.field IF} conditions detected in one {.field Equation}: {.field {if_statement}}.",
+      "An {.field Equation} supports one such condition (it splits the equation domain); comparison conditions are unrestricted."
+    ),
     # test-ems_model.R: "invalid set qualifier"
     invalid_set_qual = "Invalid set qualifier detected: {.field {invalid_qual}}.",
     # not in tests
