@@ -388,6 +388,30 @@ test_that("minimal intertemporal variables raise no netcut warning", {
   expect_no_warning(ems_model(model_file, closure_file))
 })
 
+test_that("netcut proxy rewrite (roadmap 6.5 E2)", {
+  fix_model <- write_modified_model(
+    model_file,
+    paste(
+      "Variable (all,r,REG)(all,t,FWDTIME) nctv(r,t) # probe #;",
+      paste0(
+        "Equation E_nctv # probe # (all,r,REG)(all,t,FWDTIME) nctv(r,t) = ",
+        'qfe("capital","svces",r,t+1) - 0.5*qfe("capital","svces",r,t+1) - ',
+        '0.5*qfe("capital","crops",r,t+1);'
+      ),
+      sep = "\n"
+    )
+  )
+  expect_snapshot(model <- ems_model(fix_model, closure_file))
+  # one proxy per distinct element slice; repeated references share it
+  expect_true(all(c("NCV1", "E_NCV1", "NCV2", "E_NCV2") %in% model$name))
+  probe <- model$tab[grepl("E_nctv ", model$tab, fixed = TRUE)]
+  expect_match(probe, "NCV1(r,t+1)", fixed = TRUE)
+  expect_match(probe, "NCV2(r,t+1)", fixed = TRUE)
+  expect_no_match(probe, "qfe", fixed = TRUE)
+  # the rewritten model is minimal: no netcut warning remains
+  expect_no_warning(ems_model(fix_model, closure_file))
+})
+
 test_that("partial read statement", {
   err_model <- write_modified_model(
     model_file,

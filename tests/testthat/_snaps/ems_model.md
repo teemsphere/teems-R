@@ -109,6 +109,14 @@
     i Every element of a lead/lagged variable joins the dense border (netcut) of the bordered matrix methods (SBBD/DBBD/NDBBD); each non-time dimension multiplies the border size.
     i Link periods through a minimal intertemporal proxy instead, e.g. `capital(REG,TIME) = qo("capital",REG,TIME)`, and place the lead/lag on the proxy.
 
+# netcut proxy rewrite (roadmap 6.5 E2)
+
+    Code
+      model <- ems_model(fix_model, closure_file)
+    Message
+      i Inter-period links on element slices rewritten onto minimal intertemporal proxies: NCV1 = qfe("capital","crops",r,t) and NCV2 = qfe("capital","svces",r,t).
+      i Proxy variables (NCV*) and their linking equations (E_NCV*) appear in solve outputs.
+
 # partial read statement
 
     x Partial Read statements are not supported.

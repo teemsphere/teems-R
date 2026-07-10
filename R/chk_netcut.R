@@ -44,9 +44,12 @@
 
   names(lagged_refs) <- eqs$name
 
+  # E2-synthesized proxies are already reduced as far as statically possible
+  proxies <- grepl("^netcut proxy for ", var_extract$label)
+
   lagged_vars <- intersect(
     unique(unlist(lagged_refs)),
-    tolower(var_extract$name)
+    tolower(var_extract$name[!proxies])
   )
 
   offending <- purrr::map_lgl(lagged_vars, function(v) {

@@ -77,6 +77,16 @@ build_model_err <- function() {
     )
 }
 
+build_model_info <- function() {
+  list(
+    # test-ems_model.R: "netcut proxy rewrite (roadmap 6.5 E2)"
+    netcut_rewrite = c(
+      "Inter-period links on element slices rewritten onto minimal intertemporal proxies: {.field {proxy_summary}}.",
+      "Proxy variables (NCV*) and their linking equations (E_NCV*) appear in solve outputs."
+    )
+  )
+}
+
 build_model_wrn <- function() {
   list(
     # test-ems_model.R: "ignored tab statement"

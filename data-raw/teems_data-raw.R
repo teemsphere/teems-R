@@ -269,6 +269,7 @@ exp_err <- build_exp_err()
 gen_err <- build_gen_err()
 gen_info <- build_gen_info()
 model_err <- build_model_err()
+model_info <- build_model_info()
 model_wrn <- build_model_wrn()
 shk_err <- build_shk_err()
 solve_err <- build_solve_err()
@@ -296,6 +297,7 @@ usethis::use_data(
   gen_err,
   gen_info,
   model_err,
+  model_info,
   model_wrn,
   shk_err,
   solve_err,

@@ -407,6 +407,61 @@ test_that("IF equations solve identically to their hand adaptations", {
   expect_equal(probe[[1]], ifelse(reg == "chn", 3, 2))
 })
 
+test_that("netcut proxy rewrite solves identically to a hand proxy (roadmap 6.5 E2)", {
+  # hand-proxied reference: minimal intertemporal proxy written by the modeler
+  nest_temp("solve_netcut_ref", write_dir)
+  ref_file <- write_modified_model(
+    dynamic_model_file,
+    paste(
+      "Variable (all,r,REG)(all,t,ALLTIME) ncref(r,t) # hand proxy #;",
+      paste0(
+        "Equation E_ncref # hand proxy link # (all,r,REG)(all,t,ALLTIME) ",
+        'ncref(r,t) = qfe("capital","svces",r,t);'
+      ),
+      "Variable (all,r,REG)(all,t,FWDTIME) nctv(r,t) # probe #;",
+      paste0(
+        "Equation E_nctv # probe # (all,r,REG)(all,t,FWDTIME) ",
+        "nctv(r,t) = ncref(r,t+1);"
+      ),
+      sep = "\n"
+    )
+  )
+  ref_model <- ems_model(ref_file, dynamic_closure_file)
+  cmf_ref <- ems_deploy(dynamic_data, ref_model)
+  ref <- ems_solve(cmf_ref)
+
+  # direct element-slice lead: the rewrite must synthesize the same proxy
+  nest_temp("solve_netcut", write_dir)
+  slice_file <- write_modified_model(
+    dynamic_model_file,
+    paste(
+      "Variable (all,r,REG)(all,t,FWDTIME) nctv(r,t) # probe #;",
+      paste0(
+        "Equation E_nctv # probe # (all,r,REG)(all,t,FWDTIME) ",
+        'nctv(r,t) = qfe("capital","svces",r,t+1);'
+      ),
+      sep = "\n"
+    )
+  )
+  slice_model <- suppressMessages(ems_model(slice_file, dynamic_closure_file))
+  expect_true(all(c("NCV1", "E_NCV1") %in% slice_model$name))
+  cmf_slice <- ems_deploy(dynamic_data, slice_model)
+  out <- ems_solve(cmf_slice)
+
+  expect_setequal(setdiff(out$name, ref$name), "NCV1")
+  expect_setequal(setdiff(ref$name, out$name), "ncref")
+  common <- intersect(ref$name, out$name)
+  r2 <- ref[match(common, ref$name), ]
+  o2 <- out[match(common, out$name), ]
+  attr(r2, "row.names") <- attr(o2, "row.names") <- seq_along(common)
+  expect_equal(o2, r2)
+
+  # the synthesized proxy carries the hand proxy's values
+  proxy <- out$dat[[match("NCV1", out$name)]]
+  hand <- ref$dat[[match("ncref", ref$name)]]
+  expect_equal(proxy, hand)
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)

@@ -21,6 +21,11 @@
     call = call
   )
 
+  tab <- .rewrite_tab_netcut(
+    tab = tab,
+    call = call
+  )
+
   if (!is.null(var_omit)) {
     extract <- .generate_extracts(
       tab = tab,
