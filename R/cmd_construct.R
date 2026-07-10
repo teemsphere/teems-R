@@ -28,7 +28,7 @@
     docker_preamble,
     '"/opt/teems-solver/lib/mpi/bin/mpiexec',
     "-n", n_tasks,
-    "/opt/teems-solver/solver/hsl",
+    "/opt/teems-solver/solver/teems-solver",
     "-cmdfile", paths$docker_cmf
   )
 
@@ -72,7 +72,7 @@
   if (terminal_run) {
     m_exec <- normalizePath(file.path(paths$run, "model_exec.txt"), "/", FALSE)
     cat(solve_cmd, file = m_exec)
-    hsl <- "hsl"
+    hsl <- "teems-solver"
     diag_out <- normalizePath(paths$diag_out, "/", FALSE)
     cmf_path <- paste0("\"", normalizePath(paths$cmf, "/"), "\"")
     .cli_action(solve_info$terminal_run,
