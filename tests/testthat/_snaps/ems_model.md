@@ -88,6 +88,20 @@
 
     x Invalid set qualifier detected: (static).
 
+# unsupported IF placement
+
+    x Unsupported IF placement detected: Formula (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) = 2 * IF[r in REG, VTRPROV(r,t)].
+    i IF terms must enter a Formula additively at the top level of the right-hand side.
+
+# unsupported IF condition
+
+    x Unsupported IF condition detected: VTRPROV(r,t) gt VT(t).
+    i Supported forms: <index> in <set>, <index> = "<element>", and <coefficient> <op> <constant>.
+
+# IF in equation
+
+    x IF conditionals in Equation statements are not supported yet.
+
 # partial read statement
 
     x Partial Read statements are not supported.

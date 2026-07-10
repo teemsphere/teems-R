@@ -303,6 +303,61 @@ test_that("set expressions parse (GEMPACK manual 10.1.1.1)", {
   expect_no_error(ems_model(expr_model, closure_file))
 })
 
+test_that("IF in formula RHS (GEMPACK manual 11.4.6)", {
+  ok_model <- write_modified_model(
+    model_file,
+    paste(
+      "Coefficient (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFTESTA(c,r,t) # if in-set #;",
+      "Formula (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFTESTA(c,r,t) = VDB(c,r,t) + IF[c in MARG, VST(c,r,t)];",
+      "Coefficient (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFTESTB(c,r,t) # if comparison #;",
+      "Formula (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFTESTB(c,r,t) = 1 + IF[VDB(c,r,t) gt 0, VDB(c,r,t)];",
+      "Coefficient (all,r,REG)(all,t,ALLTIME) IFTESTC(r,t) # if element #;",
+      'Formula (all,r,REG)(all,t,ALLTIME) IFTESTC(r,t) = IF[r="chn", VTRPROV(r,t)];',
+      sep = "\n"
+    )
+  )
+  model <- ems_model(ok_model, closure_file)
+  expect_s3_class(model, "data.frame")
+  # in-set and element conditions synthesize intersection sets
+  expect_true(all(c("IFS1", "IFS2") %in% model$name))
+})
+
+test_that("unsupported IF placement", {
+  err_model <- write_modified_model(
+    model_file,
+    paste(
+      "Coefficient (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) # bad if #;",
+      "Formula (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) = 2 * IF[r in REG, VTRPROV(r,t)];",
+      sep = "\n"
+    )
+  )
+  expect_snapshot_error(ems_model(err_model, closure_file))
+})
+
+test_that("unsupported IF condition", {
+  err_model <- write_modified_model(
+    model_file,
+    paste(
+      "Coefficient (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) # bad if #;",
+      "Formula (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) = IF[VTRPROV(r,t) gt VT(t), VTRPROV(r,t)];",
+      sep = "\n"
+    )
+  )
+  expect_snapshot_error(ems_model(err_model, closure_file))
+})
+
+test_that("IF in equation", {
+  err_model <- write_modified_model(
+    model_file,
+    paste(
+      "Variable (all,r,REG)(all,t,ALLTIME) ifbad(r,t) # bad if #;",
+      "Equation E_ifbad # bad if # (all,r,REG)(all,t,ALLTIME) ifbad(r,t) = IF[r in REG, yp(r,t)];",
+      sep = "\n"
+    )
+  )
+  expect_snapshot_error(ems_model(err_model, closure_file))
+})
+
 test_that("partial read statement", {
   err_model <- write_modified_model(
     model_file,

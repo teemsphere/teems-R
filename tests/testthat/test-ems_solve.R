@@ -282,6 +282,50 @@ test_that("set equality solves identically through an equation quantifier", {
   expect_equal(eq_out, base)
 })
 
+test_that("IF formulas solve identically to their hand adaptations", {
+  nest_temp("solve_if_base", write_dir)
+  cmf_base <- ems_deploy(static_data, static_model)
+  base <- ems_solve(cmf_base)
+
+  nest_temp("solve_if", write_dir)
+  if_file <- write_modified_model(
+    static_model_file,
+    NULL,
+    .fn = function(m, t) {
+      old_vcb <- paste0(
+        "Formula (all,c,MARG)(all,r,REG)\r\n",
+        "    VCB(c,r) = VDB(c,r) + sum{d,REG, VXSB(c,r,d)} + VST(c,r);\r\n",
+        "Formula (all,c,NMRG)(all,r,REG)\r\n",
+        "    VCB(c,r) = VDB(c,r) + sum{d,REG, VXSB(c,r,d)};"
+      )
+      new_vcb <- paste0(
+        "Formula (all,c,COMM)(all,r,REG)\r\n",
+        "    VCB(c,r) = VDB(c,r) + sum{d,REG, VXSB(c,r,d)} + IF[c in MARG, VST(c,r)];"
+      )
+      old_vxw <- paste0(
+        "Formula (all,c,MARG)(all,r,REG)\r\n",
+        "    VXW(c,r) = VXDFOB(c,r) + VST(c,r);\r\n",
+        "Formula (all,c,NMRG)(all,r,REG)\r\n",
+        "    VXW(c,r) = VXDFOB(c,r);"
+      )
+      new_vxw <- paste0(
+        "Formula (all,c,COMM)(all,r,REG)\r\n",
+        "    VXW(c,r) = VXDFOB(c,r) + IF[c in MARG, VST(c,r)];"
+      )
+      stopifnot(
+        grepl(old_vcb, m, fixed = TRUE),
+        grepl(old_vxw, m, fixed = TRUE)
+      )
+      m <- sub(old_vcb, new_vcb, m, fixed = TRUE)
+      sub(old_vxw, new_vxw, m, fixed = TRUE)
+    }
+  )
+  if_model <- ems_model(if_file, static_closure_file)
+  cmf_if <- ems_deploy(static_data, if_model)
+  if_out <- ems_solve(cmf_if)
+  expect_equal(if_out, base)
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)
