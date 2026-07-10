@@ -43,6 +43,7 @@
       i_data <- i_data[!duplicated(names(i_data), fromLast = TRUE)]
     }
   }
+  
   .check_database_version(
     vetted = vetted_db_versions,
     provided = metadata$full_database_version,

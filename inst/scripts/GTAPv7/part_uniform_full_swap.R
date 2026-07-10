@@ -20,7 +20,7 @@ partial <- ems_uniform_shock(
   var = "qfd",
   REGr = "usa",
   ACTSa = "crops",
-  value = -1
+  value = -0.5
 )
 
 # validate inputs, write solver files, with full variable swaps passed as strings
@@ -40,7 +40,7 @@ outputs <- ems_solve(
 )
 
 # checks
-exo_shk <- outputs$dat$qfd[REGr == "usa" & ACTSa == "crops"]$Value == -1
+exo_shk <- outputs$dat$qfd[REGr == "usa" & ACTSa == "crops"]$Value == -0.5
 exo_null <- outputs$dat$qfd[!(REGr == "usa" & ACTSa == "crops")]$Value == 0
 endo <- outputs$dat$tfd$Value != 0
 qfd_len_check <- (length(exo_shk) + length(exo_null)) == nrow(outputs$dat$qfd)
