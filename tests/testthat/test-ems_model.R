@@ -375,6 +375,19 @@ test_that("multiple membership IF conditions in an equation", {
   expect_snapshot_error(ems_model(err_model, closure_file))
 })
 
+test_that("netcut inflation warning (roadmap 6.5 E1)", {
+  warn_model <- write_modified_model(
+    model_file,
+    "Equation E_nctest # netcut probe # (all,e,ENDW)(all,a,ACTS)(all,r,REG)(all,t,FWDTIME) qfe(e,a,r,t+1) = qfe(e,a,r,t);"
+  )
+  expect_snapshot_warning(ems_model(warn_model, closure_file))
+})
+
+test_that("minimal intertemporal variables raise no netcut warning", {
+  # shipped GTAP-RE lead/lag variables (kb, pinv, rental) are REG x ALLTIME
+  expect_no_warning(ems_model(model_file, closure_file))
+})
+
 test_that("partial read statement", {
   err_model <- write_modified_model(
     model_file,

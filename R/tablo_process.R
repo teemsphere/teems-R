@@ -114,6 +114,13 @@
     call = call
   )
 
+  .check_netcut(
+    var_extract = var_extract,
+    math_extract = math_extract,
+    set_extract = extract$set,
+    call = call
+  )
+
   if (.o_verbose() && !quiet) {
     n_var <- nrow(var_extract)
     n_eq <- nrow(math_extract[math_extract$type %in% "Equation",])

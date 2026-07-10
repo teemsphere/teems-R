@@ -80,6 +80,12 @@ build_model_err <- function() {
 build_model_wrn <- function() {
   list(
     # test-ems_model.R: "ignored tab statement"
-    ignored_state = "The following model statements are unsupported and will be ignored: {.field {ign_state}}."
+    ignored_state = "The following model statements are unsupported and will be ignored: {.field {ign_state}}.",
+    # test-ems_model.R: "netcut inflation warning"
+    netcut_inflation = c(
+      "Multidimensional {.field {offenders}} referenced with a lead or lag in {.field {lag_eqs}}.",
+      "Every element of a lead/lagged variable joins the dense border (netcut) of the bordered matrix methods (SBBD/DBBD/NDBBD); each non-time dimension multiplies the border size.",
+      "Link periods through a minimal intertemporal proxy instead, e.g. {.code capital(REG,TIME) = qo(\"capital\",REG,TIME)}, and place the lead/lag on the proxy."
+    )
   )
 }

@@ -103,6 +103,12 @@
     x Multiple set-membership or element IF conditions detected in one Equation: Equation E_iftest # bad # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) = IF[c in MARG, qst(c,r,t)] + IF[r in REG, pds(c,r,t)].
     i An Equation supports one such condition (it splits the equation domain); comparison conditions are unrestricted.
 
+# netcut inflation warning (roadmap 6.5 E1)
+
+    ! Multidimensional qfe(ENDW,ACTS,REG,ALLTIME) referenced with a lead or lag in E_nctest.
+    i Every element of a lead/lagged variable joins the dense border (netcut) of the bordered matrix methods (SBBD/DBBD/NDBBD); each non-time dimension multiplies the border size.
+    i Link periods through a minimal intertemporal proxy instead, e.g. `capital(REG,TIME) = qo("capital",REG,TIME)`, and place the lead/lag on the proxy.
+
 # partial read statement
 
     x Partial Read statements are not supported.
