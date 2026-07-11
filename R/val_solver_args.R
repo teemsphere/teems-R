@@ -159,12 +159,6 @@
     "NDBBD" = 3
   )
 
-  if (a$matrix_method %=% "NDBBD") {
-    a$nesteddbbd <- 1
-  } else {
-    a$nesteddbbd <- 0
-  }
-
   if (a$solution_method %=% "mod_midpoint") {
     a$solmed <- "Mmid"
   } else {
