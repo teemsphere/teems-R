@@ -47,7 +47,6 @@
     "-nsubints", n_subintervals,
     "-solmed", solmed,
     "-nesteddbbd", nesteddbbd,
-    "-presol", 1,
     "-laA", laA,
     "-laDi", laDi,
     "-laD", laD,
