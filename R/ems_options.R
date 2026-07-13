@@ -31,8 +31,12 @@
 #'   "SLUG", "EFLG")`). Headers to fully exclude from all aspects
 #'   of the model run. Failure to designate these headers
 #'   properly will result in errors. Modify with caution.
-#' @param docker_tag Character length 1 (default `"latest"`).
-#'   Docker tag specifying which Docker image to use.
+#' @param docker_tag Character length 1. Docker tag specifying
+#'   which `teems` image to use. When unset, the tag is selected
+#'   automatically: the highest CPU capability level the host
+#'   supports (e.g. `"x86-64-v3"`, probed via `ld.so`) with a
+#'   matching local image `teems:<level>` (or its short form,
+#'   e.g. `teems:v3`) is preferred, falling back to `"latest"`.
 #' @seealso [`ems_option_get()`] for retrieving package options.
 #'   [`ems_option_reset()`] for resetting package options.
 #' @examples
@@ -97,7 +101,9 @@ ems_option_set <- function(verbose = NULL,
 #'   * `"full_exclude"` Character vector. Headers to
 #'     fully exclude from all aspects of the model run.
 #'   * `"docker_tag"` Character. Docker tag specifying
-#'     which Docker image to use.
+#'     which Docker image to use. `"latest"` when unset; note
+#'     the solve command auto-selects a host-matched variant
+#'     tag when the option is unset (see [`ems_option_set()`]).
 #' @seealso [`ems_option_set()`] for setting package options.
 #'   [`ems_option_reset()`] for resetting package options.
 #' @examples

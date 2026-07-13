@@ -42,12 +42,6 @@
 
 #' @noRd
 #' @keywords internal
-.o_docker_tag <- function() {
-  ems_option_get("docker_tag")
-}
-
-#' @noRd
-#' @keywords internal
 .o_accuracy_threshold <- function() {
   ems_option_get("accuracy_threshold")
 }

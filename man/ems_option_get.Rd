@@ -32,7 +32,9 @@ timestep intervals.
 \item \code{"full_exclude"} Character vector. Headers to
 fully exclude from all aspects of the model run.
 \item \code{"docker_tag"} Character. Docker tag specifying
-which Docker image to use.
+which Docker image to use. \code{"latest"} when unset; note
+the solve command auto-selects a host-matched variant
+tag when the option is unset (see \code{\link[=ems_option_set]{ems_option_set()}}).
 }}
 }
 \value{

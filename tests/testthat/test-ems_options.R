@@ -162,3 +162,40 @@ test_that("ems_option_reset examples work", {
   # Retrieve default option value for `verbose`
   ems_option_get("verbose")
 })
+
+test_that("supported ISA levels resolve per platform", {
+  expect_identical(.supported_isa_levels(machine = "arm64"), "armv8-a")
+  expect_identical(.supported_isa_levels(machine = "aarch64"), "armv8-a")
+  expect_identical(
+    .supported_isa_levels(sysname = "Windows", machine = "x86_64"),
+    "x86-64-v2"
+  )
+  expect_identical(.supported_isa_levels(machine = "ppc64le"), character(0))
+  if (Sys.info()[["sysname"]] == "Linux" && Sys.info()[["machine"]] == "x86_64") {
+    levels <- .supported_isa_levels()
+    expect_true(all(grepl("^x86-64-v[0-9]+$", levels)))
+    expect_true(is.element("x86-64-v2", levels))
+    expect_identical(levels, sort(levels, decreasing = TRUE))
+  }
+})
+
+test_that("docker tag auto-selection", {
+  # an explicit docker_tag always wins
+  ems_option_set(docker_tag = "custom")
+  expect_identical(.resolve_docker_tag(), "custom")
+  ems_option_reset()
+
+  # highest supported local variant preferred; short-form tag matches too
+  local_mocked_bindings(
+    .supported_isa_levels = function(...) c("x86-64-v3", "x86-64-v2"),
+    .docker_image_present = function(image_name) image_name == "teems:v3"
+  )
+  expect_snapshot(tag <- .resolve_docker_tag())
+  expect_identical(tag, "v3")
+
+  # no variant image present: silent fallback to latest
+  local_mocked_bindings(
+    .docker_image_present = function(image_name) FALSE
+  )
+  expect_silent(expect_identical(.resolve_docker_tag(), "latest"))
+})
