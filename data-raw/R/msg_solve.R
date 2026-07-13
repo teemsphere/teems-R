@@ -6,8 +6,11 @@ build_solve_err <- function() {
     # test-ems_solve.R: "ems_solve errors when n_tasks is not integerish"
     x_integerish = "{.arg {arg}} must be integer-like.",
     invalid_length = "{.arg {arg}} must be an integer-like numeric of length 1.",
-    # test-ems_solve.R: "ems_solve errors when steps are mixed odd/even"
-    subint_form = "{.arg n_subintervals} must be all even or all odd.",
+    # test-ems_solve.R: "ems_solve errors when steps are not all even for Gragg"
+    step_parity = c(
+      "{.arg steps} must be all even when {.arg solution_method} is {.val Gragg}.",
+      "Gragg's method guarantees its accuracy properties for even step counts only (Pearson 1991, Theorem 6.1)."
+    ),
     # test-ems_solve.R: "ems_solve errors when steps is not length 3"
     step_length = "{.arg steps} must be a numeric vector of length 3.",
     # test-ems_solve.R: "ems_solve errors when SBBD used with static model"

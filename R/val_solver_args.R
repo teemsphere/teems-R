@@ -106,15 +106,15 @@
     }
   }
 
-  if (!(all(a$steps %% 2 == 0) || all(a$steps %% 2 == 1))) {
-    .cli_action(solve_err$subint_form,
+  if (!all(is.numeric(a$steps), length(a$steps) == 3)) {
+    .cli_action(solve_err$step_length,
       action = "abort",
       call = call
     )
   }
-  if (!all(is.numeric(a$steps), length(a$steps) == 3)) {
-    .cli_action(solve_err$step_length,
-      action = "abort",
+  if (a$solution_method %=% "Gragg" && !all(a$steps %% 2 == 0)) {
+    .cli_action(solve_err$step_parity,
+      action = c("abort", "inform"),
       call = call
     )
   }

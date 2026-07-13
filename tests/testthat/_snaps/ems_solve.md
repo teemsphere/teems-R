@@ -10,9 +10,15 @@
 
     x `steps` must be a numeric vector of length 3.
 
-# ems_solve errors when steps are mixed odd/even
+# ems_solve errors when steps are not all even for Gragg
 
-    x `n_subintervals` must be all even or all odd.
+    x `steps` must be all even when `solution_method` is "Gragg".
+    i Gragg's method guarantees its accuracy properties for even step counts only (Pearson 1991, Theorem 6.1).
+
+---
+
+    x `steps` must be all even when `solution_method` is "Gragg".
+    i Gragg's method guarantees its accuracy properties for even step counts only (Pearson 1991, Theorem 6.1).
 
 # ems_solve errors when SBBD used with static model
 

@@ -70,11 +70,12 @@ subintervals may alleviate accuracy issues stemming from
 large shock magnitudes.}
 
 \item{steps}{Integer length 3 (default is \code{c(2L, 4L, 8L)}). A
-vector of steps for the Gragg method, must be all odd or all
-even and length 3. A larger number of steps may improve
-accuracy for some model runs. Even step counts are
-preferable: the error-cancellation theory behind the
-extrapolation assumes them (Pearson 1991, Theorem 6.1).}
+vector of steps for the Gragg method, must be all even and
+length 3. A larger number of steps may improve accuracy for
+some model runs. Even step counts are required because the
+error-cancellation theory behind the extrapolation assumes
+them (Pearson 1991, Theorem 6.1). Ignored when
+\code{solution_method = "Johansen"}.}
 
 \item{n_tasks}{Integer length 1 (default is \code{1L}), number of
 tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}

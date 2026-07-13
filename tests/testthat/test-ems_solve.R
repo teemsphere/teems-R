@@ -71,10 +71,15 @@ test_that("ems_solve errors when steps is not length 3", {
   expect_snapshot_error(ems_solve(cmf_path, steps = c(2L, 4L)))
 })
 
-test_that("ems_solve errors when steps are mixed odd/even", {
-  nest_temp("solve_err_mixed", write_dir)
+test_that("ems_solve errors when steps are not all even for Gragg", {
+  nest_temp("solve_err_parity", write_dir)
   cmf_path <- ems_deploy(static_data, static_model)
-  expect_snapshot_error(ems_solve(cmf_path, steps = c(2L, 3L, 4L)))
+  expect_snapshot_error(
+    ems_solve(cmf_path, solution_method = "Gragg", steps = c(2L, 3L, 4L))
+  )
+  expect_snapshot_error(
+    ems_solve(cmf_path, solution_method = "Gragg", steps = c(3L, 5L, 9L))
+  )
 })
 
 test_that("ems_solve errors when SBBD used with static model", {
