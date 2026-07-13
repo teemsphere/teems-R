@@ -34,7 +34,7 @@
   docker_diagnostic_out <- file.path(paths$docker_run, "out", paste0("solver_out", "_", timeID, ".txt"))
   solver_param <- paste(
     "-matsol", matsol,
-    if (solmed %=% "Mmid") {
+    if (solmed %=% "Gragg") {
       paste("-step1", steps[1], "-step2", steps[2], "-step3", steps[3])
     },
     if (any(is.element(el = matsol, set = c(0, 2, 3)))) {

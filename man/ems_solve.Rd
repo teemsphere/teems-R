@@ -6,7 +6,7 @@
 \usage{
 ems_solve(
   cmf_path,
-  solution_method = c("Johansen", "mod_midpoint"),
+  solution_method = c("Johansen", "Gragg"),
   matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
   n_subintervals = 1L,
   steps = c(2L, 4L, 8L),
@@ -32,9 +32,17 @@ is the one-step \code{"Johansen"}. Choices:
 only be used as a rough approximation due to handling of
 nonlinear equations. See:
 \href{https://www.copsmodels.com/gpmanual.htm#gpd1.2.13}{Johansen}
-\item \code{"mod_midpoint"}: The modified midpoint method
-performs multiple passes. See: \href{https://www.copsmodels.com/gpmanual.htm#gpd3.12.2}{modified
-midpoint}
+\item \code{"Gragg"}: Gragg's method (the smoothed modified midpoint
+method; Pearson 1991). The shock is applied over a sequence
+of linearized steps — an Euler first step, midpoint
+"leapfrog" steps, and a terminal smoothing pass — and the
+sequence is repeated for each of the three step counts in
+\code{steps}. The three solutions are then combined by Richardson
+extrapolation, giving rapid error decay as steps increase
+plus an accuracy estimate from the agreement between levels.
+Recommended whenever accuracy matters. See also:
+\href{https://www.copsmodels.com/gpmanual.htm#gpd3.12.2}{GEMPACK
+solution methods}
 }}
 
 \item{matrix_method}{Character of length 1, matrix solution
@@ -62,9 +70,11 @@ subintervals may alleviate accuracy issues stemming from
 large shock magnitudes.}
 
 \item{steps}{Integer length 3 (default is \code{c(2L, 4L, 8L)}). A
-vector of steps for the modified midpoint method, must be
-all odd or all even and length 3. A larger number of steps
-may improve accuracy for some model runs.}
+vector of steps for the Gragg method, must be all odd or all
+even and length 3. A larger number of steps may improve
+accuracy for some model runs. Even step counts are
+preferable: the error-cancellation theory behind the
+extrapolation assumes them (Pearson 1991, Theorem 6.1).}
 
 \item{n_tasks}{Integer length 1 (default is \code{1L}), number of
 tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}
@@ -147,10 +157,16 @@ ems_solve(cmf_path)
 
 # Solving a dynamic model with the SBBD method:
 ems_solve(cmf_path,
-          solution_method = "mod_midpoint",
+          solution_method = "Gragg",
           matrix_method = "SBBD",
           n_tasks = 6)
 }
+}
+\references{
+Pearson, K.R. (1991), "Solving Nonlinear Economic
+Models Accurately via a Linear Representation", Impact
+Project Preliminary Working Paper No. IP-55, Monash
+University (revised June 2002).
 }
 \seealso{
 \code{\link[=ems_deploy]{ems_deploy()}} for generating \code{"cmf_path"}.

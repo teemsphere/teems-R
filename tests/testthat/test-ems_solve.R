@@ -150,7 +150,7 @@ test_that("ems_solve warns when poor accuracy", {
   cmf_path <- ems_deploy(static_data, static_model, shock)
   expect_snapshot_warning(ems_solve(
     cmf_path,
-    solution_method = "mod_midpoint"
+    solution_method = "Gragg"
   ))
 })
 
@@ -186,7 +186,7 @@ test_that("matrix_method auto resolves by model type", {
   cmf_path <- ems_deploy(dynamic_data, dynamic_model)
   expect_snapshot(
     ems_solve(cmf_path,
-      solution_method = "mod_midpoint",
+      solution_method = "Gragg",
       matrix_method = "auto",
       terminal_run = TRUE
     ),
@@ -468,14 +468,14 @@ test_that("ems_solve returns the same output across static matrix methods", {
   cmf_path <- ems_deploy(static_data, static_model, numeraire)
   LU <- ems_solve(
     cmf_path,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "LU",
     n_subintervals = 2
   )
 
   DBBD <- ems_solve(
     cmf_path,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "DBBD",
     n_subintervals = 2,
     n_tasks = 2
@@ -491,14 +491,14 @@ test_that("ems_solve returns the same output across dynamic matrix methods", {
   cmf_path <- ems_deploy(dynamic_data, dynamic_model, numeraire)
   LU <- ems_solve(
     cmf_path,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "LU",
     n_subintervals = 2
   )
 
   SBBD <- ems_solve(
     cmf_path,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "SBBD",
     n_subintervals = 2,
     n_tasks = 2
@@ -506,7 +506,7 @@ test_that("ems_solve returns the same output across dynamic matrix methods", {
 
   NDBBD <- ems_solve(
     cmf_path,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "NDBBD",
     n_subintervals = 2,
     n_tasks = 2
@@ -530,7 +530,7 @@ test_that("ems_solve examples work", {
 
   # Solving a dynamic model with the SBBD method:
   expect_s3_class(ems_solve(cmf_path,
-            solution_method = "mod_midpoint",
+            solution_method = "Gragg",
             matrix_method = "SBBD",
             n_tasks = 6), "tbl_df")
 })

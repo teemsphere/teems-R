@@ -121,7 +121,7 @@ test_that("solve_in_situ solves", {
     model_dir = insitu_dir,
     closure_file = model_files[["closure_file"]],
     shock_file = shock_file,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "SBBD",
     n_subintervals = 1,
     n_tasks = 1
@@ -176,7 +176,7 @@ test_that("solve_in_situ errors when model directory doesn't exist", {
     closure_file = model_files[["closure_file"]],
     model_dir = file.path(insitu_dir, "no_dir"),
     shock_file = shock_file,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "SBBD",
     n_subintervals = 1,
     n_tasks = 1
@@ -204,7 +204,7 @@ test_that("solve_in_situ errors when missing input file", {
     closure_file = model_files[["closure_file"]],
     model_dir = insitu_dir,
     shock_file = shock_file,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "SBBD",
     n_subintervals = 1,
     n_tasks = 1
@@ -233,7 +233,7 @@ test_that("solve_in_situ errors when input file is without name", {
     closure_file = model_files[["closure_file"]],
     model_dir = insitu_dir,
     shock_file = shock_file,
-    solution_method = "mod_midpoint",
+    solution_method = "Gragg",
     matrix_method = "SBBD",
     n_subintervals = 1,
     n_tasks = 1

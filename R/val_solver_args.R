@@ -9,7 +9,7 @@
   solution_method <- a$solution_method
   a$solution_method <- rlang::arg_match(
     arg = solution_method,
-    values = c("Johansen", "mod_midpoint"),
+    values = c("Johansen", "Gragg"),
     error_call = call
   )
   
@@ -159,8 +159,8 @@
     "NDBBD" = 3
   )
 
-  if (a$solution_method %=% "mod_midpoint") {
-    a$solmed <- "Mmid"
+  if (a$solution_method %=% "Gragg") {
+    a$solmed <- "Gragg"
   } else {
     a$solmed <- "Johansen"
     a$n_subintervals <- 1
