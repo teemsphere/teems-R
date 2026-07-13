@@ -13,7 +13,6 @@
                            laD,
                            matsol,
                            steps,
-                           enable_time,
                            inmemory = NULL,
                            verbosity = NULL,
                            append_args) {
@@ -36,12 +35,6 @@
     "-matsol", matsol,
     if (solmed %=% "Gragg") {
       paste("-step1", steps[1], "-step2", steps[2], "-step3", steps[3])
-    },
-    if (any(is.element(el = matsol, set = c(0, 2, 3)))) {
-      paste("-regset", "REG")
-    },
-    if (enable_time) {
-      "-enable_time"
     },
     "-nsubints", n_subintervals,
     "-solmed", solmed,

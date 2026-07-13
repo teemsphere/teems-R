@@ -32,7 +32,6 @@
     matsol = v$matsol,
     solmed = v$solmed,
     n_subintervals = v$n_subintervals,
-    enable_time = v$enable_time,
     inmemory = v$inmemory,
     verbosity = v$verbosity,
     append_args = v$append_args
