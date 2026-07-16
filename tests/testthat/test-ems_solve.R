@@ -467,6 +467,43 @@ test_that("netcut proxy rewrite solves identically to a hand proxy (roadmap 6.5 
   expect_equal(proxy, hand)
 })
 
+test_that("condensed models solve equivalently and recover backsolved values (roadmap 6.2)", {
+  nest_temp("solve_condense", write_dir)
+  numeraire <- ems_uniform_shock("pfactwld", 5)
+  bs <- c(
+    "qint", "qva", "pva", "pint", "qfa", "pca", "ps", "qfe", "afe",
+    "pfd", "pfm"
+  )
+  om <- c("tfd", "tfm")
+  # ps exercises the combined coefficient pivot (its defining equation
+  # retains the variable on both sides after rearrangement)
+  cond_model <- suppressWarnings(
+    ems_model(static_model_file, static_closure_file, omit = om, backsolve = bs)
+  )
+
+  plain_cmf <- ems_deploy(static_data, static_model, numeraire)
+  plain <- ems_solve(plain_cmf, solution_method = "Gragg", matrix_method = "LU")
+  cond_cmf <- ems_deploy(static_data, cond_model, numeraire)
+  cond <- ems_solve(cond_cmf, solution_method = "Gragg", matrix_method = "LU")
+
+  # backsolved variables are recovered by the solver and reported;
+  # omitted variables are gone from the deployed model entirely
+  expect_all_true(bs %in% cond$name)
+  expect_false(any(om %in% cond$name))
+
+  # recovered values and surviving core variables match the uncondensed run
+  core <- c(bs, "qo", "pds", "pms", "qxs")
+  for (v in core) {
+    a <- plain$dat[[match(v, plain$name)]]
+    b <- cond$dat[[match(v, cond$name)]]
+    expect_true(isTRUE(all.equal(a, b, tolerance = 1e-4)), label = v)
+  }
+
+  # exogenous-shock identity survives condensation
+  pfactwld <- cond$dat[[match("pfactwld", cond$name)]]
+  expect_true(max(abs(pfactwld$Value - 5)) < 1e-6)
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)
