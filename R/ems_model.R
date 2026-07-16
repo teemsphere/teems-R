@@ -13,9 +13,25 @@
 #'   closure file with .cls extension. See
 #'   \href{https://github.com/teemsphere/teems-models}{teems-models}
 #'   for closure file formatting.
-#' @param var_omit Character vector of variable length (default
-#'   is `NULL`), variable names to substitute with `0` in the
-#'   model and remove from the closure.
+#' @param omit Character vector of variable length (default is
+#'   `NULL`), variable names to omit from the condensed system.
+#'   Omitted variables must be exogenous in the closure and
+#'   unshocked; their references are replaced with `0` in the
+#'   model and their entries removed from the closure.
+#' @param backsolve Character vector of variable length (default
+#'   is `NULL`), variable names to substitute out of the system
+#'   by backsolving. Unnamed entries resolve their defining
+#'   equation by the `E_<variable>` convention; use named entries
+#'   for exceptions (e.g., `c(qgd = "E_qgdtot")`). Backsolved
+#'   variables must be endogenous; their values remain available
+#'   in solve outputs. Nominations are validated against the
+#'   GEMPACK substitution requirements (GEMPACK manual, section
+#'   14.1.10).
+#' @param ignore_condense Logical length 1 (default is `FALSE`).
+#'   If `TRUE`, `Omit`, `Substitute`, and `Backsolve` statements
+#'   found in the model file are ignored (the equivalent of the
+#'   GEMPACK `ICT` option). In-TAB `Substitute` statements are
+#'   always executed as backsolves.
 #' @param ... A named pairlist assigning values to model
 #'   coefficients. Name must match a coefficient declared in the
 #'   model file. Value may be a length-1 numeric, a data frame or
@@ -57,14 +73,16 @@
 #'
 #' ems_model(model_file = GTAP_RE[["model_file"]],
 #'           closure_file = GTAP_RE[["closure_file"]],
-#'           var_omit = c("atall", "avaall", "tfe", "tfm", "tgd", "tgm", "tid", "tim"),
+#'           omit = c("atall", "avaall", "tfe", "tfm", "tgd", "tgm", "tid", "tim"),
 #'           KAPPA = 0.03,
 #'           SUBPAR = SUBPAR)
 #' }
 ems_model <- function(
     model_file,
     closure_file,
-    var_omit = NULL,
+    omit = NULL,
+    backsolve = NULL,
+    ignore_condense = FALSE,
     ...
 ) {
 if (missing(model_file)) {

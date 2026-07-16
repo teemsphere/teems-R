@@ -8,7 +8,11 @@
   attr(metadata, "file") <- "metadata.rds"
   data_call <- attr(args_list$.data, "call")
   model_call <- attr(args_list$model, "call")
-  var_extract <- args_list$model[args_list$model$type == "Variable", ]
+  # condensed (omitted/backsolved) variables are out of the solve system:
+  # closure, shock, and system-size handling see live variables only
+  var_extract <- args_list$model[
+    args_list$model$type == "Variable" & is.na(args_list$model$condense),
+  ]
   sets <- .finalize_sets(
     sets = args_list$.data[purrr::map_lgl(args_list$.data, inherits, "set")],
     set_extract = args_list$model[args_list$model$type == "Set", ],

@@ -12,7 +12,9 @@
 
   model <- .process_tablo(
     tab_file = v$model_file,
-    var_omit = v$var_omit,
+    omit = v$omit,
+    backsolve = v$backsolve,
+    ignore_condense = v$ignore_condense,
     call = call
   )
 
@@ -30,7 +32,6 @@
 
   closure <- .check_closure(
     closure = v$closure,
-    var_omit = v$var_omit,
     var_extract = model[model$type == "Variable", ],
     call = call
   )

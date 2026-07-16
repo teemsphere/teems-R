@@ -41,7 +41,14 @@
       call = call
     )
   }
-  
+
+  .abort_condensed(
+    var_name = swap$var,
+    var_extract = var_extract,
+    err = swap_err$condensed_var,
+    call = call
+  )
+
   attr(swap$var, "call") <- call
   return(swap$var)
 }
@@ -62,7 +69,14 @@
       call = call
     )
   }
-  
+
+  .abort_condensed(
+    var_name = swap$var,
+    var_extract = var_extract,
+    err = swap_err$condensed_var,
+    call = call
+  )
+
   attr(swap$var, "call") <- call
   return(swap$var)
 }
@@ -85,6 +99,13 @@
       call = call
     )
   }
+
+  .abort_condensed(
+    var_name = swap$var,
+    var_extract = var_extract,
+    err = swap_err$condensed_var,
+    call = call
+  )
 
   ls_mixed <- purrr::pluck(var_extract, "ls_mixed_idx", swap$var)
 

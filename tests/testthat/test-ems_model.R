@@ -61,11 +61,11 @@ test_that("ems_model rejects non-existent closure_file", {
   expect_snapshot_error(ems_model(model_file, "not_a_file"))
 })
 
-test_that("ems_model rejects non-character var_omit", {
+test_that("ems_model rejects non-character omit", {
   expect_snapshot_error(ems_model(model_file, closure_file, 1))
 })
 
-test_that("ems_model rejects invalid variable names in var_omit", {
+test_that("ems_model rejects invalid variable names in omit", {
   expect_snapshot_error(ems_model(model_file, closure_file, "not_a_var"))
 })
 
@@ -216,7 +216,7 @@ test_that("ignored tab statement", {
 })
 
 test_that("invalid tab statement", {
-  err_model <- write_modified_model(model_file, "OMIT  a1  a1oct  a1mar  a1_s  a2  a2mar  ;")
+  err_model <- write_modified_model(model_file, "DISPLAY VKB ;")
   expect_snapshot(ems_model(err_model, closure_file),
                   error = TRUE,
                   transform = function(lines) {
@@ -517,7 +517,9 @@ test_that("ems_model errors dots passed without names", {
   expect_snapshot_error(
     ems_model(model_file,
       closure_file,
-      var_omit = NULL,
+      omit = NULL,
+      backsolve = NULL,
+      ignore_condense = FALSE,
       1
     )
   )
@@ -549,11 +551,256 @@ test_that("ems_model examples run", {
   model <- ems_model(
     model_file = GTAP_RE[["model_file"]],
     closure_file = GTAP_RE[["closure_file"]],
-    var_omit = c("atall", "avaall", "tfe", "tfm", "tgd", "tgm", "tid", "tim"),
+    omit = c("atall", "avaall", "tfe", "tfm", "tgd", "tgm", "tid", "tim"),
     KAPPA = 0.03,
     SUBPAR = SUBPAR
   )
   expect_s3_class(model, "tbl_df")
+})
+
+# --- condensation (roadmap 6.2: omit / backsolve, GEMPACK 10.16 & 14.1.10) ---
+
+condense_graft <- paste(
+  "Variable (all,r,REG)(all,t,ALLTIME) tva(r,t) # test var A #;",
+  "Variable (all,r,REG)(all,t,ALLTIME) tvb(r,t) # test var B #;",
+  "Variable (all,t,ALLTIME) tvc(t) # test var C #;",
+  "Variable (all,t,ALLTIME) tve(t) # test var E #;",
+  "Variable (all,t,ALLTIME) tvd(t) # test var D #;",
+  "Equation E_tva (all,r,REG)(all,t,ALLTIME) tva(r,t) = 2*qgdp(r,t) + pop(r,t);",
+  "Equation E_tvb (all,r,REG)(all,t,ALLTIME) tvb(r,t) = 3*tva(r,t);",
+  "Equation E_tvc (all,t,ALLTIME) tvc(t) = sum{r,REG, GDP(r,t)*tva(r,t)};",
+  "Equation E_tve (all,t,ALLTIME) tve(t) = walras_sup(t);",
+  "Equation E_tvd (all,t,ALLTIME) tvd(t) = sum{r,REG, GDP(r,t)*tve(t)};",
+  sep = "\n"
+)
+
+test_that("backsolve rewrites referencing equations and retains the defining equation", {
+  bs_model <- write_modified_model(model_file, condense_graft)
+  model <- ems_model(bs_model, closure_file, backsolve = "tva")
+
+  var_row <- model[model$type == "Variable" & model$name %in% "tva", ]
+  expect_identical(var_row$condense, "backsolve")
+  expect_identical(var_row$condense_eq, "E_tva")
+  eq_row <- model[model$type == "Equation" & model$name %in% "E_tva", ]
+  expect_identical(eq_row$condense, "backsolve")
+
+  # hand-verifiable rewrite: tvb(r,t) = 3*[2*qgdp(r,t) + pop(r,t)]
+  e_tvb <- model$tab[model$type == "Equation" & model$name %in% "E_tvb"]
+  expect_match(e_tvb, "tvb(r,t) = 3*2*qgdp(r,t) + 3*pop(r,t);", fixed = TRUE)
+
+  # substitution under a sum whose index the variable carries stays in place
+  e_tvc <- model$tab[model$type == "Equation" & model$name %in% "E_tvc"]
+  expect_match(e_tvc, "sum{r,REG, GDP(r,t)*2*qgdp(r,t)}", fixed = TRUE)
+  expect_match(e_tvc, "sum{r,REG, GDP(r,t)*pop(r,t)}", fixed = TRUE)
+
+  # no residual reference outside the retained defining equation
+  eqs <- model[model$type == "Equation", ]
+  hits <- grepl("(?<![[:alnum:]_])tva(?![[:alnum:]_])", eqs$tab, perl = TRUE)
+  expect_identical(eqs$name[hits], "E_tva")
+
+  # deployed TAB: Backsolve statement present, declaration retained
+  tab <- teems:::.finalize_tab(model)
+  expect_match(tab, "Backsolve tva using E_tva ;", fixed = TRUE)
+  expect_match(tab, "tva(r,t) # test var A #", fixed = TRUE)
+})
+
+test_that("substitution inverts idle sums onto synthesized coefficients", {
+  bs_model <- write_modified_model(model_file, condense_graft)
+  model <- ems_model(bs_model, closure_file, backsolve = "tve")
+
+  # sum{r,REG, GDP(r,t)*tve(t)} -> CSUB1(t)*walras_sup(t),
+  # CSUB1(t) = sum{r,REG, GDP(r,t)} (GEMPACK 14.1.12 pattern)
+  e_tvd <- model$tab[model$type == "Equation" & model$name %in% "E_tvd"]
+  expect_match(e_tvd, "tvd(t) = CSUB1(t)*walras_sup(t);", fixed = TRUE)
+  csub_formula <- model$tab[model$type == "Formula" & grepl("CSUB1", model$tab)]
+  expect_match(csub_formula, "CSUB1(t) = sum{r,REG, GDP(r,t)}", fixed = TRUE)
+})
+
+test_that("backsolve through a coefficient pivot synthesizes a reciprocal and warns", {
+  expect_snapshot_warning(
+    model <- ems_model(model_file, closure_file, backsolve = "qgdp")
+  )
+  csub_rows <- model$tab[model$type == "Formula" & grepl("CSUB", model$tab)]
+  expect_true(any(grepl("= GDP(r,t)", csub_rows, fixed = TRUE)))
+  # every other equation is qgdp-free
+  eqs <- model[model$type == "Equation", ]
+  hits <- grepl("(?<![[:alnum:]_])qgdp(?![[:alnum:]_])", eqs$tab, perl = TRUE)
+  expect_identical(eqs$name[hits], "E_qgdp")
+})
+
+test_that("in-TAB Omit statements are honored and stripped", {
+  omit_model <- write_modified_model(model_file, "Omit atall avaall ;")
+  model <- ems_model(omit_model, closure_file)
+  flagged <- model$name[model$condense %in% "omit"]
+  expect_setequal(flagged, c("atall", "avaall"))
+  # references zeroed, statement stripped, declaration row retained
+  expect_false(any(grepl("atall\\(", model$tab[model$type == "Equation"])))
+  expect_false(any(grepl("^Omit", model$tab)))
+  expect_true("atall" %in% model$name[model$type == "Variable"])
+  tab <- teems:::.finalize_tab(model)
+  expect_false(grepl("(?<![[:alnum:]_])atall(?![[:alnum:]_])", tab, perl = TRUE))
+})
+
+test_that("in-TAB Substitute executes as backsolve with a message", {
+  sub_model <- write_modified_model(
+    model_file,
+    paste(condense_graft, "Substitute tva using E_tva ;", sep = "\n")
+  )
+  expect_snapshot(model <- ems_model(sub_model, closure_file))
+  expect_identical(
+    model$condense[model$type == "Variable" & model$name %in% "tva"],
+    "backsolve"
+  )
+})
+
+test_that("ignore_condense disables in-TAB condensation statements", {
+  omit_model <- write_modified_model(model_file, "Omit atall avaall ;")
+  model <- ems_model(omit_model, closure_file, ignore_condense = TRUE)
+  expect_true(all(is.na(model$condense)))
+  expect_true(any(grepl("atall\\(", model$tab[model$type == "Equation"])))
+})
+
+test_that("ems_model rejects invalid variable names in backsolve", {
+  expect_snapshot_error(ems_model(model_file, closure_file, backsolve = "not_a_var"))
+})
+
+test_that("ems_model rejects invalid equation names in backsolve", {
+  expect_snapshot_error(
+    ems_model(model_file, closure_file, backsolve = c(qgdp = "E_not_real"))
+  )
+})
+
+test_that("ems_model rejects unresolvable backsolve entries", {
+  # pop has no E_pop defining equation
+  expect_snapshot_error(ems_model(model_file, closure_file, backsolve = "pop"))
+})
+
+test_that("ems_model rejects conflicting condensation actions", {
+  bs_model <- write_modified_model(model_file, condense_graft)
+  expect_snapshot_error(
+    ems_model(bs_model, closure_file, omit = "tva", backsolve = "tva")
+  )
+})
+
+test_that("ems_model rejects a reused backsolve equation", {
+  bs_model <- write_modified_model(model_file, condense_graft)
+  expect_snapshot_error(
+    ems_model(bs_model, closure_file, backsolve = c(tva = "E_tva", tvb = "E_tva"))
+  )
+})
+
+test_that("backsolve rule violations abort (GEMPACK 14.1.10)", {
+  rule_graft <- paste(
+    "Variable (all,r,REG)(all,t,ALLTIME) tvr(r,t) # rule test var #;",
+    "Variable (all,t,ALLTIME) tvc2(t) # rule test var #;",
+    "Variable (all,t,ALLTIME) tvc3(t) # rule test var #;",
+    "Variable (all,c,COMM)(all,t,ALLTIME) tvm(c,t) # rule test var #;",
+    "Variable (all,r,REG)(all,s,REG)(all,t,ALLTIME) tvrr(r,s,t) # rule test var #;",
+    "Equation E_tr1 (all,t,ALLTIME) tvr(\"usa\",t) = walras_sup(t);",
+    "Equation E_tr2 (all,t,ALLTIME) tvc2(t) = sum{r,REG, tvr(r,t)};",
+    "Equation E_tr3 (all,r,REG)(all,t,ALLTIME) tvc3(t) = pop(r,t);",
+    "Equation E_tr4 (all,m,MARG)(all,t,ALLTIME) tvm(m,t) = walras_sup(t);",
+    "Equation E_tr5 (all,r,REG)(all,t,ALLTIME) tvrr(r,r,t) = pop(r,t);",
+    "Equation E_tr6 (all,r,REG)(all,t,ALLTIME) tvr(r,t+1) = pop(r,t);",
+    "Equation E_tr7 (all,r,REG)(all,s,REG)(all,t,ALLTIME) tvrr(r,s,t) = tvrr(s,r,t) + pop(r,t);",
+    "Equation E_trc (all,r,REG)(all,t,ALLTIME) tvr(r,t) = tvr(r,t) + pop(r,t);",
+    sep = "\n"
+  )
+  rule_model <- write_modified_model(model_file, rule_graft)
+
+  # rule 1: element argument
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvr = "E_tr1")))
+  # rule 2: SUM index as argument
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvr = "E_tr2")))
+  # rule 3: equation ALL index absent from the occurrence
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvc3 = "E_tr3")))
+  # rule 4: quantifier ranges over a subset of the declared set
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvm = "E_tr4")))
+  # rule 5: repeated index within one occurrence
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvrr = "E_tr5")))
+  # rule 6: lead/lag offset argument
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvr = "E_tr6")))
+  # rule 7: two occurrences with different index patterns
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvrr = "E_tr7")))
+  # occurrences cancel: no expression obtainable
+  expect_snapshot_error(ems_model(rule_model, closure_file, backsolve = c(tvr = "E_trc")))
+})
+
+test_that("backsolved variables must be endogenous in the closure", {
+  endo_graft <- paste(
+    "Variable (all,r,REG)(all,t,ALLTIME) tvz(r,t) # closure test var #;",
+    "Equation E_tvp (all,r,REG)(all,t,ALLTIME) pop(r,t) = tvz(r,t);",
+    sep = "\n"
+  )
+  endo_model <- write_modified_model(model_file, endo_graft)
+  expect_snapshot_error(
+    ems_model(endo_model, closure_file, backsolve = c(pop = "E_tvp"))
+  )
+})
+
+test_that("omitted variables must be exogenous in the closure", {
+  expect_snapshot_error(ems_model(model_file, closure_file, omit = "qgdp"))
+})
+
+test_that("swaps and shocks on condensed variables abort", {
+  model <- ems_model(model_file, closure_file, omit = "atall")
+  nest_temp("condensed_guard", write_dir)
+  expect_snapshot_error(
+    ems_deploy(dat, model, swap_in = "atall", swap_out = "pop")
+  )
+  expect_snapshot_error(
+    ems_deploy(dat, model, shock = ems_uniform_shock("atall", 1))
+  )
+})
+
+test_that("GTAP standard condensation condenses cleanly", {
+  # gtapv7.sti (corpus 12102.zip) standard condensation, minus the four
+  # regional-aggregate CNT* variables absent from the teems GTAPv7 variant
+  std_omit <- c(
+    "atall", "avaall", "tfe", "tfd", "tfm", "tgd", "tgm",
+    "tpdall", "tpmall", "tid", "tim"
+  )
+  std_backsolve <- c(
+    "pfactreal", "CNTqpm", "CNTqfd", "CNTqfm", "qfe", "CNTqim", "pfd",
+    "qia", "qtmfsd", "qfd", "CNTqfe", "c2_cr", "ptrans", "atmfsd", "afa",
+    "qca", "qfa", "pca", "qfm", "compvalad", "qgd", "pfa", "pes", "pgd",
+    "ps", "CNTtech_ava", "CNTendw", "qint", "CNTqe", "pmds", "pcif",
+    "qpd", "CNTqpd", "CNTqid", "c3_cr", "CNTqms", "qim", "CNTtech_ao",
+    "CNTqca", "qxs", "c1_cr", "CNTqfeer", "qmw", "ppm", "qpm",
+    "CNTtech_ams", "CNTqgd", "pfm", "qva", "pfob", "pint", "pfe",
+    "CNTalleffcr", "CNTtech_af", "CNTtech_aint", "CNTtech_afe", "afe",
+    "qid", "pva", "qgm", "CNTqo", "CNTtech_atmfsd", "CNTqgm", "ppd",
+    "pgm", "CNTqxs", "qpev", "aint"
+  )
+
+  GTAPv7 <- ems_example("GTAPv7", write_dir)
+  suppressWarnings(
+    model <- ems_model(GTAPv7[["model_file"]], GTAPv7[["closure_file"]],
+      omit = std_omit, backsolve = std_backsolve
+    )
+  )
+
+  var_flags <- model[model$type == "Variable" & !is.na(model$condense), ]
+  expect_identical(sum(var_flags$condense == "omit"), length(std_omit))
+  expect_identical(sum(var_flags$condense == "backsolve"), length(std_backsolve))
+
+  # no equation other than the retained defining equation references a
+  # backsolved variable; retained equations reference survivors only
+  eqs <- model[model$type == "Equation", ]
+  for (v in std_backsolve) {
+    def_eq <- model$condense_eq[model$type == "Variable" & model$name %in% v]
+    hit <- grepl(paste0("(?<![[:alnum:]_])", v, "(?![[:alnum:]_])"), eqs$tab,
+      perl = TRUE, ignore.case = TRUE
+    )
+    expect_identical(setdiff(eqs$name[hit], def_eq), character(0))
+  }
+
+  # deployed TAB carries one Backsolve statement per substitution
+  tab <- teems:::.finalize_tab(model)
+  expect_identical(
+    sum(grepl("^Backsolve ", strsplit(tab, "\n")[[1]])),
+    length(std_backsolve)
+  )
 })
 
 unlink(tools::R_user_dir("teems", "cache"), recursive = TRUE)

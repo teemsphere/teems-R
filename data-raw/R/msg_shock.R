@@ -22,6 +22,11 @@ build_shk_err <- function() {
       "Shock variable {.val {var_name}} not found in the model.",
       "Call: {.code {deparse(call)}}"
     ),
+    # test-ems_model.R: "shocks on condensed variables abort"
+    condensed_var = c(
+      "Shock variable {.val {var_name}} was condensed out of the model ({condense_action}).",
+      "Omitted variables must stay unshocked and backsolved variables are endogenous; drop the condensation action in {.fun teems::ems_model} to shock this variable."
+    ),
     # test-ems_uniform_shock.R: "ems_uniform_shock errors when both int set and year are provided"
     # test-ems_custom_shock.R: "ems_custom_shock errors when both year and int set are provided"
     extra_col = c(

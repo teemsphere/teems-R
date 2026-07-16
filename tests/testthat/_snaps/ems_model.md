@@ -30,11 +30,11 @@
 
     x Cannot open file 'not_a_file': No such file.
 
-# ems_model rejects non-character var_omit
+# ems_model rejects non-character omit
 
-    x `var_omit` must be a NULL or character, not a number.
+    x `omit` must be a NULL or character, not a number.
 
-# ems_model rejects invalid variable names in var_omit
+# ems_model rejects invalid variable names in omit
 
     x "not_a_var" designated for omission not found in the model.
 
@@ -57,8 +57,8 @@
       ems_model(err_model, closure_file)
     Condition
       Error in `ems_model()`:
-      x teems version_number does not support Omit statements.
-      i Supported statements include: File, Coefficient, Read, Update, Set, Subset, Formula, Assertion, Variable, Equation, Write, and Zerodivide.
+      x teems version_number does not support Display statements.
+      i Supported statements include: File, Coefficient, Read, Update, Set, Subset, Formula, Assertion, Variable, Equation, Write, Zerodivide, Omit, Substitute, and Backsolve.
 
 # invalid intertemporal header
 
@@ -154,4 +154,107 @@
 # ems_model errors dots passed without names
 
     x Coefficients to modify must be passed as named pairs: `RDLT = 1`.
+
+# backsolve through a coefficient pivot synthesizes a reciprocal and warns
+
+    ! Backsolving qgdp using E_qgdp divides by the coefficient expression GDP(r,t).
+    i Ensure this expression can never be zero; a zero value will surface as a solver error.
+
+# in-TAB Substitute executes as backsolve with a message
+
+    Code
+      model <- ems_model(sub_model, closure_file)
+    Message
+      i In-TAB Substitute statement for "tva" executed as backsolve.
+      i Backsolved values remain available in solve outputs; plain substitution is not implemented.
+
+# ems_model rejects invalid variable names in backsolve
+
+    x "not_a_var" designated for backsolving not found in the model.
+
+# ems_model rejects invalid equation names in backsolve
+
+    x Equation "E_not_real" nominated for backsolving "qgdp" not found in the model.
+
+# ems_model rejects unresolvable backsolve entries
+
+    x No equation "E_pop" found to backsolve "pop".
+    i Unnamed `backsolve` entries resolve their defining equation by the E_<variable> convention.
+    i Name the defining equation explicitly: `backsolve = c(pop = "<equation>")`.
+
+# ems_model rejects conflicting condensation actions
+
+    x Variable "tva" appears in more than one condensation action (omit/backsolve).
+
+# ems_model rejects a reused backsolve equation
+
+    x Equation "E_tva" nominated for more than one backsolve.
+
+# backsolve rule violations abort (GEMPACK 14.1.10)
+
+    x Equation E_tr1 cannot be used to backsolve tvr.
+    i Occurrence tvr("usa",t): an element occurs as an argument; every argument must be an index (requirement 1).
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+---
+
+    x Equation E_tr2 cannot be used to backsolve tvr.
+    i Occurrence sum{r,REG, tvr(r,t)}: a SUM index occurs as an argument; every index must be an equation ALL index (requirement 2).
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+---
+
+    x Equation E_tr3 cannot be used to backsolve tvc3.
+    i Equation ALL index (r) absent from occurrence tvc3(t); every equation ALL index must appear in each occurrence (requirement 3).
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+---
+
+    x Equation E_tr4 cannot be used to backsolve tvm.
+    i Occurrence tvm(m,t) ranges over {MARG,ALLTIME} but the variable is declared over {COMM,ALLTIME}; every index must range over the full declared set (requirement 4).
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+---
+
+    x Equation E_tr5 cannot be used to backsolve tvrr.
+    i Occurrence tvrr(r,r,t): a repeated index; all indices of one occurrence must be different (requirement 5).
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+---
+
+    x Equation E_tr6 cannot be used to backsolve tvr.
+    i Occurrence tvr(r,t+1): an argument carries a lead/lag offset; offsets block substitution in intertemporal models (requirement 6).
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+---
+
+    x Equation E_tr7 cannot be used to backsolve tvrr.
+    i Occurrences tvrr(r,s,t) and tvrr(s,r,t) have different index patterns; all occurrences must share one pattern (requirement 7).
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+---
+
+    x Equation E_trc cannot be used to backsolve tvr.
+    i The occurrences of the variable cancel; no expression for it can be obtained from this equation.
+    i GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10.
+
+# backsolved variables must be endogenous in the closure
+
+    x Backsolved "pop" is exogenous in the closure.
+    i Substituted-out variables must be endogenous; swap out of the closure or drop the backsolve.
+
+# omitted variables must be exogenous in the closure
+
+    x Omitted "qgdp" is not exogenous in the closure.
+    i Omitted variables must be exogenous and unshocked (GEMPACK manual, section 14.1).
+
+# swaps and shocks on condensed variables abort
+
+    x Swap variable "atall" was condensed out of the model (omit).
+    i Condensed variables cannot enter the closure; drop the condensation action in `teems::ems_model()` to swap this variable.
+
+---
+
+    x Shock variable "atall" was condensed out of the model (omit).
+    i Omitted variables must stay unshocked and backsolved variables are endogenous; drop the condensation action in `teems::ems_model()` to shock this variable.
 

@@ -5,6 +5,11 @@ build_swap_err <- function() {
       "Swap variable {.val {var_name}} not found in the model.",
       "Call: {.code {deparse(call)}}"
     ),
+    # test-ems_model.R: "swaps on condensed variables abort"
+    condensed_var = c(
+      "Swap variable {.val {var_name}} was condensed out of the model ({condense_action}).",
+      "Condensed variables cannot enter the closure; drop the condensation action in {.fun teems::ems_model} to swap this variable."
+    ),
     # test-ems_swap.R: "ems_swap errors when invalid set provided to swap-in"
     invalid_set = c(
       "Set {.val {non_exist_set}} is not associated with {.val {var_name}}.",

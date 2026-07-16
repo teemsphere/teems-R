@@ -16,17 +16,24 @@
   checklist <- list(
     model_file = "character",
     closure_file = "character",
-    var_omit = c("NULL", "character"),
+    omit = c("NULL", "character"),
+    backsolve = c("NULL", "character"),
+    ignore_condense = "logical",
     mod_coeff = c("logical", "list")
   )
-  
+
   .check_arg_class(
     args_list = a,
     checklist = checklist,
     call = call
   )
-  
-  a$var_omit <- tolower(a$var_omit)
+
+  if (length(a$ignore_condense) != 1L || is.na(a$ignore_condense)) {
+    .cli_action("{.arg ignore_condense} must be {.val TRUE} or {.val FALSE}.",
+      action = "abort",
+      call = call
+    )
+  }
 
   a$model_file <- .check_input(
     file = a$model_file,

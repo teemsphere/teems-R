@@ -6,7 +6,9 @@
 #' @note This will become a method for "process_model"
 #' @noRd
 .process_tablo <- function(tab_file,
-                           var_omit = NULL,
+                           omit = NULL,
+                           backsolve = NULL,
+                           ignore_condense = FALSE,
                            type = NULL,
                            quiet = FALSE,
                            call) {
@@ -26,35 +28,15 @@
     call = call
   )
 
-  if (!is.null(var_omit)) {
-    extract <- .generate_extracts(
-      tab = tab,
-      call = call
-    )
-
-    var_extract <- .parse_tab_obj(
-      extract = extract$model,
-      obj_type = "variable",
-      call = call
-    )
-
-    if (!all(var_omit %in% var_extract$name)) {
-      invalid_var <- setdiff(var_omit, var_extract$name)
-      .cli_action(model_err$invalid_var_omit,
-        action = "abort",
-        call = call
-      )
-    }
-  }
-
-  if (!is.null(var_omit)) {
-    for (var in unique(var_omit)) {
-      tab <- .omit_var(
-        var_omit = var,
-        statements = tab
-      )
-    }
-  }
+  condensed <- .condense_model(
+    tab = tab,
+    omit = omit,
+    backsolve = backsolve,
+    ignore_condense = ignore_condense,
+    quiet = quiet,
+    call = call
+  )
+  tab <- condensed$tab
 
   extract <- .generate_extracts(
     tab = tab,
@@ -133,15 +115,24 @@
     n_coeff <- nrow(coeff_extract)
     n_sets <- nrow(extract$set)
 
+    summary_items <- c(
+      "Variables" = n_var,
+      "Equations" = n_eq,
+      "Coefficients" = n_coeff,
+      "Formulas" = n_form,
+      "Sets" = n_sets
+    )
+    if (condensed$n_omit + condensed$n_backsolve > 0L) {
+      summary_items <- c(
+        summary_items,
+        "Omitted" = condensed$n_omit,
+        "Backsolved" = condensed$n_backsolve
+      )
+    }
+
     model_summary <- cli::cli_fmt({
       cli::cli_h1("Model summary:")
-      cli::cli_dl(c(
-        "Variables" = n_var,
-        "Equations" = n_eq,
-        "Coefficients" = n_coeff,
-        "Formulas" = n_form,
-        "Sets" = n_sets
-      ))
+      cli::cli_dl(summary_items)
     })
   }
   
@@ -180,7 +171,18 @@
       tab <- tab[!grepl(x_coeff, tab$tab),]
     }
   }
-  
+
+  tab$condense <- NA_character_
+  tab$condense_eq <- NA_character_
+  if (!is.null(condensed$flags) && nrow(condensed$flags) > 0L) {
+    flag_key <- paste(condensed$flags$type, tolower(condensed$flags$name))
+    tab_key <- paste(tab$type, tolower(tab$name))
+    r_idx <- match(tab_key, flag_key)
+    tab$condense <- condensed$flags$condense[r_idx]
+    tab$condense_eq <- condensed$flags$condense_eq[r_idx]
+  }
+
+
   if (.o_verbose() && !quiet) {
     attr(tab, "model_summary") <- model_summary
   }

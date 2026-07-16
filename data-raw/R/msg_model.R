@@ -1,7 +1,47 @@
 build_model_err <- function() {
   list(
-    # test-ems_model.R: "ems_model rejects invalid variable names in var_omit"
-    invalid_var_omit = "{.val {invalid_var}} designated for omission not found in the model.",
+    # test-ems_model.R: "ems_model rejects invalid variable names in omit"
+    invalid_omit = "{.val {invalid_var}} designated for omission not found in the model.",
+    # test-ems_model.R: "ems_model rejects invalid variable names in backsolve"
+    invalid_backsolve_var = "{.val {invalid_var}} designated for backsolving not found in the model.",
+    # test-ems_model.R: "ems_model rejects invalid equation names in backsolve"
+    invalid_backsolve_eq = "Equation {.val {invalid_eq}} nominated for backsolving {.val {bs_var}} not found in the model.",
+    # test-ems_model.R: "ems_model rejects unresolvable backsolve entries"
+    backsolve_unresolvable = c(
+      "No equation {.val {conv_eq}} found to backsolve {.val {bs_var}}.",
+      "Unnamed {.arg backsolve} entries resolve their defining equation by the {.field E_<variable>} convention.",
+      "Name the defining equation explicitly: {.code backsolve = c({bs_var} = \"<equation>\")}."
+    ),
+    # test-ems_model.R: "ems_model rejects conflicting condensation actions"
+    condense_conflict = "Variable{?s} {.val {conflict_var}} appear{?s/} in more than one condensation action (omit/backsolve).",
+    # test-ems_model.R: "ems_model rejects a reused backsolve equation"
+    condense_eq_reused = "Equation{?s} {.val {reused_eq}} nominated for more than one backsolve.",
+    # test-ems_model.R: "backsolve rule violations" (GEMPACK manual 14.1.10)
+    condense_rule = c(
+      "Equation {.field {eq_name}} cannot be used to backsolve {.field {var_name}}.",
+      "{rule_text}",
+      "GEMPACK substitution requirement: see the GEMPACK manual, section 14.1.10."
+    ),
+    # test-ems_model.R: "unrearrangeable backsolve equation"
+    condense_rearrange = c(
+      "Equation {.field {eq_name}} could not be rearranged into the form {.field {var_name} = ...}.",
+      "Occurrences of {.field {var_name}} must enter the equation as top-level additive terms, optionally multiplied by coefficient expressions or enclosed in sums over indices the variable does not carry."
+    ),
+    # test-ems_model.R: "unparseable equation nominated for backsolve"
+    condense_parse = c(
+      "Failed to parse {.field {eq_name}} into linear terms while condensing: {parse_reason}.",
+      "Statement: {.field {statement}}."
+    ),
+    # test-ems_model.R: "backsolved variables must be endogenous in the closure"
+    condense_endo = c(
+      "Backsolved {.val {bs_exo}} {cli::qty(length(bs_exo))}{?is/are} exogenous in the closure.",
+      "Substituted-out variables must be endogenous; swap out of the closure or drop the backsolve."
+    ),
+    # test-ems_model.R: "omitted variables must be exogenous in the closure"
+    condense_exo = c(
+      "Omitted {.val {omit_endo}} {cli::qty(length(omit_endo))}{?is/are} not exogenous in the closure.",
+      "Omitted variables must be exogenous and unshocked (GEMPACK manual, section 14.1)."
+    ),
     # test-ems_model.R: "ems_model rejects invalid coefficient arguments"
     invalid_coeff = "{.arg {nme}} is not declared in the model.",
     # test-ems_model.R: "partial read statement"
@@ -83,7 +123,14 @@ build_model_info <- function() {
     netcut_rewrite = c(
       "Inter-period links on element slices rewritten onto minimal intertemporal proxies: {.field {proxy_summary}}.",
       "Proxy variables (NCV*) and their linking equations (E_NCV*) appear in solve outputs."
-    )
+    ),
+    # test-ems_model.R: "in-TAB Substitute executes as backsolve"
+    substitute_as_backsolve = c(
+      "In-TAB {.field Substitute} statement{?s} for {.val {sub_var}} executed as backsolve{?s}.",
+      "Backsolved values remain available in solve outputs; plain substitution is not implemented."
+    ),
+    # test-ems_model.R: "ignore_condense disables in-TAB condensation"
+    condense_ignored = "{n_ignored} in-TAB condensation statement{?s} ignored ({.code ignore_condense = TRUE})."
   )
 }
 
@@ -91,6 +138,11 @@ build_model_wrn <- function() {
   list(
     # test-ems_model.R: "ignored tab statement"
     ignored_state = "The following model statements are unsupported and will be ignored: {.field {ign_state}}.",
+    # test-ems_model.R: "backsolve pivot divide warning"
+    condense_pivot_zero = c(
+      "Backsolving {.field {var_name}} using {.field {eq_name}} divides by the coefficient expression {.field {pivot_expr}}.",
+      "Ensure this expression can never be zero; a zero value will surface as a solver error."
+    ),
     # test-ems_model.R: "netcut inflation warning"
     netcut_inflation = c(
       "Multidimensional {.field {offenders}} referenced with a lead or lag in {.field {lag_eqs}}.",

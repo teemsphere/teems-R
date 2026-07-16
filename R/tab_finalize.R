@@ -2,6 +2,24 @@
 #' @noRd
 .finalize_tab <- function(model) {
 
+  # omitted variables: declaration rows are retained in the model tibble
+  # (closure/shock validation reads the condense flag) but filtered from
+  # the deployed TAB; backsolved declarations stay (the solver recovers
+  # their values from the retained defining equations)
+  omitted <- model$type == "Variable" & model$condense %in% "omit"
+  backsolved <- model$type == "Variable" & model$condense %in% "backsolve"
+  backsolve_writeout <- paste(
+    "Backsolve",
+    model$name[backsolved],
+    "using",
+    model$condense_eq[backsolved],
+    ";"
+  )
+  if (!any(backsolved)) {
+    backsolve_writeout <- NULL
+  }
+  model <- model[!omitted, ]
+
   set_extract <- model[model$type == "Set",]
   coeff_extract <- model[model$type == "Coefficient",]
 
@@ -42,6 +60,7 @@
   tab <- paste(
     c(
       model$tab,
+      backsolve_writeout,
       set_writeout,
       coeff_writeout
     ),

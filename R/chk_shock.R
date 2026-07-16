@@ -17,6 +17,13 @@
     )
   }
 
+  .abort_condensed(
+    var_name = shock$var,
+    var_extract = var_extract,
+    err = shk_err$condensed_var,
+    call = attr(shock, "call")
+  )
+
   UseMethod(".check_shock", shock)
 }
 

@@ -35,13 +35,13 @@ tab_qual <- c(
 supported_state <- c(
   "File", "Coefficient", "Read", "Update", "Set", "Subset",
   "Formula", "Assertion", "Variable", "Equation", "Write",
-  "Zerodivide"
+  "Zerodivide", "Omit", "Substitute", "Backsolve"
 )
 
 ignored_state <- "Postsim"
 
 invalid_state <- c(
-  "Omit", "Loop", "Display", "Substitute", "Break", "Mapping", "Backsolve", "Cycle", "Complementarity", "Transfer"
+  "Loop", "Display", "Break", "Mapping", "Cycle", "Complementarity", "Transfer"
 )
 
 # mappings
