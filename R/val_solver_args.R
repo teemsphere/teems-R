@@ -9,7 +9,7 @@
   solution_method <- a$solution_method
   a$solution_method <- rlang::arg_match(
     arg = solution_method,
-    values = c("Johansen", "Gragg"),
+    values = c("Johansen", "Gragg", "Euler"),
     error_call = call
   )
   
@@ -118,6 +118,13 @@
       call = call
     )
   }
+  if (a$solution_method %in% c("Gragg", "Euler") && !all(diff(a$steps) > 0)) {
+    solution_method <- a$solution_method
+    .cli_action(solve_err$step_increasing,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
 
   if ("tab_path" %in% names(attributes(paths$cmf))) {
     tab <- readLines(attr(paths$cmf, "tab_path"))
@@ -159,8 +166,8 @@
     "NDBBD" = 3
   )
 
-  if (a$solution_method %=% "Gragg") {
-    a$solmed <- "Gragg"
+  if (a$solution_method %in% c("Gragg", "Euler")) {
+    a$solmed <- a$solution_method
   } else {
     a$solmed <- "Johansen"
     a$n_subintervals <- 1

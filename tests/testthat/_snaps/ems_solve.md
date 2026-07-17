@@ -20,6 +20,16 @@
     x `steps` must be all even when `solution_method` is "Gragg".
     i Gragg's method guarantees its accuracy properties for even step counts only (Pearson 1991, Theorem 6.1).
 
+# ems_solve errors when steps are not increasing
+
+    x `steps` must be strictly increasing for `solution_method` "Gragg".
+    i Richardson extrapolation combines three solutions computed with distinct, increasing step counts.
+
+---
+
+    x `steps` must be strictly increasing for `solution_method` "Euler".
+    i Richardson extrapolation combines three solutions computed with distinct, increasing step counts.
+
 # ems_solve errors when SBBD used with static model
 
     x `matrix_method` "SBBD" only applicable to intertemporal model runs.

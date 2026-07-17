@@ -13,6 +13,11 @@ build_solve_err <- function() {
     ),
     # test-ems_solve.R: "ems_solve errors when steps is not length 3"
     step_length = "{.arg steps} must be a numeric vector of length 3.",
+    # test-ems_solve.R: "ems_solve errors when steps are not increasing"
+    step_increasing = c(
+      "{.arg steps} must be strictly increasing for {.arg solution_method} {.val {solution_method}}.",
+      "Richardson extrapolation combines three solutions computed with distinct, increasing step counts."
+    ),
     # test-ems_solve.R: "ems_solve errors when SBBD used with static model"
     invalid_method = "{.arg matrix_method} {.val {matrix_method}} only applicable to intertemporal model runs.",
     solution_err = "Errors detected during solution. See {.path {paths$diag_out}}.",

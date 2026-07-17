@@ -24,6 +24,16 @@
 #'   Recommended whenever accuracy matters. See also:
 #'   \href{https://www.copsmodels.com/gpmanual.htm#gpd3.12.2}{GEMPACK
 #'   solution methods}
+#'   * `"Euler"`: The forward Euler method, computed for each of
+#'   the three step counts in `steps` and combined by Richardson
+#'   extrapolation. Converges more slowly than `"Gragg"` (its
+#'   truncation error shrinks linearly in the step size, so the
+#'   extrapolated accuracy gains one order per solution instead of
+#'   two) but it is the most robust of the multistep methods: each
+#'   step uses only the current state, so it tolerates
+#'   near-asymptote levels and severe shocks — including exact
+#'   `-100%` shocks — where the midpoint family can become
+#'   unstable. Any strictly increasing step counts are permitted.
 #' @param matrix_method Character of length 1, matrix solution
 #'   method (default is `"auto"`). Choices:
 #'   * `"auto"`: Selects the method from the model type and size
@@ -45,12 +55,14 @@
 #'   subintervals may alleviate accuracy issues stemming from
 #'   large shock magnitudes.
 #' @param steps Integer length 3 (default is `c(2L, 4L, 8L)`). A
-#'   vector of steps for the Gragg method, must be all even and
-#'   length 3. A larger number of steps may improve accuracy for
-#'   some model runs. Even step counts are required because the
-#'   error-cancellation theory behind the extrapolation assumes
-#'   them (Pearson 1991, Theorem 6.1). Ignored when
-#'   `solution_method = "Johansen"`.
+#'   strictly increasing vector of step counts for the three
+#'   extrapolation solutions of the `"Gragg"` and `"Euler"`
+#'   methods. A larger number of steps may improve accuracy for
+#'   some model runs. For `"Gragg"` all three must additionally be
+#'   even, because the error-cancellation theory behind the
+#'   extrapolation assumes even step counts (Pearson 1991,
+#'   Theorem 6.1); `"Euler"` has no parity requirement. Ignored
+#'   when `solution_method = "Johansen"`.
 #' @param n_tasks Integer length 1 (default is `1L`), number of
 #'   tasks to run in parallel. Must be `1L` if `"matrix_method"`
 #'   == "LU".
@@ -125,7 +137,7 @@
 #'           n_tasks = 6)
 #' }
 ems_solve <- function(cmf_path,
-                      solution_method = c("Johansen", "Gragg"),
+                      solution_method = c("Johansen", "Gragg", "Euler"),
                       matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
                       n_subintervals = 1L,
                       steps = c(2L, 4L, 8L),

@@ -82,6 +82,19 @@ test_that("ems_solve errors when steps are not all even for Gragg", {
   )
 })
 
+test_that("ems_solve errors when steps are not increasing", {
+  nest_temp("solve_err_increasing", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  expect_snapshot_error(
+    ems_solve(cmf_path, solution_method = "Gragg", steps = c(4L, 4L, 8L))
+  )
+  # odd steps are fine under Euler (no parity rule): the decreasing
+  # order alone must trigger the abort
+  expect_snapshot_error(
+    ems_solve(cmf_path, solution_method = "Euler", steps = c(9L, 5L, 3L))
+  )
+})
+
 test_that("ems_solve errors when SBBD used with static model", {
   nest_temp("solve_err_sbbd", write_dir)
   cmf_path <- ems_deploy(static_data, static_model)

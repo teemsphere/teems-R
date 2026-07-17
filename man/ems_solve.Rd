@@ -6,7 +6,7 @@
 \usage{
 ems_solve(
   cmf_path,
-  solution_method = c("Johansen", "Gragg"),
+  solution_method = c("Johansen", "Gragg", "Euler"),
   matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
   n_subintervals = 1L,
   steps = c(2L, 4L, 8L),
@@ -43,6 +43,16 @@ plus an accuracy estimate from the agreement between levels.
 Recommended whenever accuracy matters. See also:
 \href{https://www.copsmodels.com/gpmanual.htm#gpd3.12.2}{GEMPACK
 solution methods}
+\item \code{"Euler"}: The forward Euler method, computed for each of
+the three step counts in \code{steps} and combined by Richardson
+extrapolation. Converges more slowly than \code{"Gragg"} (its
+truncation error shrinks linearly in the step size, so the
+extrapolated accuracy gains one order per solution instead of
+two) but it is the most robust of the multistep methods: each
+step uses only the current state, so it tolerates
+near-asymptote levels and severe shocks — including exact
+\verb{-100\%} shocks — where the midpoint family can become
+unstable. Any strictly increasing step counts are permitted.
 }}
 
 \item{matrix_method}{Character of length 1, matrix solution
@@ -70,12 +80,14 @@ subintervals may alleviate accuracy issues stemming from
 large shock magnitudes.}
 
 \item{steps}{Integer length 3 (default is \code{c(2L, 4L, 8L)}). A
-vector of steps for the Gragg method, must be all even and
-length 3. A larger number of steps may improve accuracy for
-some model runs. Even step counts are required because the
-error-cancellation theory behind the extrapolation assumes
-them (Pearson 1991, Theorem 6.1). Ignored when
-\code{solution_method = "Johansen"}.}
+strictly increasing vector of step counts for the three
+extrapolation solutions of the \code{"Gragg"} and \code{"Euler"}
+methods. A larger number of steps may improve accuracy for
+some model runs. For \code{"Gragg"} all three must additionally be
+even, because the error-cancellation theory behind the
+extrapolation assumes even step counts (Pearson 1991,
+Theorem 6.1); \code{"Euler"} has no parity requirement. Ignored
+when \code{solution_method = "Johansen"}.}
 
 \item{n_tasks}{Integer length 1 (default is \code{1L}), number of
 tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}
