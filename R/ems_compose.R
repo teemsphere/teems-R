@@ -5,7 +5,11 @@
 #'   checks are performed during composition.
 #' @return A tibble with columns "name", "label", "type", and
 #'   "dat" (a list-column of data.tables) containing model
-#'   results.
+#'   results. For runs solved with an embedded Runge-Kutta method
+#'   (`"BoSha32"`, `"DoPri54"`; see [`ems_solve()`]) each
+#'   variable's data.table carries an additional `error_metric`
+#'   column: the solver's component-by-component estimate of the
+#'   cumulative solution error, `|delta| / max(1, |Value|)`.
 #' @inheritParams ems_solve
 #' @param which Character vector of variable length (default
 #'   `"all"`). When `"all"`, all model variables are returned

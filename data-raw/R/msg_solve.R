@@ -13,6 +13,23 @@ build_solve_err <- function() {
     ),
     # test-ems_solve.R: "ems_solve errors when steps is not length 3"
     step_length = "{.arg steps} must be a numeric vector of length 3.",
+    # test-ems_solve.R: "ems_solve errors when steps is not length 1 for RK"
+    step_single_rk = c(
+      "{.arg steps} must be a single positive integer when {.arg solution_method} is {.val {solution_method}}.",
+      "Runge-Kutta methods take one step count (e.g. {.code steps = 8L}); they use no Richardson extrapolation, so no step-count triple is involved."
+    ),
+    # test-ems_solve.R: "ems_solve errors when adaptive used with non-embedded method"
+    adaptive_method = c(
+      "{.arg adaptive} {.val {adaptive}} requires an embedded Runge-Kutta {.arg solution_method} ({.val BoSha32} or {.val DoPri54}).",
+      "Only the embedded pairs provide the per-step error estimate the adaptive controller acts on."
+    ),
+    # test-ems_solve.R: "ems_solve errors when subintervals used with RK"
+    rk_subintervals = c(
+      "{.arg n_subintervals} must be 1 when {.arg solution_method} is {.val {solution_method}}.",
+      "Subintervals restart the integrator and only benefit the extrapolating methods; increase {.arg steps} (or use {.arg adaptive}) instead."
+    ),
+    # test-ems_solve.R: "ems_solve errors when eps_tolerance is invalid"
+    epstol_range = "{.arg eps_tolerance} must be a positive numeric of length 1.",
     # test-ems_solve.R: "ems_solve errors when steps are not increasing"
     step_increasing = c(
       "{.arg steps} must be strictly increasing for {.arg solution_method} {.val {solution_method}}.",

@@ -31,6 +31,8 @@
     laD = v$laD,
     matsol = v$matsol,
     solmed = v$solmed,
+    adaptive = v$adaptive,
+    eps_tolerance = v$eps_tolerance,
     n_subintervals = v$n_subintervals,
     inmemory = v$inmemory,
     verbosity = v$verbosity,

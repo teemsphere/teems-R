@@ -363,9 +363,36 @@ cpp11::list parse_solution_bins(std::string path_prefix, cpp11::strings names_fi
      "glval"_nm = (SEXP)var_glval}
   );
 
+  // --- Read .acc if present (embedded-RK cumulative error metrics,
+  //     one double per element in .bin order) ---
+  cpp11::sexp acc_sexp = R_NilValue;
+  std::string acc_path = path_prefix + "acc";
+  std::ifstream acc_file(acc_path, std::ios::binary);
+  if (acc_file.is_open()) {
+    cpp11::writable::doubles acc_vec(static_cast<R_xlen_t>(total_ele));
+    if (filter) {
+      R_xlen_t write_pos = 0;
+      for (auto i : sel_idx) {
+        uvadd beg = var_structs[i].begadd;
+        uvadd mat = var_structs[i].matsize;
+        acc_file.seekg(static_cast<std::streamoff>(beg) * sizeof(forreal),
+                       std::ios::beg);
+        acc_file.read(reinterpret_cast<char*>(REAL(acc_vec) + write_pos),
+                      sizeof(forreal) * mat);
+        write_pos += static_cast<R_xlen_t>(mat);
+      }
+    } else {
+      acc_file.read(reinterpret_cast<char*>(REAL(acc_vec)),
+                    sizeof(forreal) * nvarele);
+    }
+    acc_file.close();
+    acc_sexp = (SEXP)acc_vec;
+  }
+
   cpp11::writable::list result(
     {"bin"_nm = (SEXP)bin_vec,
-     "var"_nm = (SEXP)var_list}
+     "var"_nm = (SEXP)var_list,
+     "acc"_nm = (SEXP)acc_sexp}
   );
 
   return result;

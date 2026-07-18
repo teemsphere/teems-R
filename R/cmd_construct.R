@@ -13,6 +13,8 @@
                            laD,
                            matsol,
                            steps,
+                           adaptive = "no",
+                           eps_tolerance = 0.1,
                            inmemory = NULL,
                            verbosity = NULL,
                            append_args) {
@@ -35,6 +37,12 @@
     "-matsol", matsol,
     if (solmed %in% c("Gragg", "Euler")) {
       paste("-step1", steps[1], "-step2", steps[2], "-step3", steps[3])
+    },
+    if (solmed %in% c("RK2", "RK4", "BoSha32", "DoPri54")) {
+      paste("-step1", steps[1])
+    },
+    if (solmed %in% c("BoSha32", "DoPri54") && adaptive != "no") {
+      paste("-adaptive", adaptive, "-epstol", eps_tolerance)
     },
     "-nsubints", n_subintervals,
     "-solmed", solmed,

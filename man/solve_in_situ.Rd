@@ -10,10 +10,12 @@ solve_in_situ(
   model_file,
   closure_file,
   shock_file,
-  solution_method = c("Johansen", "Gragg", "Euler"),
+  solution_method = c("Johansen", "Gragg", "Euler", "RK2", "RK4", "BoSha32", "DoPri54"),
   matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
   n_subintervals = 1L,
   steps = c(2L, 4L, 8L),
+  adaptive = c("no", "yes", "accuracy-only"),
+  eps_tolerance = 0.1,
   n_tasks = 1L,
   laA = 300L,
   laD = 200L,
@@ -82,6 +84,22 @@ step uses only the current state, so it tolerates
 near-asymptote levels and severe shocks — including exact
 \verb{-100\%} shocks — where the midpoint family can become
 unstable. Any strictly increasing step counts are permitted.
+\item \code{"RK2"}, \code{"RK4"}: Explicit Runge-Kutta methods (the midpoint
+method and the classic fourth-order method; Schiffmann 2022).
+A single solution is computed with the one step count in
+\code{steps} — no Richardson extrapolation — with each step built
+from 2 (\code{"RK2"}) or 4 (\code{"RK4"}) staged linear solves. \code{"RK4"}
+reaches a given accuracy in far fewer steps than the
+extrapolating methods.
+\item \code{"BoSha32"}, \code{"DoPri54"}: Embedded Runge-Kutta pairs
+(Bogacki-Shampine 3(2), 4 stages; Dormand-Prince 5(4), 7
+stages). Alongside the solution they compute a
+component-by-component estimate of the cumulative error —
+returned as the \code{error_metric} column by \code{\link[=ems_compose]{ems_compose()}}
+and summarized as a face value in the solver log — and they
+support adaptive step-size control via \code{adaptive} and
+\code{eps_tolerance}. \code{"DoPri54"} with \code{adaptive = "yes"} is the
+recommended high-accuracy choice.
 }}
 
 \item{matrix_method}{Character of length 1, matrix solution
@@ -115,8 +133,32 @@ methods. A larger number of steps may improve accuracy for
 some model runs. For \code{"Gragg"} all three must additionally be
 even, because the error-cancellation theory behind the
 extrapolation assumes even step counts (Pearson 1991,
-Theorem 6.1); \code{"Euler"} has no parity requirement. Ignored
+Theorem 6.1); \code{"Euler"} has no parity requirement. The
+Runge-Kutta methods compute a single solution and instead
+take one step count (e.g. \code{steps = 8L}), which under
+\code{adaptive} control is the initial step count only. Ignored
 when \code{solution_method = "Johansen"}.}
+
+\item{adaptive}{Character length 1, adaptive step-size control
+for the embedded Runge-Kutta methods (\code{"BoSha32"},
+\code{"DoPri54"}); default is \code{"no"}. Choices:
+\itemize{
+\item \code{"no"}: Fixed steps.
+\item \code{"yes"}: After each step the worst per-component error
+metric is compared against \code{eps_tolerance}; failing steps are
+redone with a smaller step size and passing steps adjust the
+next step size (at most halving or doubling it). A step on
+which a percentage-change variable crosses \verb{-100\%} is also
+retried at a reduced step size.
+\item \code{"accuracy-only"}: As \code{"yes"}, but only the error metric is
+acted on; check failures are ignored.
+}}
+
+\item{eps_tolerance}{Numeric length 1 (default is \code{0.1}), the
+per-step error-metric bound targeted by \code{adaptive} control.
+\code{0.1} suffices for most simulations; use \code{0.01} for more
+accurate solutions. Values below \code{0.005} are hard to achieve
+numerically. Ignored when \code{adaptive = "no"}.}
 
 \item{n_tasks}{Integer length 1 (default is \code{1L}), number of
 tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}

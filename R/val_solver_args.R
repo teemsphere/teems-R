@@ -9,7 +9,16 @@
   solution_method <- a$solution_method
   a$solution_method <- rlang::arg_match(
     arg = solution_method,
-    values = c("Johansen", "Gragg", "Euler"),
+    values = c("Johansen", "Gragg", "Euler", "RK2", "RK4", "BoSha32", "DoPri54"),
+    error_call = call
+  )
+  is_rk <- a$solution_method %in% c("RK2", "RK4", "BoSha32", "DoPri54")
+  is_rk_embedded <- a$solution_method %in% c("BoSha32", "DoPri54")
+
+  adaptive <- a$adaptive
+  a$adaptive <- rlang::arg_match(
+    arg = adaptive,
+    values = c("no", "yes", "accuracy-only"),
     error_call = call
   )
   
@@ -26,6 +35,8 @@
     matrix_method = "character",
     n_subintervals = c("numeric", "integer"),
     steps = c("numeric", "integer"),
+    adaptive = "character",
+    eps_tolerance = c("numeric", "integer"),
     n_tasks = c("numeric", "integer"),
     laA = c("numeric", "integer"),
     laD = c("numeric", "integer"),
@@ -106,24 +117,57 @@
     }
   }
 
-  if (!all(is.numeric(a$steps), length(a$steps) == 3)) {
-    .cli_action(solve_err$step_length,
-      action = "abort",
-      call = call
-    )
-  }
-  if (a$solution_method %=% "Gragg" && !all(a$steps %% 2 == 0)) {
-    .cli_action(solve_err$step_parity,
-      action = c("abort", "inform"),
-      call = call
-    )
-  }
-  if (a$solution_method %in% c("Gragg", "Euler") && !all(diff(a$steps) > 0)) {
-    solution_method <- a$solution_method
-    .cli_action(solve_err$step_increasing,
-      action = c("abort", "inform"),
-      call = call
-    )
+  if (is_rk) {
+    if (!all(
+      is.numeric(a$steps), length(a$steps) == 1,
+      rlang::is_integerish(a$steps), a$steps >= 1
+    )) {
+      solution_method <- a$solution_method
+      .cli_action(solve_err$step_single_rk,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    if (a$adaptive %!=% "no" && !is_rk_embedded) {
+      adaptive <- a$adaptive
+      .cli_action(solve_err$adaptive_method,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    if (a$n_subintervals != 1) {
+      solution_method <- a$solution_method
+      .cli_action(solve_err$rk_subintervals,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    if (!all(is.numeric(a$eps_tolerance), length(a$eps_tolerance) == 1, a$eps_tolerance > 0)) {
+      .cli_action(solve_err$epstol_range,
+        action = "abort",
+        call = call
+      )
+    }
+  } else {
+    if (!all(is.numeric(a$steps), length(a$steps) == 3)) {
+      .cli_action(solve_err$step_length,
+        action = "abort",
+        call = call
+      )
+    }
+    if (a$solution_method %=% "Gragg" && !all(a$steps %% 2 == 0)) {
+      .cli_action(solve_err$step_parity,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    if (a$solution_method %in% c("Gragg", "Euler") && !all(diff(a$steps) > 0)) {
+      solution_method <- a$solution_method
+      .cli_action(solve_err$step_increasing,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
   }
 
   if ("tab_path" %in% names(attributes(paths$cmf))) {
@@ -166,7 +210,7 @@
     "NDBBD" = 3
   )
 
-  if (a$solution_method %in% c("Gragg", "Euler")) {
+  if (a$solution_method %in% c("Gragg", "Euler") || is_rk) {
     a$solmed <- a$solution_method
   } else {
     a$solmed <- "Johansen"

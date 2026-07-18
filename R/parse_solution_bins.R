@@ -26,6 +26,10 @@
     r_idx = seq_along(raw$bin) - 1L,
     Value = raw$bin
   )
+  # embedded-RK runs write per-element cumulative error metrics (.acc)
+  if (!is.null(raw$acc)) {
+    xc$error_metric <- raw$acc
+  }
 
   list(
     var_union = var_union,

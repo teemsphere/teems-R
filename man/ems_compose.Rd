@@ -21,7 +21,11 @@ their associated headers (e.g., VTWR/VTMFSD).}
 \value{
 A tibble with columns "name", "label", "type", and
 "dat" (a list-column of data.tables) containing model
-results.
+results. For runs solved with an embedded Runge-Kutta method
+(\code{"BoSha32"}, \code{"DoPri54"}; see \code{\link[=ems_solve]{ems_solve()}}) each
+variable's data.table carries an additional \code{error_metric}
+column: the solver's component-by-component estimate of the
+cumulative solution error, \verb{|delta| / max(1, |Value|)}.
 }
 \description{
 \code{ems_compose()} retrieves and processes results

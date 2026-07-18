@@ -95,6 +95,35 @@ test_that("ems_solve errors when steps are not increasing", {
   )
 })
 
+test_that("ems_solve errors on invalid Runge-Kutta arguments", {
+  nest_temp("solve_err_rk", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  # RK methods take a single step count, not the extrapolation triple
+  expect_snapshot_error(
+    ems_solve(cmf_path, solution_method = "RK4", steps = c(2L, 4L, 8L))
+  )
+  expect_snapshot_error(
+    ems_solve(cmf_path, solution_method = "DoPri54", steps = 2.5)
+  )
+  # adaptive control needs an embedded pair
+  expect_snapshot_error(
+    ems_solve(cmf_path, solution_method = "RK4", steps = 8L, adaptive = "yes")
+  )
+  # subintervals only benefit the extrapolating methods
+  expect_snapshot_error(
+    ems_solve(cmf_path,
+      solution_method = "BoSha32", steps = 8L,
+      n_subintervals = 2L
+    )
+  )
+  expect_snapshot_error(
+    ems_solve(cmf_path,
+      solution_method = "DoPri54", steps = 8L,
+      adaptive = "yes", eps_tolerance = -0.1
+    )
+  )
+})
+
 test_that("ems_solve errors when SBBD used with static model", {
   nest_temp("solve_err_sbbd", write_dir)
   cmf_path <- ems_deploy(static_data, static_model)
@@ -135,6 +164,33 @@ test_that("inmemory and verbosity reach the solver command", {
   cmd <- readLines(file.path(run_dir, "model_exec.txt"), warn = FALSE)
   expect_no_match(paste(cmd, collapse = " "), "-inmemory", fixed = TRUE)
   expect_no_match(paste(cmd, collapse = " "), "-verbosity", fixed = TRUE)
+})
+
+test_that("Runge-Kutta flags reach the solver command", {
+  nest_temp("solve_rk_cmd", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  run_dir <- dirname(cmf_path)
+  suppressMessages(
+    ems_solve(cmf_path,
+      solution_method = "DoPri54", steps = 6L,
+      adaptive = "yes", eps_tolerance = 0.01,
+      terminal_run = TRUE
+    )
+  )
+  cmd <- paste(readLines(file.path(run_dir, "model_exec.txt"), warn = FALSE), collapse = " ")
+  expect_match(cmd, "-solmed DoPri54", fixed = TRUE)
+  expect_match(cmd, "-step1 6", fixed = TRUE)
+  expect_no_match(cmd, "-step2", fixed = TRUE)
+  expect_match(cmd, "-adaptive yes -epstol 0.01", fixed = TRUE)
+
+  # fixed-step runs pass neither adaptive flag
+  suppressMessages(
+    ems_solve(cmf_path, solution_method = "RK4", steps = 8L, terminal_run = TRUE)
+  )
+  cmd <- paste(readLines(file.path(run_dir, "model_exec.txt"), warn = FALSE), collapse = " ")
+  expect_match(cmd, "-solmed RK4", fixed = TRUE)
+  expect_match(cmd, "-step1 8", fixed = TRUE)
+  expect_no_match(cmd, "-adaptive", fixed = TRUE)
 })
 
 test_that("ems_solve errors when solution errors detected", {
@@ -571,6 +627,40 @@ test_that("ems_solve returns the same output across dynamic matrix methods", {
   LU_NDBBD_check <- all.equal(LU, NDBBD, tolerance = 1e-4)
   check <- c(LU_SBBD_check, LU_NDBBD_check)
   expect_all_true(check)
+})
+
+test_that("Runge-Kutta methods solve consistently and expose accuracy metrics (roadmap 6.3c)", {
+  nest_temp("solve_rk_e2e", write_dir)
+  numeraire <- ems_uniform_shock("pfactwld", 5)
+  cmf_path <- ems_deploy(static_data, static_model, numeraire)
+  gragg <- ems_solve(cmf_path, solution_method = "Gragg")
+  rk4 <- ems_solve(cmf_path, solution_method = "RK4", steps = 8L)
+  # compare with the solver's accuracy metric (absolute below 1,
+  # relative above); the welfare/CNT/del_ aggregates are excluded —
+  # differences of $-million components carry float32 cancellation
+  # noise on which any cross-method comparison is loose (the
+  # documented Johansen-vs-Gragg floor is the same order)
+  rk_metric <- function(a, b) {
+    keep <- !grepl("^(ev|wev|cnt|del_)", a$name, ignore.case = TRUE)
+    g <- unlist(lapply(a$dat[keep], function(d) d$Value))
+    r <- unlist(lapply(b$dat[keep], function(d) d$Value))
+    max(abs(g - r) / pmax(1, abs(g)))
+  }
+  expect_lt(rk_metric(gragg, rk4), 1e-4)
+
+  # fixed-step explicit runs carry no accuracy metrics
+  expect_false("error_metric" %in% colnames(rk4$dat[["qgdp"]]))
+
+  dopri <- ems_solve(cmf_path,
+    solution_method = "DoPri54", steps = 4L,
+    adaptive = "yes"
+  )
+  # embedded runs ride an error_metric column alongside every Value
+  expect_true("error_metric" %in% colnames(dopri$dat[["qgdp"]]))
+  expect_true(all(dopri$dat[["qgdp"]]$error_metric >= 0))
+  # the exogenous shock identity survives the RK integration
+  expect_equal(unique(round(dopri$dat[["pfactwld"]]$Value, 6)), 5)
+  expect_lt(rk_metric(gragg, dopri), 1e-4)
 })
 
 test_that("ems_solve examples work", {
