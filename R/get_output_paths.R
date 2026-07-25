@@ -30,11 +30,21 @@
     full.names = TRUE
   )
 
+  postsim_paths <- list.files(
+    path = file.path(model_dir, "out", "postsim"),
+    pattern = "csv",
+    full.names = TRUE
+  )
+  if (length(postsim_paths) == 0) {
+    postsim_paths <- NULL
+  }
+
   list(
     tab      = tab_path,
     model    = model_dir,
     metadata = metadata_path,
     coeff    = coeff_paths,
+    postsim  = postsim_paths,
     sets     = set_paths
   )
 }

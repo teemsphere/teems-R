@@ -1,5 +1,13 @@
 build_model_err <- function() {
   list(
+    # test-ems_model.R: "postsim sections reject forbidden statements"
+    postsim_invalid = c(
+      "Statement type{?s} {.val {ps_bad_types}} {?is/are} not allowed in
+      a PostSim section.",
+      "PostSim sections may contain Set, Subset, Coefficient, File,
+      Formula, Assertion, and Zerodivide statements (GEMPACK manual
+      12.2.1)."
+    ),
     # test-ems_model.R: "ems_model rejects invalid variable names in omit"
     invalid_omit = "{.val {invalid_var}} designated for omission not found in the model.",
     # test-ems_model.R: "ems_model rejects invalid variable names in backsolve"

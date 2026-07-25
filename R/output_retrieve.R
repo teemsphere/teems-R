@@ -35,9 +35,25 @@
       call = call
     )
   }
-  
+
+  # PostSim coefficients (computed after the solve, dumped by the
+  # solver into out/postsim/) compose like ordinary coefficients but
+  # carry their own type
+  if (compose_coefficient && !is.null(paths$postsim)) {
+    output$postsim <- .compose_coeff(
+      paths = paths$postsim,
+      coeff_extract = comp_extract$coefficient,
+      sets = sets,
+      time_steps = time_steps,
+      call = call,
+      type_label = "postsim"
+    )
+  }
+
   if (type == "all") {
-    output <- rbind(output$variable, output$coefficient)
+    output <- rbind(output$variable, output$coefficient, output$postsim)
+  } else if (!is.null(output$postsim)) {
+    output <- rbind(output[[1]], output$postsim)
   } else {
     output <- output[[1]]
   }

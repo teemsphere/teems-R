@@ -2,6 +2,10 @@
 #' @noRd
 .finalize_tab <- function(model) {
 
+  if (is.null(model$postsim)) {
+    model$postsim <- FALSE
+  }
+
   # omitted variables: declaration rows are retained in the model tibble
   # (closure/shock validation reads the condense flag) but filtered from
   # the deployed TAB; backsolved declarations stay (the solver recovers
@@ -57,12 +61,29 @@
     paste0('"', trimws(gsub("#", "", coeff_extract$label)), '"', ";")
   )
 
+  # PostSim executables re-wrap in a single trailing section (sections
+  # are conceptually concatenated at end of file, manual 12.2); their
+  # declarations stay inline, and the write-all File/Write pairs below
+  # remain in the ordinary part so the solver dumps PostSim
+  # coefficients after the post-solve pass
+  ps_exec <- !is.na(model$postsim) & model$postsim &
+    tolower(model$type) %in% c("formula", "assertion", "zerodivide")
+  postsim_block <- NULL
+  if (any(ps_exec)) {
+    postsim_block <- c(
+      "PostSim (Begin);",
+      model$tab[ps_exec],
+      "PostSim (End);"
+    )
+  }
+
   tab <- paste(
     c(
-      model$tab,
+      model$tab[!ps_exec],
       backsolve_writeout,
       set_writeout,
-      coeff_writeout
+      coeff_writeout,
+      postsim_block
     ),
     collapse = "\n"
   )

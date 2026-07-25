@@ -28,7 +28,13 @@
   }
 
   if (coeff) {
-    coeff_names <- model[model$type == "Coefficient", "name"][[1]]
+    is_ps <- if (is.null(model$postsim)) {
+      rep(FALSE, nrow(model))
+    } else {
+      !is.na(model$postsim) & model$postsim
+    }
+    coeff_names <- model[model$type == "Coefficient" & !is_ps, "name"][[1]]
+    ps_names <- model[model$type == "Coefficient" & is_ps, "name"][[1]]
     coeff_writeout <- paste(
       "outdata",
       paste0('"', coeff_names, '"'),
@@ -44,6 +50,28 @@
         ";"
       )
     )
+    if (length(ps_names) > 0) {
+      # PostSim coefficients land in their own output directory
+      coeff_writeout <- c(coeff_writeout, paste(
+        "outdata",
+        paste0('"', ps_names, '"'),
+        paste0(
+          '"',
+          file.path(
+            write_dir,
+            "out",
+            "postsim",
+            paste0(ps_names, ".csv")
+          ),
+          '"',
+          ";"
+        )
+      ))
+      ps_out <- file.path(write_dir, "out", "postsim")
+      if (!dir.exists(ps_out)) {
+        dir.create(ps_out, recursive = TRUE)
+      }
+    }
     
     .out_mkdir(write_dir = write_dir,
                sets = FALSE,

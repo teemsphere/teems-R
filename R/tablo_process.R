@@ -18,6 +18,23 @@
     call = call
   )
 
+  # PostSim declarations captured by name from the raw statements: the
+  # extraction merge can shift marker rows by one, so declaration rows
+  # are tagged by name while executables use the region flag below
+  ps_region <- cumsum(grepl("^\\s*postsim\\s*\\(\\s*begin", tab, ignore.case = TRUE)) -
+    cumsum(grepl("^\\s*postsim\\s*\\(\\s*end", tab, ignore.case = TRUE))
+  ps_raw <- tab[ps_region > 0 & !grepl("^\\s*postsim", tab, ignore.case = TRUE)]
+  ps_decl_names <- toupper(unlist(lapply(
+    ps_raw[grepl("^\\s*(coefficient|set|subset|file)\\b", ps_raw, ignore.case = TRUE)],
+    function(x) {
+      x <- sub("^\\s*(coefficient|set|subset|file)\\s*", "", x, ignore.case = TRUE)
+      x <- gsub("\\(all\\s*,[^)]*\\)", "", x, ignore.case = TRUE)
+      x <- gsub("\\([^)]*\\)", "", x)
+      x <- trimws(sub("[#(].*$", "", x))
+      strsplit(trimws(x), "\\s+")[[1]][1]
+    }
+  )))
+
   tab <- .rewrite_tab_if(
     tab = tab,
     call = call
@@ -162,7 +179,38 @@
   tab <- tab[tolower(tab$type) != "write",]
   # drop File used for output, need a separate fun arg for this
   tab <- tab[!(tolower(tab$type) == "file" & grepl("(new)", tab$tab, ignore.case = TRUE)),]
-  # potentially handle postsim here or simply throw error
+
+  # PostSim sections (GEMPACK ch.12): tag the region, validate its
+  # contents, drop the markers. Declarations stay in place (the solver
+  # separates PostSim by execution order, not by namespace);
+  # .finalize_tab() re-wraps the executables in a trailing section.
+  is_marker <- tolower(tab$type) %in% "postsim"
+  if (any(is_marker)) {
+    ps_begin <- is_marker & grepl("begin", tab$tab, ignore.case = TRUE)
+    ps_end <- is_marker & grepl("end", tab$tab, ignore.case = TRUE)
+    tab$postsim <- (cumsum(ps_begin) - cumsum(ps_end)) > 0 & !ps_begin
+    ps_allowed <- c(
+      "set", "subset", "coefficient", "file",
+      "formula", "assertion", "zerodivide"
+    )
+    ps_bad <- tab$postsim & !is_marker &
+      !tolower(tab$type) %in% ps_allowed
+    if (any(ps_bad)) {
+      ps_bad_types <- unique(tab$type[ps_bad])
+      .cli_action(model_err$postsim_invalid,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    tab <- tab[!is_marker, ]
+  } else {
+    tab$postsim <- FALSE
+  }
+  if (length(ps_decl_names) > 0) {
+    ps_decl <- tolower(tab$type) %in% c("coefficient", "set", "subset", "file") &
+      toupper(tab$name) %in% ps_decl_names
+    tab$postsim <- tab$postsim | ps_decl
+  }
 
   if (any(tab$header %in% .o_full_exclude())) {
     x_header <- intersect(tab$header, .o_full_exclude())

@@ -6,7 +6,8 @@
                            coeff_extract,
                            sets,
                            time_steps,
-                           call) {
+                           call,
+                           type_label = "coefficient") {
 
   ls_data <- lapply(paths, readLines)
 
@@ -70,6 +71,6 @@
   }
 
   coeff_tib <- coeff_tib[, c("name", "label", "dat")]
-  coeff_tib <- tibble::add_column(coeff_tib, type = "coefficient", .after = "label")
+  coeff_tib <- tibble::add_column(coeff_tib, type = type_label, .after = "label")
   return(coeff_tib)
 }
