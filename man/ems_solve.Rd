@@ -20,7 +20,8 @@ ems_solve(
   verbosity = NULL,
   suppress_outputs = FALSE,
   terminal_run = FALSE,
-  append_args = NULL
+  append_args = NULL,
+  pre_probe = FALSE
 )
 }
 \arguments{
@@ -173,6 +174,15 @@ structured data with \code{\link[=ems_compose]{ems_compose()}}.}
 \item{append_args}{Character vector (default \code{NULL}).
 Additional arguments appended to the Docker run command
 (e.g., \code{c("-smllthreads 2", "-maxthreads 2")}).}
+
+\item{pre_probe}{Logical length 1 (default \code{FALSE}). When \code{TRUE},
+run the solver's structural probe first and abort — with the
+defective variable and equation elements named — if the deployed
+system is structurally singular, instead of failing mid-solve
+with an unnamed singularity. Adds a probe run's cost (the
+pre-solve pipeline plus a maximum matching: negligible below
+~10^5 equations, tens of seconds around 10^6). See
+\code{\link[=ems_probe]{ems_probe()}} for the full diagnosis.}
 }
 \value{
 A tibble of model output variables and coefficients.

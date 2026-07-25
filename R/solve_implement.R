@@ -43,7 +43,16 @@
   if (isFALSE(cmds)) {
     return(invisible(NULL))
   }
-  
+
+  if (isTRUE(v$pre_probe)) {
+    .probe_preflight(
+      cmf_path = args_list$cmf_path,
+      timeID = timeID,
+      call = call
+    )
+  }
+
+
   if (Sys.info()[["sysname"]] == "Windows") {
     captured <- character(0)
     elapsed_time <- system.time(captured <- system(cmds$solve, intern = TRUE))

@@ -147,6 +147,14 @@
 #' @param append_args Character vector (default `NULL`).
 #'   Additional arguments appended to the Docker run command
 #'   (e.g., `c("-smllthreads 2", "-maxthreads 2")`).
+#' @param pre_probe Logical length 1 (default `FALSE`). When `TRUE`,
+#'   run the solver's structural probe first and abort — with the
+#'   defective variable and equation elements named — if the deployed
+#'   system is structurally singular, instead of failing mid-solve
+#'   with an unnamed singularity. Adds a probe run's cost (the
+#'   pre-solve pipeline plus a maximum matching: negligible below
+#'   ~10^5 equations, tens of seconds around 10^6). See
+#'   [`ems_probe()`] for the full diagnosis.
 #' @seealso [`ems_deploy()`] for generating `"cmf_path"`.
 #'   [`solve_in_situ()`] for calling the solver on existing input
 #'   files. [`ems_compose()`] for structuring data when
@@ -190,7 +198,8 @@ ems_solve <- function(cmf_path,
                       verbosity = NULL,
                       suppress_outputs = FALSE,
                       terminal_run = FALSE,
-                      append_args = NULL
+                      append_args = NULL,
+                      pre_probe = FALSE
 ) {
 if (missing(cmf_path)) {
   .cli_missing(cmf_path)

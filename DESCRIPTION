@@ -43,6 +43,9 @@ Depends:
 Imports:
     cli (>= 3.4.0),
     data.table (>= 1.15.0),
+    graphics,
+    grDevices,
+    jsonlite (>= 1.8.0),
     purrr (>= 1.0.0),
     R6 (>= 2.4.0),
     rlang (>= 1.0.0),

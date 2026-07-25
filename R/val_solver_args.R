@@ -45,7 +45,8 @@
     verbosity = c("NULL", "numeric", "integer"),
     suppress_outputs = "logical",
     terminal_run = "logical",
-    append_args = c("NULL", "character")
+    append_args = c("NULL", "character"),
+    pre_probe = "logical"
   )
 
   .check_arg_class(
@@ -89,6 +90,14 @@
   if (!is.null(a$inmemory) && (as.integer(length(a$inmemory)) %!=% 1L || is.na(a$inmemory))) {
     arg <- "inmemory"
     .cli_action(solve_err$logical_scalar,
+      action = "abort",
+      call = call
+    )
+  }
+
+  if (as.integer(length(a$pre_probe)) %!=% 1L || is.na(a$pre_probe)) {
+    arg <- "pre_probe"
+    .cli_action(probe_err$x_logical,
       action = "abort",
       call = call
     )
