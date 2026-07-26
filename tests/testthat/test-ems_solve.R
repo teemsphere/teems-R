@@ -206,14 +206,12 @@ test_that("ems_solve errors when solution errors detected", {
   )
 })
 
-test_that("ems_solve errors when solution singularity detected", {
+test_that("ems_deploy errors when the closure does not square the system", {
   nest_temp("solve_err_sing", write_dir)
-  cmf_path <- ems_deploy(static_data, static_model, swap_out = "pop")
-  expect_snapshot(ems_solve(cmf_path),
+  # an unpaired swap_out leaves 3 too few exogenous elements; the
+  # count-squaring pre-flight rejects it before any solver call
+  expect_snapshot(ems_deploy(static_data, static_model, swap_out = "pop"),
     error = TRUE,
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
     variant = variant
   )
 })

@@ -38,6 +38,32 @@ supported_state <- c(
   "Zerodivide", "Omit", "Substitute", "Backsolve", "Postsim"
 )
 
+# vocabularies mirrored from teems-solver src (keep in sync; row
+# inventory in dev/validation_table.md):
+# reserved identifier names: tab_parse.c names_validate (manual 11.2.1)
+tab_reserved_words <- c(
+  "sum", "if", "abs", "max", "min", "sqrt", "exp", "loge", "log10",
+  "id01", "id0v", "round", "trunc0", "truncb", "prod", "maxs", "mins",
+  "random", "normal", "cumnormal", "lognormal", "cumlognormal",
+  "gperf", "gperfc", "ras_matrix", "all"
+)
+# variable/coefficient qualifier accept-lists: tab_parse.c
+# tab_qualifiers_parse (manual 10.3/10.4); *_prefixes match
+# "token=value" forms; bounds (ge/gt/le/lt <number>) are handled
+# separately
+tab_var_qualifiers <- c("change", "percent_change", "linear", "levels")
+tab_var_qualifier_prefixes <- c("orig_level=", "vpqtype=")
+tab_coef_qualifiers <- c("real", "integer", "parameter", "non_parameter")
+# Default-statement value vocabulary: cmf_io.c tab_defaults_validate
+# (manual 10.19); values outside these lists are individually
+# diagnosed (bound defaults, levels, add_homotopy) or unknown
+tab_default_values <- list(
+  coefficient = c("parameter", "non_parameter"),
+  variable = c("linear", "levels", "change", "percent_change"),
+  formula = c("initial", "always"),
+  equation = c("linear", "not_add_homotopy")
+)
+
 ignored_state <- character(0)
 
 invalid_state <- c(
@@ -259,6 +285,7 @@ coeff_conversion$GTAPv6set <- strsplit(coeff_conversion$GTAPv6set, ", ")
 coeff_conversion$GTAPv7set <- strsplit(coeff_conversion$GTAPv7set, ", ")
 
 # messages (definitions in data-raw/R/msg_*.R) -------------------------
+cls_err <- build_cls_err()
 compose_err <- build_compose_err()
 convert_wrn <- build_convert_wrn()
 data_err <- build_data_err()
@@ -278,6 +305,7 @@ solve_err <- build_solve_err()
 solve_info <- build_solve_info()
 solve_wrn <- build_solve_wrn()
 swap_err <- build_swap_err()
+solver_error_map <- build_solver_error_map()
 
 usethis::use_data(
   vetted_db_versions,
@@ -286,9 +314,15 @@ usethis::use_data(
   supported_state,
   ignored_state,
   invalid_state,
+  tab_reserved_words,
+  tab_var_qualifiers,
+  tab_var_qualifier_prefixes,
+  tab_coef_qualifiers,
+  tab_default_values,
   param_weights,
   set_conversion,
   coeff_conversion,
+  cls_err,
   compose_err,
   convert_wrn,
   data_err,
@@ -308,6 +342,7 @@ usethis::use_data(
   solve_info,
   solve_wrn,
   swap_err,
+  solver_error_map,
   overwrite = TRUE,
   internal = TRUE,
   compress = "gzip"

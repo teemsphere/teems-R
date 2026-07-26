@@ -44,6 +44,14 @@
     sets = sets,
     closure = closure
   )
+  .check_system_square(
+    model = v$model,
+    var_extract = var_extract,
+    sets = sets,
+    closure = closure,
+    size_metadata = size_metadata,
+    call = call
+  )
   metadata$system_size <- size_metadata$system_size
   metadata$n_reg <- size_metadata$n_reg
   shocks <- .finalize_shocks(

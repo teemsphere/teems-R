@@ -18,6 +18,8 @@
     call = call
   )
 
+  .chk_raw_statements(tab, call = call)
+
   # PostSim declarations captured by name from the raw statements: the
   # extraction merge can shift marker rows by one, so declaration rows
   # are tagged by name while executables use the region flag below
@@ -191,7 +193,7 @@
     tab$postsim <- (cumsum(ps_begin) - cumsum(ps_end)) > 0 & !ps_begin
     ps_allowed <- c(
       "set", "subset", "coefficient", "file",
-      "formula", "assertion", "zerodivide"
+      "read", "formula", "assertion", "zerodivide"
     )
     ps_bad <- tab$postsim & !is_marker &
       !tolower(tab$type) %in% ps_allowed
@@ -231,10 +233,12 @@
   }
 
 
+  .check_tab_preflight(tab, call = call)
+
   if (.o_verbose() && !quiet) {
     attr(tab, "model_summary") <- model_summary
   }
-  
+
   attr(tab, "tab_file") <- basename(tab_file)
   return(tab)
 }

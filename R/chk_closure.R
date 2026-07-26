@@ -49,10 +49,38 @@
 
   if (!all(cls_var %in% var_extract$name)) {
     var_discrepancy <- setdiff(tolower(cls_var), tolower(var_extract$name))
-    .cli_action(model_err$no_var,
-      action = "abort",
+    candidates <- .nearest_names(var_discrepancy, var_extract$name)
+    msg <- cls_err$unknown_var
+    action <- c("abort", "inform")
+    if (length(candidates) == 0L) {
+      msg <- msg[1]
+      action <- action[1]
+    }
+    .cli_action(msg,
+      action = action,
       call = call
     )
   }
   return(closure)
+}
+
+#' Nearest declared names for typo suggestions (generalized edit
+#' distance, case-insensitive), closest first, capped
+#'
+#' @importFrom utils adist
+#'
+#' @keywords internal
+#' @noRd
+.nearest_names <- function(unknown,
+                           declared,
+                           max_dist = 3L,
+                           cap = 5L) {
+  declared <- unique(declared)
+  d <- utils::adist(tolower(unknown), tolower(declared))
+  hits <- lapply(seq_along(unknown), function(i) {
+    j <- which(d[i, ] <= max_dist)
+    j[order(d[i, j])]
+  })
+  candidates <- declared[unique(unlist(hits))]
+  utils::head(candidates, cap)
 }

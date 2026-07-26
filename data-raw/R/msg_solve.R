@@ -38,7 +38,41 @@ build_solve_err <- function() {
     # test-ems_solve.R: "ems_solve errors when SBBD used with static model"
     invalid_method = "{.arg matrix_method} {.val {matrix_method}} only applicable to intertemporal model runs.",
     solution_err = "Errors detected during solution. See {.path {paths$diag_out}}.",
-    solution_sing = "Singularity detected during solution. See {.path {paths$diag_out}}.",
+    solution_sing = c(
+      "Singularity detected during solution. See {.path {paths$diag_out}}.",
+      "A square-but-singular system usually indicates a structurally deficient closure partition.",
+      "Run {.fun teems::ems_probe} on the deployed model or re-solve with {.code pre_probe = TRUE} for a named structural diagnosis."
+    ),
+    # test-chk_solver_log.R: "TAB errors map to the model-specification abort"
+    # lines 2-4 filled by .check_solver_log; line 3 dropped when no
+    # manual section applies
+    solver_tab = c(
+      "The solver rejected the model specification with {n_err} error{?s}:",
+      "{err_preview}",
+      "See GEMPACK manual section{?s} {.val {manual_secs}}.",
+      "Full log: {.path {diag_out}}."
+    ),
+    # test-chk_solver_log.R: "closure errors map to the closure abort"
+    solver_closure = c(
+      "The solver rejected the closure or shock inputs with {n_err} error{?s}:",
+      "{err_preview}",
+      "Check the closure, swap and shock arguments supplied to {.fun teems::ems_model} and {.fun teems::ems_deploy}.",
+      "Full log: {.path {diag_out}}."
+    ),
+    # test-chk_solver_log.R: "data errors map to the data abort"
+    solver_data = c(
+      "The solver could not read the model data with {n_err} error{?s}:",
+      "{err_preview}",
+      "Check the data inputs supplied to {.fun teems::ems_data} and the headers named in the TAB file.",
+      "Full log: {.path {diag_out}}."
+    ),
+    # test-chk_solver_log.R: "runtime errors map to the numeric abort"
+    solver_numeric = c(
+      "The solver stopped on {n_err} runtime error{?s} while evaluating model values:",
+      "{err_preview}",
+      "See GEMPACK manual section{?s} {.val {manual_secs}}.",
+      "Full log: {.path {diag_out}}."
+    ),
     # not simulated
     docker_installed = "Docker is required but not installed.",
     docker_sudo = "Docker is installed but cannot be called without sudo.",

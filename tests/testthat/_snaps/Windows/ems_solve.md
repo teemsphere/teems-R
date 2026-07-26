@@ -1,11 +1,3 @@
-# ems_solve errors when solution errors detected
-
-    Code
-      ems_solve(cmf_path)
-    Condition
-      Error in `ems_solve()`:
-      x Errors detected during solution. See 'C:/Users/PC/AppData/Local/R/cache/R/teems/solve/solve_err_error/out/solver_out_HHMM.txt'.
-
 # ems_solve errors when solution singularity detected
 
     Code

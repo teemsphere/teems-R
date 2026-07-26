@@ -210,9 +210,9 @@ test_that("aggregated csv to a formula", {
 })
 
 
-test_that("ignored tab statement", {
-  wrn_model <- write_modified_model(model_file, "POSTSIM (BEGIN) ;")
-  expect_snapshot_warning(ems_model(wrn_model, closure_file))
+test_that("unbalanced PostSim markers", {
+  err_model <- write_modified_model(model_file, "POSTSIM (BEGIN) ;")
+  expect_snapshot_error(ems_model(err_model, closure_file))
 })
 
 test_that("invalid tab statement", {

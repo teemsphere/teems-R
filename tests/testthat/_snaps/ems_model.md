@@ -47,9 +47,9 @@
     x Directly assigned numeric values must be length 1.
     i To assign heterogeneous values, use a `data.frame` with the appropriate set columns.
 
-# ignored tab statement
+# unbalanced PostSim markers
 
-    ! The following model statements are unsupported and will be ignored: Postsim.
+    x Unbalanced PostSim section markers: 1 `PostSim (Begin)` against 0 `PostSim (End)` (GEMPACK manual 12.2).
 
 # invalid tab statement
 
@@ -58,7 +58,7 @@
     Condition
       Error in `ems_model()`:
       x teems version_number does not support Display statements.
-      i Supported statements include: File, Coefficient, Read, Update, Set, Subset, Formula, Assertion, Variable, Equation, Write, Zerodivide, Omit, Substitute, and Backsolve.
+      i Supported statements include: File, Coefficient, Read, Update, Set, Subset, Formula, Assertion, Variable, Equation, Write, Zerodivide, Omit, Substitute, Backsolve, and Postsim.
 
 # invalid intertemporal header
 
@@ -128,7 +128,7 @@
 
 # invalid var in closure
 
-    x Closure contains variables not in the model: "not_a_var".
+    x Closure variable "not_a_var" not found among the model's variables.
 
 # closure missing exo/endo spec
 

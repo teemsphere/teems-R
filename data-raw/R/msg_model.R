@@ -5,9 +5,135 @@ build_model_err <- function() {
       "Statement type{?s} {.val {ps_bad_types}} {?is/are} not allowed in
       a PostSim section.",
       "PostSim sections may contain Set, Subset, Coefficient, File,
-      Formula, Assertion, and Zerodivide statements (GEMPACK manual
-      12.2.1)."
+      Read, Formula, Assertion, and Zerodivide statements (GEMPACK
+      manual 12.2.1)."
     ),
+    # pre-flight TAB validators (chk_tab_preflight.R); solver
+    # counterparts inventoried in dev/validation_table.md
+    # test-chk_tab_preflight.R: "name collisions abort"
+    name_coef_var = c(
+      "{cli::qty(clash)}Name{?s} declared as both a coefficient and a
+      variable: {.val {clash}}.",
+      "TABLO names are case-insensitive and must be unique (GEMPACK
+      manual 11.2.1)."
+    ),
+    name_coef_set = c(
+      "{cli::qty(clash)}Name{?s} declared as both a coefficient and a
+      set: {.val {clash}}.",
+      "TABLO names are case-insensitive and must be unique (GEMPACK
+      manual 11.2.1)."
+    ),
+    name_var_set = c(
+      "{cli::qty(clash)}Name{?s} declared as both a variable and a
+      set: {.val {clash}}.",
+      "TABLO names are case-insensitive and must be unique (GEMPACK
+      manual 11.2.1)."
+    ),
+    # test-chk_tab_preflight.R: "duplicate declarations abort"
+    name_dup = "{cli::qty(dup_names)}Duplicate {dup_type} declaration{?s}:
+    {.val {dup_names}} (GEMPACK manual 11.2.1).",
+    # test-chk_tab_preflight.R: "reserved words abort"
+    name_reserved = "{cli::qty(res_names)}Declaration name{?s}
+    {.val {res_names}} {?is a reserved word/are reserved words} (GEMPACK
+    manual 11.2.1).",
+    name_c_prefix = "{cli::qty(bad_names)}The {.code c_} prefix is
+    reserved for change variables; rename coefficient{?s}
+    {.val {bad_names}}.",
+    name_prefix_clash = c(
+      "{cli::qty(clash)}Coefficient and variable pair{?s} sharing a base
+      name: {.val {clash}}.",
+      "The generated {.code p_}/{.code c_} linear variable names do not
+      disambiguate; rename one of each pair."
+    ),
+    name_too_long = "{cli::qty(long_names)}Declaration name{?s} longer
+    than {max_len} characters: {.val {long_names}}.",
+    # test-chk_tab_preflight.R: "unknown qualifiers abort"
+    qual_unknown = c(
+      "{cli::qty(bad_quals)}Unknown declaration qualifier{?s}:
+      {.val {bad_quals}}.",
+      "See GEMPACK manual 10.3/10.4 for the recognized variable and
+      coefficient qualifiers."
+    ),
+    qual_no_split = "The variable qualifier {.code no_split} (full shock
+    at every step) is not supported: {.val {bad_stmt}}",
+    qual_linear_name = "The variable qualifiers {.code linear_name=} and
+    {.code linear_var=} are not supported; use the default
+    {.code p_}/{.code c_} linear name: {.val {bad_stmt}}",
+    qual_empty = "Empty qualifier {.code ()} in declaration:
+    {.val {bad_stmt}}",
+    qual_unbalanced = "Unbalanced parentheses in the qualifier list of:
+    {.val {bad_stmt}}",
+    # test-chk_tab_preflight.R: "duplicate bounds abort"
+    bound_dup = c(
+      "Duplicate {bound_dir} bound in declaration: {.val {bad_stmt}}",
+      "One lower ({.code ge}/{.code gt}) and one upper
+      ({.code le}/{.code lt}) bound are allowed per declaration (GEMPACK
+      manual 10.19.1)."
+    ),
+    # test-chk_tab_preflight.R: "invalid Default statements abort"
+    default_levels = "Equation {.code (default=levels)} is not supported;
+    the solver handles linearized equations only (GEMPACK manual 10.19):
+    {.val {bad_stmt}}",
+    default_homotopy = "Equation {.code (default=add_homotopy)} is not
+    supported (GEMPACK manual 10.19): {.val {bad_stmt}}",
+    default_bound = "Coefficient bound defaults are not supported
+    (GEMPACK manual 10.19): {.val {bad_stmt}}",
+    default_unknown = "Unknown {default_kw} default {.val {bad_val}}
+    (GEMPACK manual 10.19): {.val {bad_stmt}}",
+    default_keyword = "Default statements apply only to Coefficient,
+    Variable, Formula, and Equation declarations (GEMPACK manual 10.19):
+    {.val {bad_stmt}}",
+    default_unsupported = c(
+      "Default statements are not supported by the teems pipeline:
+      {.val {bad_stmt}}",
+      "Declare the qualifier on each affected statement instead; the
+      positional Default semantics (GEMPACK manual 10.19) cannot be
+      carried through model preparation."
+    ),
+    # test-ems_model.R: "unbalanced PostSim markers"
+    postsim_unbalanced = "Unbalanced PostSim section markers:
+    {ps_begin} {.code PostSim (Begin)} against {ps_end}
+    {.code PostSim (End)} (GEMPACK manual 12.2).",
+    # test-chk_tab_preflight.R: "PostSim scope violations abort"
+    postsim_scope = c(
+      "{cli::qty(bad_refs)}Ordinary statement{?s} reference{?s/}
+      PostSim-declared name{?s}: {.val {bad_refs}}.",
+      "PostSim declarations are only visible inside PostSim sections
+      (GEMPACK manual 12.2.1)."
+    ),
+    postsim_same_file = c(
+      "{cli::qty(bad_files)}File{?s} {.val {bad_files}} read in both the
+      ordinary and PostSim parts.",
+      "Split the data across two files (GEMPACK manual 12.2.3)."
+    ),
+    postsim_read_ord = "{cli::qty(bad_targets)}PostSim Read{?s} into
+    ordinary coefficient{?s} {.val {bad_targets}}; targets must be
+    PostSim coefficients (GEMPACK manual 12.2.3).",
+    postsim_read_var = "{cli::qty(bad_targets)}PostSim Read{?s} into
+    variable{?s} {.val {bad_targets}}; simulation results cannot be
+    changed (GEMPACK manual 12.2.3).",
+    postsim_read_undecl = "{cli::qty(bad_targets)}PostSim Read
+    target{?s} {.val {bad_targets}} not declared (GEMPACK manual
+    12.2.3).",
+    postsim_lhs_var = "{cli::qty(bad_lhs)}PostSim Formula{?s}
+    assign{?s/} variable{?s} {.val {bad_lhs}}; simulation results cannot
+    be changed (GEMPACK manual 12.2.2).",
+    postsim_lhs_ord = "{cli::qty(bad_lhs)}PostSim Formula{?s}
+    assign{?s/} ordinary coefficient{?s} {.val {bad_lhs}}; the LHS must
+    be a PostSim coefficient (GEMPACK manual 12.2.2).",
+    # test-chk_tab_preflight.R: "Formula & Equation aborts"
+    formula_equation = c(
+      "{.code Formula & Equation} statements are not supported: the
+      expansion needs a levels equation (GEMPACK manual 10.9.1).",
+      "Linearize the equation and set the base value with
+      {.code Formula (initial)}."
+    ),
+    read_terminal = "Read from terminal is not supported; read from a
+    file instead: {.val {bad_stmt}}",
+    read_no_header = "{cli::qty(bad_reads)}Read{?s} without a header
+    {?is/are} not supported (GEMPACK manual 11.11.8): {.val {bad_reads}}",
+    read_undeclared = "{cli::qty(bad_targets)}Read target{?s}
+    {.val {bad_targets}} not declared as {?a coefficient/coefficients}.",
     # test-ems_model.R: "ems_model rejects invalid variable names in omit"
     invalid_omit = "{.val {invalid_var}} designated for omission not found in the model.",
     # test-ems_model.R: "ems_model rejects invalid variable names in backsolve"

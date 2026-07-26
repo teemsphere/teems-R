@@ -6,17 +6,27 @@
       i `matrix_method` "auto": using "LU" for this static model.
     Condition
       Error in `ems_solve()`:
-      x Errors detected during solution. See '/home/mpc/.cache/R/teems/solve/solve_err_error/out/solver_out_HHMM.txt'.
+      x The solver stopped on 7 runtime errors while evaluating model values:
+      i coefficient vdgb has a value below its declared lower bound 0.000000
+      coefficient vmgb has a value below its declared lower bound 0.000000
+      coefficient vdgp has a value below its declared lower bound 0.000000
+      coefficient vmgp has a value below its declared lower bound 0.000000
+      coefficient vdep has a value below its declared lower bound 0.000000
+      coefficient vtmfsd has a value below its declared lower bound 0.000000
+      coefficient vkb has a value below its declared lower bound 0.000000
+      i See GEMPACK manual section "25.4.4".
+      i Full log: '/home/mpc/.cache/R/teems/solve/solve_err_error/out/solver_out_HHMM.txt'.
 
-# ems_solve errors when solution singularity detected
+# ems_deploy errors when the closure does not square the system
 
     Code
-      ems_solve(cmf_path)
-    Message
-      i `matrix_method` "auto": using "LU" for this static model.
+      ems_deploy(static_data, static_model, swap_out = "pop")
     Condition
-      Error in `ems_solve()`:
-      x Singularity detected during solution. See '/home/mpc/.cache/R/teems/solve/solve_err_sing/out/solver_out_HHMM.txt'.
+      Error in `ems_deploy()`:
+      x The closure does not square the system: 3488 endogenous variable elements against 3485 equation elements.
+      i Arithmetic: 4469 variable elements - 981 exogenous elements (closure after swaps) = 3488 endogenous; the equation system determines exactly 3485, so 3 elements must still be exogenized.
+      i Candidates: exogenizing 3 elements of one of psave, qsave, pinv, kb, qst closes the gap exactly.
+      i If the counts look right but the partition is structurally deficient, run `teems::ems_probe()` on the deployed model for a named diagnosis.
 
 # ems_solve informs terminal run
 
