@@ -132,15 +132,22 @@
         }
         acc <- data.table::funion(acc, rhs)
       } else if (op %=% "-") {
-        missing_ele <- data.table::fsetdiff(rhs, acc, all = FALSE)
-        if (nrow(missing_ele) %!=% 0L) {
-          d <- unique(missing_ele$mapping)
+        # GEMPACK set operations act element-level on the (aggregated)
+        # sets (manual 10.1.1.1): a subtracted element disappears
+        # entirely, including every origin row that maps to it. A
+        # row-level fsetdiff kept an aggregated element whenever any
+        # origin outside the subtrahend mapped to it (e.g. NMRG =
+        # COMM - MARG retained the margin commodity).
+        rhs_ele <- unique(rhs$mapping)
+        missing_ele <- setdiff(rhs_ele, unique(acc$mapping))
+        if (length(missing_ele) %!=% 0L) {
+          d <- missing_ele
           .cli_action(deploy_err$invalid_minus,
             action = "abort",
             call = call
           )
         }
-        acc <- data.table::fsetdiff(acc, rhs, all = TRUE)
+        acc <- acc[!acc$mapping %in% rhs_ele, ]
       } else if (op %=% "^") {
         acc <- data.table::funion(acc, rhs)
       } else {
