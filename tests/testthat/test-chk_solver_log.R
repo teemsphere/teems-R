@@ -55,6 +55,23 @@ test_that("shock-file errors map to the closure abort", {
   expect_error(check_log(paths), "closure or shock inputs")
 })
 
+test_that("C9 fail-fast reader wordings map to the closure abort", {
+  # "cannot open closure file" must hit the closure row, not the
+  # generic data-class "cannot open"
+  paths <- local_solver_log(c(
+    "Error: cannot open closure file /run/GTAPv7.cls",
+    "Error: wrong number of arguments for variable afall (closure file)"
+  ))
+  expect_error(
+    check_log(paths),
+    "rejected the closure or shock inputs with 2 errors"
+  )
+  paths <- local_solver_log(
+    "Error: shock statement for variable pop supplies fewer values than elements (3 expected) (shock file)"
+  )
+  expect_error(check_log(paths), "closure or shock inputs")
+})
+
 test_that("data errors map to the data abort", {
   paths <- local_solver_log(
     'Error: header "VKB" not found in the data file'

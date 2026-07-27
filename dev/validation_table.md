@@ -57,9 +57,11 @@ catalog's plausible-mistake subset).
   `.finalize` after `.finalize_sets` (explicit Subset claims vs
   realized elements; test-chk_subset_containment.R). 7 new corpus
   fixtures; S12 stays solver-only via the Phase-2 log mapping.
-- OPEN: C9 solver-side closure_read/shocks_read fail-fast sweep;
-  '+'/'&' element-level set-expression semantics decision ('&' via
-  row-level fintersect can still under-intersect when the same
+- C9 DONE (2026-07-27): solver-side closure_read/shocks_read
+  fail-fast sweep (see row C9); R side gained the `closure file`
+  solver_error_map row + tests.
+- OPEN: '+'/'&' element-level set-expression semantics decision ('&'
+  via row-level fintersect can still under-intersect when the same
   element has disjoint origin rows in the two operands).
 
 **Layer rule (single-source-of-truth):** a check is `R` (pre-flight)
@@ -282,7 +284,7 @@ probable fixes.
 | C6 | Shocked variables/elements actually exogenous after swaps | R (solver silently ignores or misapplies) | `shk_err$not_exogenous` — candidates = the variable's exogenous subset (or its swap route) | `.check_shock` (exists: existence+tuples; exogeneity NOT checked) | new snapshots |
 | C7 | Scalar shock on undeclared variable | R (solver WART: silent drop) | `shk_err$not_a_var` **already covers** | `chk_shock.R:13` | existing |
 | C8 | Square-but-singular closure (wrong partition) | route to probe | `ems_solve(pre_probe=)` named abort + `ems_probe()` guidance; cls_err count/name failures should point to pre_probe when counts pass | probe infra DONE (4d209f2) | test-ems_probe.R |
-| C9 | **Solver follow-up** (out of R scope): closure_read fail-fast sweep (6 warts + unchecked fopen), shocks_read fopen wart + scalar silent-drop | solver | — | recorded in solver memory | solver kits later |
+| C9 | **DONE 2026-07-27** — closure_read/shocks_read fail-fast sweep: 6 print-and-continue warts fixed (the element/set misses left `check` true and marked WRONG elements exogenous off a zeroed set id), unchecked closure fopen, shocks fopen fall-through, scalar-shock silent drop, strtok-NULL guards (malformed entry / wrong arg count / fewer values than elements). All error paths now `printf` + `MPI_Abort(1)` — the prior `return -1` from the rank-0-only block would deadlock other ranks at the closure broadcast. New wordings carry `(closure file)`/`(shock file)` markers; `solver_error_map` gained a `closure file` row above the data-class `cannot open` | solver | log-map (`closure` class) | `.audit/closure-test-kit` 10 legs (rc=1 + named), verify.sh 14/14, warnings 102 |
 
 ## X — CLI / solver configuration
 

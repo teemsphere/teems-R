@@ -14,6 +14,7 @@ build_solver_error_map <- function() {
     c("is not in set .* \\(in ", "closure", NA),
     c("is not declared \\(in ", "closure", NA),
     c("shock file", "closure", NA),
+    c("closure file", "closure", NA),
     c("^variable [^ ]+ is not declared", "closure", NA),
     # data files
     c("header .* not found", "data", NA),
