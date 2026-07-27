@@ -16,6 +16,16 @@ build_deploy_err <- function() {
     invalid_plus = "Set operator {.code +} requires disjoint sets; overlapping elements: {.field {d}}.",
     # test-ems_model.R: "set expression operator validity"
     invalid_minus = "Set operator {.code -} may only remove elements that are present; missing: {.field {d}}.",
+    # test-set_expr.R: "set intersection aborts on disagreeing origin coverage"
+    invalid_intersect = c(
+      "Set operator {.code &} in the definition of {.field {owner}}:
+      {cli::qty(d)}element{?s} {.field {d}} {cli::qty(d)}{?is/are}
+      carried with different origin coverage by the two operands.",
+      "The operands aggregate different source elements into
+      {cli::qty(d)}{?this/these} shared element{?s}, so the
+      intersection is ambiguous; align the aggregation mappings that
+      build both sets."
+    ),
     # test-ems_deploy.R: "ems_deploy errors when aggregated inputs are incomplete"
     agg_missing_tup = "{n} tuple{?s} in the provided input file for {.val {nme}} were missing: {.field {missing}}.",
     # test-ems_deploy.R: "ems_deploy errors when shock_file and shock are both provided"

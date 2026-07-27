@@ -67,8 +67,10 @@
 #' Evaluate a set expression against resolved mappings (data.tables with
 #' origin/mapping columns). Returns NULL when a referenced set is not
 #' resolved yet (the caller's fixed-point loop retries). Validity per
-#' the manual: '+' operands must be disjoint; '-' may only remove
-#' elements that are present.
+#' the manual, at ELEMENT level throughout: '+' operands must be
+#' disjoint; '-' may only remove elements that are present; '&' keeps
+#' the accumulator's rows and aborts when a shared element's origin
+#' coverage disagrees between the operands (ambiguous aggregation).
 #'
 #' @importFrom data.table data.table funion fsetdiff fintersect
 #'
@@ -122,9 +124,11 @@
         return(NULL)
       }
       if (op %=% "+") {
-        overlap <- data.table::fintersect(acc, rhs)
-        if (nrow(overlap) %!=% 0L) {
-          d <- unique(overlap$mapping)
+        # disjointness is an element-level requirement (manual
+        # 10.1.1.1): a shared element with disjoint origin rows used
+        # to slip past the row-level overlap test
+        d <- intersect(unique(acc$mapping), unique(rhs$mapping))
+        if (length(d) %!=% 0L) {
           .cli_action(deploy_err$invalid_plus,
             action = "abort",
             call = call
@@ -151,7 +155,29 @@
       } else if (op %=% "^") {
         acc <- data.table::funion(acc, rhs)
       } else {
-        acc <- data.table::fintersect(acc, rhs)
+        # element-level intersection (manual 10.1.1.1): keep the
+        # accumulator's rows for every element present in both
+        # operands. A shared element whose origin coverage DISAGREES
+        # between the operands is ambiguous under aggregation (whose
+        # origins feed the data build?) -- abort rather than prefer
+        # one side; the old row-level fintersect dropped such
+        # elements from the result outright.
+        shared <- intersect(unique(acc$mapping), unique(rhs$mapping))
+        acc_sh <- acc[acc$mapping %in% shared, ]
+        if (length(shared) %!=% 0L) {
+          rhs_sh <- rhs[rhs$mapping %in% shared, ]
+          acc_or <- lapply(split(acc_sh$origin, acc_sh$mapping), unique)
+          rhs_or <- lapply(split(rhs_sh$origin, rhs_sh$mapping), unique)
+          agree <- mapply(setequal, acc_or, rhs_or[names(acc_or)])
+          if (!all(agree)) {
+            d <- names(acc_or)[!agree]
+            .cli_action(deploy_err$invalid_intersect,
+              action = c("abort", "inform"),
+              call = call
+            )
+          }
+        }
+        acc <- acc_sh
       }
     }
     acc

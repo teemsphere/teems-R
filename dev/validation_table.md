@@ -60,9 +60,18 @@ catalog's plausible-mistake subset).
 - C9 DONE (2026-07-27): solver-side closure_read/shocks_read
   fail-fast sweep (see row C9); R side gained the `closure file`
   solver_error_map row + tests.
-- OPEN: '+'/'&' element-level set-expression semantics decision ('&'
-  via row-level fintersect can still under-intersect when the same
-  element has disjoint origin rows in the two operands).
+- '+'/'&' DECIDED + DONE (2026-07-28, user-approved abort
+  semantics): `.eval_set_expr` is element-level throughout. `+`
+  disjointness now tests element overlap (a shared element with
+  disjoint origin rows slipped past the row-level check). `&` keeps
+  the accumulator's rows for elements present in both operands and
+  ABORTS (`deploy_err$invalid_intersect`, naming the elements) when
+  a shared element's origin coverage disagrees between the operands
+  — ambiguous under aggregation; the old row-level fintersect
+  silently dropped such elements. `^`/UNION stays permissive
+  (merged origin rows are the union semantics); `-` was fixed
+  element-level earlier (0b73e43). test-set_expr.R covers all
+  three behaviors. PROGRAM COMPLETE — no open rows.
 
 **Layer rule (single-source-of-truth):** a check is `R` (pre-flight)
 ONLY if it is decidable from what teems-R already builds — the
