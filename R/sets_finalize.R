@@ -48,17 +48,22 @@
     attr(set_extract, "time_steps") <- time_steps
     attr(set_extract, "CYRS") <- CYRS
     n_timestep_coeff <- coeff_extract$name[match(.o_n_timestep_header(), coeff_extract$header)]
-    set_extract$mapping <- purrr::map2(
-      set_extract$qualifier_list,
-      set_extract$definition,
-      function(q, d) {
+    set_extract$mapping <- purrr::pmap(
+      list(
+        set_extract$qualifier_list,
+        set_extract$definition,
+        set_extract$name
+      ),
+      function(q, d, nm) {
         if (q %=% "(non_intertemporal)") {
           NULL
         } else {
           .convert_int_sets(
             expr = d,
             n_timestep = length(time_steps),
-            n_timestep_coeff = n_timestep_coeff
+            n_timestep_coeff = n_timestep_coeff,
+            set_name = nm,
+            call = model_call
           )
         }
       }

@@ -35,3 +35,10 @@ input, not just clean strings.
 | postsim_unbalanced | PS (markers) | lone `PostSim (Begin)` |
 | stmt_unknown_keyword | statement form | unknown keyword folded as implicit continuation |
 | formula_no_equals | statement form | Formula without `=` |
+| set_self_ref | S1 | set references itself in its defining expression |
+| set_undeclared | S2 | expression references an undeclared set |
+| set_self_eq | S3 | `Set A = A;` self-equality |
+| set_ele_range | S5 | `(first - last)` element range abbreviation |
+| set_ele_empty | S9 | trailing empty element in list |
+| set_header_len | S10 | set-declaration header over 4 characters |
+| subset_undeclared | S2 | Subset statement names an undeclared superset |

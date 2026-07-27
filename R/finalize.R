@@ -23,6 +23,10 @@
     data_call = data_call,
     model_call = model_call
   )
+  .check_subset_containment(
+    sets = sets,
+    call = model_call
+  )
   v <- .validate_deploy_args(
     a = args_list,
     sets = sets,

@@ -77,6 +77,47 @@
     x Default statements are not supported by the teems pipeline: "Variable (default=change)"
     i Declare the qualifier on each affected statement instead; the positional Default semantics (GEMPACK manual 10.19) cannot be carried through model preparation.
 
+# self-referential set expressions abort
+
+    x Set SBAD references itself in its defining expression: "SBAD + COMM".
+    i Define a set from other sets and quoted elements only (GEMPACK manual 10.1.1.1).
+
+# undeclared set references abort
+
+    x Set referenced before declaration in "Set SND = COMM - MRGX": "MRGX".
+    i Sets must be declared before they are used in a definition or Subset statement (GEMPACK manual 10.1).
+
+---
+
+    x Set referenced before declaration in "Set SEQ = NOPE": "NOPE".
+    i Sets must be declared before they are used in a definition or Subset statement (GEMPACK manual 10.1).
+
+---
+
+    x Set referenced before declaration in "Subset REG is subset of NOPE2": "NOPE2".
+    i Sets must be declared before they are used in a definition or Subset statement (GEMPACK manual 10.1).
+
+# set self-equality aborts
+
+    x Set SSE is defined as equal to itself (GEMPACK manual 10.1.2.1).
+
+# element range abbreviations abort
+
+    x Element range abbreviation in set SRG: "s1 - s5".
+    i The `(first - last)` form is not supported; list the elements explicitly.
+
+# malformed element lists abort
+
+    x Malformed element list for set SEL: "()" contains empty elements.
+
+---
+
+    x Malformed element list for set SEL2: "(x1,)" contains empty elements.
+
+# over-length set headers abort
+
+    x Header longer than 4 characters in the declaration of set SHD: "TOOBIG".
+
 # math statements without = abort
 
     x Formula statement without `=`: "Formula NOEQ 1"

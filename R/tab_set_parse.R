@@ -130,6 +130,17 @@
 
   sets$header <- gsub(pattern = "\"", replacement = "", x = sets$header)
 
+  # S10: the solver's header buffer holds HEADERSIZE (4) characters
+  hdr_long <- !is.na(sets$header) & nchar(trimws(sets$header)) > 4L
+  if (any(hdr_long)) {
+    bad_set <- sets$name[hdr_long][1]
+    bad_header <- trimws(sets$header[hdr_long][1])
+    .cli_action(model_err$set_header_len,
+      action = "abort",
+      call = call
+    )
+  }
+
   sets$remainder <- .advance_remainder(
     remainder = sets$remainder,
     pattern = sets$full_read
@@ -149,6 +160,37 @@
     yes = sets$remainder,
     no = NA
   )
+
+  # S5/S9 on raw explicit element lists (before the cleanup below can
+  # silently swallow empty elements or fold a range into one "element")
+  is_ele_list <- !is.na(sets$definition) &
+    !grepl("^\\s*=", sets$definition) &
+    tolower(sets$qualifier_list) != "(intertemporal)" &
+    is.na(sets$full_read)
+  for (i in which(is_ele_list)) {
+    bad_set <- sets$name[i]
+    inner <- sub("^\\s*\\(", "", sub("\\)\\s*$", "", trimws(sets$definition[i])))
+    bad_def <- trimws(sets$definition[i])
+    eles <- trimws(strsplit(inner, ",", fixed = TRUE)[[1]])
+    ranged <- grepl("-", eles, fixed = TRUE)
+    if (any(ranged)) {
+      bad_ele <- eles[ranged][1]
+      .cli_action(model_err$set_ele_range,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    collapsed <- gsub("[[:space:]]", "", inner)
+    empty <- !nzchar(collapsed) || grepl("^,|,,|,$", collapsed)
+    malformed <- any(grepl("[[:space:]]", eles))
+    if (empty || malformed) {
+      empty_or_malformed <- if (empty) "empty" else "malformed"
+      .cli_action(model_err$set_ele_list,
+        action = "abort",
+        call = call
+      )
+    }
+  }
 
   sets$remainder <- .advance_remainder(
     remainder = sets$remainder,
@@ -178,7 +220,28 @@
 
   for (i in which(is_set_eq)) {
     rhs_nm <- trimws(sub("^\\s*=\\s*", "", sets$definition[i]))
+    if (tolower(rhs_nm) %=% tolower(sets$name[i])) {
+      bad_set <- sets$name[i]
+      .cli_action(model_err$set_self_eq,
+        action = "abort",
+        call = call
+      )
+    }
     rhs_idx <- match(rhs_nm, sets$name)
+    if (is.na(rhs_idx)) {
+      # names are case-insensitive (11.2.1): canonicalize a spelling
+      # mismatch to the declared form so downstream exact matches hold
+      rhs_idx <- match(tolower(rhs_nm), tolower(sets$name))
+      if (is.na(rhs_idx)) {
+        bad_stmt <- paste("Set", sets$name[i], sets$definition[i])
+        bad_refs <- rhs_nm
+        .cli_action(model_err$set_undeclared,
+          action = c("abort", "inform"),
+          call = call
+        )
+      }
+      sets$definition[i] <- paste("=", sets$name[rhs_idx])
+    }
     if (tolower(sets$qualifier_list[i]) %=% "(intertemporal)" ||
       (!is.na(rhs_idx) &&
         tolower(sets$qualifier_list[rhs_idx]) %=% "(intertemporal)")) {
@@ -224,6 +287,45 @@
   sets$definition <- lapply(sets$definition, trimws)
   names(sets$definition) <- sets$name
 
+  # S1/S2: expression operands must be declared sets (quoted single
+  # elements aside) and never the set being defined; a spelling that
+  # differs only by case is canonicalized to the declared form so the
+  # downstream exact matches (implied subsets, .eval_set_expr) hold
+  for (i in which(is_expr & !is_set_eq)) {
+    toks <- .set_expr_tokens(sets$definition[[i]])
+    named <- toks[!toks %in% c("+", "-", "^", "&", "(", ")") &
+      !grepl('^"', toks)]
+    bad_refs <- character(0)
+    for (tk in unique(named)) {
+      if (tolower(tk) %=% tolower(sets$name[i])) {
+        bad_set <- sets$name[i]
+        bad_def <- sets$definition[[i]]
+        .cli_action(model_err$set_self_ref,
+          action = c("abort", "inform"),
+          call = call
+        )
+      }
+      if (tk %in% sets$name) next
+      ci <- match(tolower(tk), tolower(sets$name))
+      if (is.na(ci)) {
+        bad_refs <- c(bad_refs, tk)
+      } else {
+        sets$definition[[i]] <- gsub(
+          paste0("\\b", tk, "\\b"),
+          sets$name[ci],
+          sets$definition[[i]]
+        )
+      }
+    }
+    if (length(bad_refs) > 0L) {
+      bad_stmt <- paste("Set", sets$name[i], "=", sets$definition[[i]])
+      .cli_action(model_err$set_undeclared,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+  }
+
   expr_info <- purrr::map2(sets$definition, is_expr, function(d, e) {
     if (isTRUE(e)) .set_expr_info(d) else NA
   })
@@ -258,6 +360,25 @@
   subsets$set <- purrr::map_chr(subsets$remainder, function(s) {
     utils::tail(strsplit(s, " ")[[1]], 1)
   })
+
+  # S2 for Subset statements: both sides must be declared sets (an
+  # unknown superset used to crash the fold below with a raw indexing
+  # error); case mismatches are canonicalized to the declared form
+  for (col in c("subset", "set")) {
+    known <- subsets[[col]] %in% sets$name
+    ci <- match(tolower(subsets[[col]]), tolower(sets$name))
+    undecl <- !known & is.na(ci)
+    if (any(undecl)) {
+      j <- which(undecl)[1]
+      bad_stmt <- paste("Subset", subsets$remainder[j])
+      bad_refs <- subsets[[col]][j]
+      .cli_action(model_err$set_undeclared,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    subsets[[col]] <- ifelse(known, subsets[[col]], sets$name[ci])
+  }
 
   sets$subsets <- vector("list", nrow(sets))
   r_idx <- match(subsets$set, sets$name)

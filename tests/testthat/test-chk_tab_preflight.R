@@ -88,6 +88,40 @@ test_that("solver-valid Default statements abort as unsupported", {
   expect_preflight_error("Variable (default=change);")
 })
 
+# sets (GEMPACK manual 10.1.1.1 / 10.1.2.1; solver set readers)
+
+test_that("self-referential set expressions abort", {
+  expect_preflight_error("Set SBAD = SBAD + COMM;")
+})
+
+test_that("undeclared set references abort", {
+  # in a set expression
+  expect_preflight_error("Set SND = COMM - MRGX;")
+  # as a set-equality right-hand side
+  expect_preflight_error("Set SEQ = NOPE;")
+  # in a Subset statement
+  expect_preflight_error("Subset REG is subset of NOPE2;")
+})
+
+test_that("set self-equality aborts", {
+  expect_preflight_error("Set SSE = SSE;")
+})
+
+test_that("element range abbreviations abort", {
+  expect_preflight_error("Set SRG (s1 - s5);")
+})
+
+test_that("malformed element lists abort", {
+  expect_preflight_error("Set SEL ();")
+  expect_preflight_error("Set SEL2 (x1,);")
+})
+
+test_that("over-length set headers abort", {
+  expect_preflight_error(
+    "Set SHD read elements from file GTAPSETS header \"TOOBIG\";"
+  )
+})
+
 # unsupported statement forms
 
 test_that("math statements without = abort", {

@@ -215,6 +215,56 @@ build_model_err <- function() {
     ),
     # test-ems_model.R: "unparseable set definition"
     invalid_set_def = "Unparseable {.field Set} definition detected: {.field {bad_def}}.",
+    # test-chk_tab_preflight.R: "self-referential set expressions abort"
+    set_self_ref = c(
+      "Set {.field {bad_set}} references itself in its defining
+      expression: {.val {bad_def}}.",
+      "Define a set from other sets and quoted elements only (GEMPACK
+      manual 10.1.1.1)."
+    ),
+    # test-chk_tab_preflight.R: "undeclared set references abort"
+    set_undeclared = c(
+      "{cli::qty(bad_refs)}Set{?s} referenced before declaration in
+      {.val {bad_stmt}}: {.val {bad_refs}}.",
+      "Sets must be declared before they are used in a definition or
+      {.field Subset} statement (GEMPACK manual 10.1)."
+    ),
+    # test-chk_tab_preflight.R: "set self-equality aborts"
+    set_self_eq = "Set {.field {bad_set}} is defined as equal to
+    itself (GEMPACK manual 10.1.2.1).",
+    # test-chk_tab_preflight.R: "element range abbreviations abort"
+    set_ele_range = c(
+      "Element range abbreviation in set {.field {bad_set}}:
+      {.val {bad_ele}}.",
+      "The {.code (first - last)} form is not supported; list the
+      elements explicitly."
+    ),
+    # test-chk_tab_preflight.R: "malformed element lists abort"
+    set_ele_list = "Malformed element list for set
+    {.field {bad_set}}: {.val {bad_def}} contains
+    {empty_or_malformed} elements.",
+    # test-chk_tab_preflight.R: "over-length set headers abort"
+    set_header_len = "Header longer than 4 characters in the
+    declaration of set {.field {bad_set}}: {.val {bad_header}}.",
+    # test-int_sets.R
+    set_int_range = c(
+      "Intertemporal set {.field {bad_set}} has {range_defect} time
+      range: {.val {bad_def}} resolves to {resolved_txt}.",
+      "With {n_timestep} time step{?s} the valid indices are
+      {.code p[0]} through {.code p[{n_timestep - 1}]}."
+    ),
+    # test-int_sets.R
+    set_int_malformed = "Malformed intertemporal set definition for
+    {.field {bad_set}}: {.val {bad_def}}.",
+    # test-chk_subset_containment.R
+    subset_not_contained = c(
+      "Subset {.field {bad_sub}} is not contained in
+      {.field {bad_super}}: {cli::qty(missing_ele)}element{?s}
+      {.val {missing_ele}} {cli::qty(missing_ele)}{?is/are} missing
+      from the superset.",
+      "Check the {.field Subset} statement and the aggregation
+      mappings that build both sets."
+    ),
     # test-ems_model.R: "unsupported IF placement"
     invalid_if_placement = c(
       "Unsupported {.field IF} placement detected: {.field {if_statement}}.",

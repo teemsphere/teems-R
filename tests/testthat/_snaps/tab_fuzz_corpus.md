@@ -22,5 +22,12 @@
       read_no_header.tab: x Read without a header is not supported (GEMPACK manual 11.11.8): "Read ELX from file GTAPDATA"
       read_terminal.tab: x Read from terminal is not supported; read from a file instead: "Read SCLR from terminal"
       read_undeclared.tab: x Read target "notdecl" not declared as a coefficient.
+      set_ele_empty.tab: x Malformed element list for set SEL: "(x1,)" contains empty elements.
+      set_ele_range.tab: x Element range abbreviation in set SRG: "s1 - s5". i The `(first - last)` form is not supported; list the elements explicitly.
+      set_header_len.tab: x Header longer than 4 characters in the declaration of set REG: "TOOLONG".
+      set_self_eq.tab: x Set SSE is defined as equal to itself (GEMPACK manual 10.1.2.1).
+      set_self_ref.tab: x Set BADS references itself in its defining expression: "BADS + COMM". i Define a set from other sets and quoted elements only (GEMPACK manual 10.1.1.1).
+      set_undeclared.tab: x Set referenced before declaration in "Set NMRG = COMM - MRG": "MRG". i Sets must be declared before they are used in a definition or Subset statement (GEMPACK manual 10.1).
       stmt_unknown_keyword.tab: x Equation statement without `=`: "Equation Frobnicate all the things" i Either the statement is malformed or its leading token is an unrecognized keyword that was read as an implicit Equation continuation.
+      subset_undeclared.tab: x Set referenced before declaration in "Subset COMM is subset of KOMM": "KOMM". i Sets must be declared before they are used in a definition or Subset statement (GEMPACK manual 10.1).
 

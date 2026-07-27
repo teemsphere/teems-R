@@ -41,9 +41,26 @@ catalog's plausible-mistake subset).
   `=` and used to crash the extract parsers; now a named abort. And
   the B-row qualifier regexes accept `le`/`lt` plus negative/decimal
   bound values (`tab_qual` in data-raw).
-- OPEN: S-rows (set expression checks) R-side; C9 solver-side
-  closure_read/shocks_read fail-fast sweep; '+'/'&' element-level
-  set-expression semantics decision.
+- S-rows DONE (2026-07-27): S1/S2/S3/S9 (+ the Subset-statement half
+  of S2, previously a raw indexing crash) and S5/S10 as parse-time
+  checks in `.parse_tab_sets` — self-reference, undeclared
+  references (with case-mismatch canonicalization to the declared
+  spelling, since downstream matching is exact while GEMPACK names
+  are case-insensitive), self-equality, raw element-list hygiene
+  (empty/trailing elements, range abbreviation), header length. S4
+  already aborted (`invalid_set_def`). S6/S7 were already enforced
+  element-level at deploy by `.eval_set_expr`
+  (`deploy_err$invalid_plus`/`invalid_minus`). S8 in
+  `.convert_int_sets` (empty/inverted range — R previously counted
+  DOWN silently — out-of-range indices, malformed terms; unit tests
+  in test-int_sets.R). S11 `.check_subset_containment` in
+  `.finalize` after `.finalize_sets` (explicit Subset claims vs
+  realized elements; test-chk_subset_containment.R). 7 new corpus
+  fixtures; S12 stays solver-only via the Phase-2 log mapping.
+- OPEN: C9 solver-side closure_read/shocks_read fail-fast sweep;
+  '+'/'&' element-level set-expression semantics decision ('&' via
+  row-level fintersect can still under-intersect when the same
+  element has disjoint origin rows in the two operands).
 
 **Layer rule (single-source-of-truth):** a check is `R` (pre-flight)
 ONLY if it is decidable from what teems-R already builds — the
