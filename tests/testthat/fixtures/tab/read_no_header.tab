@@ -1,0 +1,8 @@
+File GTAPDATA # base data #;
+Set REG # regions # read elements from file GTAPDATA header "H1";
+Coefficient (all,r,REG) PPL(r) # population #;
+Read PPL from file GTAPDATA header "POP";
+Variable (all,r,REG) pop(r) # population growth #;
+Equation E_pop # identity # (all,r,REG) pop(r) = pop(r);
+Coefficient (all,r,REG) ELX(r) # extra #;
+Read ELX from file GTAPDATA;

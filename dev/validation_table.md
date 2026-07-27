@@ -5,7 +5,7 @@ Single source of truth for the R-side pre-flight validation program
 `.audit/*-test-kit` negative-leg catalogs, and the A(d) fuzz crash
 catalog's plausible-mistake subset).
 
-**Implementation status (2026-07-26):**
+**Implementation status (updated 2026-07-27):**
 - Phase 2 DONE — `chk_solver_log.R` maps `Error:` lines via
   `solver_error_map` (sysdata) to solver_tab/closure/data/numeric
   aborts quoting the lines verbatim + manual sections;
@@ -25,9 +25,25 @@ catalog's plausible-mistake subset).
   row-level on origin/mapping pairs — `NMRG = COMM - MARG` kept the
   margin commodity (5 vs the solver's 4 elements); now element-level
   per 10.1.1.1 (test-set_expr.R).
-- OPEN: S-rows (set expression checks) R-side; Phase 3c gated e2e
-  corpus for solver-only rows; C9 solver-side closure_read/shocks_read
-  fail-fast sweep.
+- Phase 3c DONE (2026-07-27): (a) gated e2e negative legs
+  (test-solver_err_e2e.R, 6 legs) push probe-mutated GTAPv7 models
+  through real `ems_solve()` runs for the solver-only rows — Z1/Z2
+  zerodivide, Z3 assertion, B2 fatal range test, I2/I3 intrinsic
+  arity — exercising the Phase-2 `Error:` mapping end to end
+  (requires a teems image ≥ 2026-07-26; skips otherwise). (b) curated
+  fuzz corpus: 20 single-defect fixtures in
+  `tests/testthat/fixtures/tab/` (provenance in its README), each
+  aborting with a named message at `.process_tablo()` — never a raw
+  parser crash — pinned in one combined snapshot
+  (test-tab_fuzz_corpus.R). RIDE-ALONGS: `stmt_missing_equals` —
+  unknown leading keywords are folded into the preceding statement as
+  implicit continuations, so they surface as a math statement without
+  `=` and used to crash the extract parsers; now a named abort. And
+  the B-row qualifier regexes accept `le`/`lt` plus negative/decimal
+  bound values (`tab_qual` in data-raw).
+- OPEN: S-rows (set expression checks) R-side; C9 solver-side
+  closure_read/shocks_read fail-fast sweep; '+'/'&' element-level
+  set-expression semantics decision.
 
 **Layer rule (single-source-of-truth):** a check is `R` (pre-flight)
 ONLY if it is decidable from what teems-R already builds — the

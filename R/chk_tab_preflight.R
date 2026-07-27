@@ -43,6 +43,22 @@
       call = call
     )
   }
+  # Formula/Equation/Update need an "=": a statement whose leading
+  # token is no recognized keyword is folded into the preceding
+  # statement as an implicit continuation (.check_statements), so an
+  # unknown keyword surfaces here as a math statement without "=" --
+  # the raw form crashes the downstream extract parsers
+  kw_stmt <- tolower(sub("^\\s*([A-Za-z_]+).*$", "\\1", statements))
+  math_stmt <- kw_stmt %in% c("formula", "equation", "update")
+  no_eq <- math_stmt & !grepl("=", gsub("#[^#]*#", "", statements), fixed = TRUE)
+  if (any(no_eq)) {
+    bad_stmt <- trimws(statements[no_eq][1])
+    stmt_kw <- tools::toTitleCase(kw_stmt[no_eq][1])
+    .cli_action(model_err$stmt_missing_equals,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
   .chk_tab_defaults(statements, call = call)
   .chk_tab_qualifiers(statements, call = call)
   .chk_raw_reads(statements, call = call)

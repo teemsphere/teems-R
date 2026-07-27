@@ -77,6 +77,16 @@
     x Default statements are not supported by the teems pipeline: "Variable (default=change)"
     i Declare the qualifier on each affected statement instead; the positional Default semantics (GEMPACK manual 10.19) cannot be carried through model preparation.
 
+# math statements without = abort
+
+    x Formula statement without `=`: "Formula NOEQ 1"
+    i Either the statement is malformed or its leading token is an unrecognized keyword that was read as an implicit Formula continuation.
+
+---
+
+    x Formula statement without `=`: "Formula Frobnicate all the things"
+    i Either the statement is malformed or its leading token is an unrecognized keyword that was read as an implicit Formula continuation.
+
 # Formula & Equation aborts
 
     x `Formula & Equation` statements are not supported: the expansion needs a levels equation (GEMPACK manual 10.9.1).

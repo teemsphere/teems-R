@@ -128,6 +128,13 @@ build_model_err <- function() {
       "Linearize the equation and set the base value with
       {.code Formula (initial)}."
     ),
+    # test-chk_tab_preflight.R: "math statements without = abort"
+    stmt_missing_equals = c(
+      "{stmt_kw} statement without {.code =}: {.val {bad_stmt}}",
+      "Either the statement is malformed or its leading token is an
+      unrecognized keyword that was read as an implicit {stmt_kw}
+      continuation."
+    ),
     read_terminal = "Read from terminal is not supported; read from a
     file instead: {.val {bad_stmt}}",
     read_no_header = "{cli::qty(bad_reads)}Read{?s} without a header
