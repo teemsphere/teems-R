@@ -295,6 +295,29 @@ probable fixes.
 | C8 | Square-but-singular closure (wrong partition) | route to probe | `ems_solve(pre_probe=)` named abort + `ems_probe()` guidance; cls_err count/name failures should point to pre_probe when counts pass | probe infra DONE (4d209f2) | test-ems_probe.R |
 | C9 | **DONE 2026-07-27** — closure_read/shocks_read fail-fast sweep: 6 print-and-continue warts fixed (the element/set misses left `check` true and marked WRONG elements exogenous off a zeroed set id), unchecked closure fopen, shocks fopen fall-through, scalar-shock silent drop, strtok-NULL guards (malformed entry / wrong arg count / fewer values than elements). All error paths now `printf` + `MPI_Abort(1)` — the prior `return -1` from the rank-0-only block would deadlock other ranks at the closure broadcast. New wordings carry `(closure file)`/`(shock file)` markers; `solver_error_map` gained a `closure file` row above the data-class `cannot open` | solver | log-map (`closure` class) | `.audit/closure-test-kit` 10 legs (rc=1 + named), verify.sh 14/14, warnings 102 |
 
+## M — Mapping statements (manual 11.9; teems-solver M1-M3 @ f3f3a83)
+
+All rows DONE 2026-07-28 (M4). Solver ground truth =
+`.audit/mapping-test-kit` (35 legs / 59 checks); R side in
+`tab_mapping_parse.R`, `chk_tab_preflight.R`, `map_data_finalize.R`
+(test-tab_mapping.R + 3 corpus fixtures).
+
+| ID | Invariant | Layer | R msg | Test source |
+|---|---|---|---|---|
+| M1 | `Mapping [(onto)] NAME from S1 to S2` form | both | `model_err$map_malformed` | kit decl legs; corpus `mapping_malformed` |
+| M2 | S1/S2 declared sets (case-canonicalized) | both | `model_err$map_undeclared_set` | kit `undeclset`; corpus `mapping_undeclared_set` |
+| M3 | Mapping names join the 11.2.1 namespace (clash + dup + reserved + length) | both | `model_err$name_map_clash`, `name_dup` | kit `nameclash` |
+| M4 | Every mapping has a `Read (by_elements)`; by_elements targets a mapping; mappings never plain/integer-read | both | `model_err$map_read_missing`, `byele_nonmap`, `map_read_plain` | kit `novalues`/`intread`; corpus `mapping_no_read` |
+| M5 | by_elements header present in the input data (character) | R (solver: wrong-header fatal) | `deploy_err$map_data_missing` | test-tab_mapping.R |
+| M6 | String count == domain size | both | `deploy_err$map_data_count` | kit `badele` twin |
+| M7 | Values are codomain elements | both | `deploy_err$map_data_ele` | kit `badele` |
+| M8 | **Aggregation compose** (user decision 2026-07-28): compose when every source element of an aggregated domain element lands on the same aggregated codomain element, abort naming the offender when split | R only (solver never sees the pre-aggregation data) | `deploy_err$map_agg_split` | test-tab_mapping.R |
+| M9 | `(onto)` coverage re-checked on the aggregated sets | both (R first) | `deploy_err$map_onto` | kit `notonto` |
+| M10 | Mapped equations require `-matsol 0` (LU) until bordered border-marking learns mapped refs | both (R aborts pre-run via `metadata$mapped_equations`) | `solve_err$map_matsol` | kit `mapeq-matsol` |
+| M11 | MAP(i) index calls and `sum{i,S: MAP(i)=rhs, ...}` conditions pass through the R parsers unmangled (comp2 keeps the full RHS past the condition `=`) | R | — (pass-through; `tab_maths_parse.R` first-`=` split) | test-tab_mapping.R |
+| M12 | Rejected forms (updates/assertions/writes, formula-assigned, composition, leadlag, subset-ranged, non-mapping `:` conditions, quantifier conditions, backsolve-through-mapping) | solver (log-map) | — | kit fatal legs |
+| M13 | Mapping domain/codomain built by an INTERSECT whose operands disagree about an element's source composition (the `origin_conflict` stamp from `.eval_set_expr`) — the compose is the one origin-row consumer, so the ambiguity is fatal at the point of use. NOTE 2026-07-29: this replaced the f0c710b abort-inside-`&` (which regressed the IF-rewrite's synthetic `COMM & MARG` sets under aggregation); INTERSECT itself is now permissive element-level per manual 10.1.1/11.7.3, keeping the accumulator's rows and order | R only | `deploy_err$map_origin_conflict` | test-set_expr.R (stamp), test-tab_mapping.R (guard) |
+
 ## X — CLI / solver configuration
 
 `main.c:723-1351` CLI validation is unreachable from teems-R (R

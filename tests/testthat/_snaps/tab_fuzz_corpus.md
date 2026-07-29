@@ -8,6 +8,9 @@
       default_positional.tab: x Default statements are not supported by the teems pipeline: "Coefficient (default=parameter)" i Declare the qualifier on each affected statement instead; the positional Default semantics (GEMPACK manual 10.19) cannot be carried through model preparation.
       formula_and_equation.tab: x `Formula & Equation` statements are not supported: the expansion needs a levels equation (GEMPACK manual 10.9.1). i Linearize the equation and set the base value with `Formula (initial)`.
       formula_no_equals.tab: x Formula statement without `=`: "Formula NOEQ 1" i Either the statement is malformed or its leading token is an unrecognized keyword that was read as an implicit Formula continuation.
+      mapping_malformed.tab: x Malformed Mapping statement: "Mapping REGTOBLOC of REG onto BLOC" i Expected `Mapping [(onto)] <name> from <set> to <set>;` (GEMPACK manual 11.9.1).
+      mapping_no_read.tab: x Mapping "regtobloc" has no `Read (by_elements)` statement assigning its values.
+      mapping_undeclared_set.tab: x Set "BLOC" in the Mapping declaration of "REGTOBLOC" is not declared in the model.
       name_c_prefix.tab: x The `c_` prefix is reserved for change variables; rename coefficient "c_foo".
       name_coef_set_clash.tab: x Name declared as both a coefficient and a set: "reg". i TABLO names are case-insensitive and must be unique (GEMPACK manual 11.2.1).
       name_coef_var_clash.tab: x Name declared as both a coefficient and a variable: "pop". i TABLO names are case-insensitive and must be unique (GEMPACK manual 11.2.1).

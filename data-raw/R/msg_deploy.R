@@ -16,18 +16,56 @@ build_deploy_err <- function() {
     invalid_plus = "Set operator {.code +} requires disjoint sets; overlapping elements: {.field {d}}.",
     # test-ems_model.R: "set expression operator validity"
     invalid_minus = "Set operator {.code -} may only remove elements that are present; missing: {.field {d}}.",
-    # test-set_expr.R: "set intersection aborts on disagreeing origin coverage"
-    invalid_intersect = c(
-      "Set operator {.code &} in the definition of {.field {owner}}:
-      {cli::qty(d)}element{?s} {.field {d}} {cli::qty(d)}{?is/are}
-      carried with different origin coverage by the two operands.",
-      "The operands aggregate different source elements into
-      {cli::qty(d)}{?this/these} shared element{?s}, so the
-      intersection is ambiguous; align the aggregation mappings that
-      build both sets."
+    # test-tab_mapping.R: "a mapping over a conflicted intersection set aborts"
+    # INTERSECT itself is permissive (element-level, manual 10.1.1);
+    # the origin_conflict stamp set by .eval_set_expr aborts here, at
+    # the one consumer that reads origin rows
+    map_origin_conflict = c(
+      "The {loc} set {.field {set_name}} of mapping {.val {map_name}}
+      is built by an INTERSECT whose operands disagree about the
+      source composition of {cli::qty(conflict)}element{?s}
+      {.val {conflict}}.",
+      "The by_elements composition depends on which source elements
+      aggregate into {cli::qty(conflict)}{?this/these} element{?s};
+      align the aggregation mappings (or the set definitions) so both
+      operands agree."
     ),
     # test-ems_deploy.R: "ems_deploy errors when aggregated inputs are incomplete"
     agg_missing_tup = "{n} tuple{?s} in the provided input file for {.val {nme}} were missing: {.field {missing}}.",
+    # Mapping data build (GEMPACK manual 11.9.3); mirrors the solver
+    # by_elements read fatals ahead of the deploy round-trip
+    # test-ems_deploy.R: "mapping header missing from the data aborts"
+    map_data_missing = c(
+      "No header {.val {header}} found in the input data for mapping
+      {.val {map_name}}.",
+      "{.code Read (by_elements)} data must be supplied as a character
+      header in the {.fun teems::ems_data} inputs."
+    ),
+    # test-ems_deploy.R: "mapping header count mismatch aborts"
+    map_data_count = "Mapping {.val {map_name}} header {.val {header}}
+    holds {.val {n_vals}} value{?s}; the domain set {.field {dom}} has
+    {.val {n_dom}} element{?s} in the input data.",
+    # test-ems_deploy.R: "mapping values outside the codomain abort"
+    map_data_ele = "{cli::qty(bad_vals)}Mapping {.val {map_name}}
+    value{?s} {.val {bad_vals}} {?is/are} not {?an element/elements}
+    of the codomain set {.field {cod}}.",
+    # test-ems_deploy.R: "split mapping under aggregation aborts"
+    map_agg_split = c(
+      "Aggregated {.field {dom}} element {.val {agg_ele}} merges
+      source elements with different {.field {cod}} values:
+      {.field {split_detail}}.",
+      "Mapping {.val {map_name}} cannot be composed under this
+      aggregation; revise the {.field {dom}} aggregation or the
+      {.val {header}} data."
+    ),
+    # test-ems_deploy.R: "onto violation after aggregation aborts"
+    map_onto = c(
+      "{cli::qty(missing_cod)}Codomain element{?s} {.val {missing_cod}}
+      of the {.code (onto)} mapping {.val {map_name}} {?is/are} not
+      covered after aggregation.",
+      "Every {.field {cod}} element must be the value of at least one
+      {.field {dom}} element (GEMPACK manual 11.9.1)."
+    ),
     # test-ems_deploy.R: "ems_deploy errors when shock_file and shock are both provided"
     shk_file_shocks = c(
       "No additional shocks are accepted if a shock file is provided."

@@ -71,6 +71,21 @@
     call = call,
     model_call = model_call
   )
+  .data <- c(.data, .finalize_map_data(
+    model = v$model,
+    sets = sets,
+    set_raw = attr(args_list$.data, "set_raw"),
+    call = call,
+    data_call = data_call
+  ))
+  # mapped equations restrict the solver to the LU matrix method
+  # (validated at solve time from the deploy metadata)
+  map_names <- v$model$name[v$model$type == "Mapping"]
+  metadata$mapped_equations <- length(map_names) > 0L &&
+    any(grepl(
+      paste0("\\b(", paste(tolower(map_names), collapse = "|"), ")\\s*\\("),
+      tolower(v$model$tab[v$model$type == "Equation"])
+    ))
   tab <- .finalize_tab(model = v$model)
   cmf <- .finalize_cmf(
     model = v$model,

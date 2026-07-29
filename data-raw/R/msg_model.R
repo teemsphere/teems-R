@@ -141,6 +141,37 @@ build_model_err <- function() {
     {?is/are} not supported (GEMPACK manual 11.11.8): {.val {bad_reads}}",
     read_undeclared = "{cli::qty(bad_targets)}Read target{?s}
     {.val {bad_targets}} not declared as {?a coefficient/coefficients}.",
+    # Mapping statements (GEMPACK manual 11.9); solver counterparts in
+    # tab_parse.c mapping machinery (teems-solver M1-M3)
+    # test-chk_tab_preflight.R: "malformed mapping declarations abort"
+    map_malformed = c(
+      "Malformed {.field Mapping} statement: {.val {bad_stmt}}",
+      "Expected {.code Mapping [(onto)] <name> from <set> to <set>;}
+      (GEMPACK manual 11.9.1)."
+    ),
+    # test-chk_tab_preflight.R: "mapping with undeclared sets aborts"
+    map_undeclared_set = "{cli::qty(bad_sets)}Set{?s} {.val {bad_sets}}
+    in the {.field Mapping} declaration of {.val {map_name}}
+    {?is/are} not declared in the model.",
+    # test-chk_tab_preflight.R: "mapping name clashes abort"
+    name_map_clash = c(
+      "{cli::qty(clash)}Name{?s} declared as both a mapping and a
+      {clash_kind}: {.val {clash}}.",
+      "TABLO names are case-insensitive and must be unique (GEMPACK
+      manual 11.2.1)."
+    ),
+    # test-chk_tab_preflight.R: "by_elements read of a non-mapping aborts"
+    byele_nonmap = "{cli::qty(bad_targets)}{.code Read (by_elements)}
+    target{?s} {.val {bad_targets}} {?is/are} not {?a declared
+    mapping/declared mappings} (GEMPACK manual 11.9.3).",
+    # test-chk_tab_preflight.R: "plain read of a mapping aborts"
+    map_read_plain = "{cli::qty(bad_targets)}Mapping{?s}
+    {.val {bad_targets}} must be read with the
+    {.code (by_elements)} qualifier (GEMPACK manual 11.9.3).",
+    # test-chk_tab_preflight.R: "mapping without a read aborts"
+    map_read_missing = "{cli::qty(bad_maps)}Mapping{?s}
+    {.val {bad_maps}} {?has/have} no {.code Read (by_elements)}
+    statement assigning {?its/their} values.",
     # test-ems_model.R: "ems_model rejects invalid variable names in omit"
     invalid_omit = "{.val {invalid_var}} designated for omission not found in the model.",
     # test-ems_model.R: "ems_model rejects invalid variable names in backsolve"

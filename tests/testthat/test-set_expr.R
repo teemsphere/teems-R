@@ -82,10 +82,13 @@ test_that("set intersection is element-level with agreeing origins", {
   expect_identical(out$origin, "o1")
 })
 
-test_that("set intersection aborts on disagreeing origin coverage", {
+test_that("set intersection keeps shared elements and stamps disagreeing origins", {
   # both operands contain element x, but via different origins: the
-  # old row-level fintersect silently DROPPED x; ambiguous under
-  # aggregation, so it now aborts naming the element
+  # old row-level fintersect silently DROPPED x, and an intermediate
+  # revision aborted. Element-level semantics (manual 10.1.1) keep x
+  # with the accumulator's rows; the disagreement is recorded as the
+  # origin_conflict stamp for consumers that read origin rows
+  # (.finalize_map_data)
   mappings <- list(
     A = data.table::data.table(
       origin = "o1", mapping = "x",
@@ -96,7 +99,33 @@ test_that("set intersection aborts on disagreeing origin coverage", {
       key = c("origin", "mapping")
     )
   )
-  expect_snapshot_error(
-    .eval_set_expr(d = "= A & B", mappings = mappings, owner = "C", call = NULL)
+  out <- .eval_set_expr(d = "= A & B", mappings = mappings, owner = "C", call = NULL)
+  expect_identical(unique(out$mapping), "x")
+  expect_identical(out$origin, "o1")
+  expect_identical(attr(out, "origin_conflict"), "x")
+})
+
+test_that("the origin_conflict stamp propagates through derived sets", {
+  mappings <- list(
+    A = data.table::data.table(
+      origin = "o1", mapping = "x",
+      key = c("origin", "mapping")
+    ),
+    B = data.table::data.table(
+      origin = "o2", mapping = "x",
+      key = c("origin", "mapping")
+    ),
+    E = data.table::data.table(
+      origin = "o9", mapping = "y",
+      key = c("origin", "mapping")
+    )
   )
+  tainted <- .eval_set_expr(d = "= A & B", mappings = mappings, owner = "C", call = NULL)
+  mappings$C <- tainted
+  # the conflicted element survives into the union: stamp carries
+  derived <- .eval_set_expr(d = "= C + E", mappings = mappings, owner = "D", call = NULL)
+  expect_identical(attr(derived, "origin_conflict"), "x")
+  # the conflicted element is subtracted away: stamp trimmed off
+  cleaned <- .eval_set_expr(d = "= C - B", mappings = mappings, owner = "F", call = NULL)
+  expect_null(attr(cleaned, "origin_conflict"))
 })

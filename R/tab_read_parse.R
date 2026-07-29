@@ -4,6 +4,10 @@
                             call) {
 
   reads <- extract[tolower(extract$type) %in% "read", ]
+  # (by_elements) assigns mapping values (GEMPACK manual 11.9.3); any
+  # other parenthesized form is a partial (indexed) read
+  byele <- grepl("^\\s*\\(\\s*by_elements\\s*\\)", reads$remainder, ignore.case = TRUE)
+  reads$remainder <- sub("^\\s*\\(\\s*by_elements\\s*\\)\\s*", "", reads$remainder, ignore.case = TRUE)
   if (any(grepl("\\(", reads$remainder))) {
     .cli_action(model_err$invalid_read,
       action = "abort",
@@ -38,7 +42,7 @@
   reads$file <- trimws(reads$remainder)
   reads$remainder <- NULL
   reads$label <- NA
-  reads$qualifier_list <- NA
+  reads$qualifier_list <- ifelse(byele, "(by_elements)", NA_character_)
   reads$ls_upper_idx <- NA
   reads$ls_mixed_idx <- NA
   reads$definition <- NA

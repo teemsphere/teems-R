@@ -124,8 +124,16 @@
   })
 
 
-  maths$comp1 <- trimws(purrr::map_chr(purrr::map(maths$definition, strsplit, split = "="), purrr::pluck, 1, 1))
-  maths$comp2 <- trimws(purrr::map_chr(purrr::map(maths$definition, strsplit, split = "="), purrr::pluck, 1, 2))
+  # split on the FIRST "=" only: mapping-equality sum conditions
+  # (sum{r,REG: MAP(r)=b, ...}, manual 11.4.11) put "=" inside the RHS
+  def_split <- strsplit(maths$definition, split = "=")
+  maths$comp1 <- trimws(purrr::map_chr(def_split, 1))
+  maths$comp2 <- trimws(purrr::map_chr(def_split, function(s) {
+    if (length(s) < 2L) {
+      return(NA_character_)
+    }
+    paste(s[-1], collapse = "=")
+  }))
 
   maths$ls_upper_idx <- NA
   maths$ls_mixed_idx <- NA

@@ -71,6 +71,14 @@
     c(.o_n_timestep_header(), .o_timestep_header())
   )
 
+  # (by_elements) mapping headers are character data validated against
+  # the raw input headers at the data build (.finalize_map_data), not
+  # against the aggregated coefficient tables
+  byele <- a$model$type == "Read" &
+    !is.na(a$model$qualifier_list) &
+    grepl("by_elements", a$model$qualifier_list, ignore.case = TRUE)
+  non_int_req <- setdiff(non_int_req, a$model$header[byele])
+
   model_headers <- attr(a$model, "header")
   if (!is.null(model_headers)) {
     non_int_req <- setdiff(non_int_req, model_headers)

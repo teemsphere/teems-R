@@ -69,10 +69,17 @@
 #' resolved yet (the caller's fixed-point loop retries). Validity per
 #' the manual, at ELEMENT level throughout: '+' operands must be
 #' disjoint; '-' may only remove elements that are present; '&' keeps
-#' the accumulator's rows and aborts when a shared element's origin
-#' coverage disagrees between the operands (ambiguous aggregation).
+#' the accumulator's rows and order (manual 10.1.1: "elements are
+#' ordered as in <set1>"). A shared element whose origin coverage
+#' disagrees between '&' operands is recorded on the result as the
+#' "origin_conflict" attribute rather than aborting: origins are teems
+#' aggregation bookkeeping with no GEMPACK counterpart and are
+#' meaningless for loop domains (e.g. the IF-rewrite's synthetic
+#' intersections); the consumers that do read origin rows (the
+#' by_elements mapping compose, .finalize_map_data) abort on the stamp
+#' at the point of use.
 #'
-#' @importFrom data.table data.table funion fsetdiff fintersect
+#' @importFrom data.table data.table funion fsetdiff fintersect setattr
 #'
 #' @keywords internal
 #' @noRd
@@ -83,6 +90,7 @@
   toks <- .set_expr_tokens(d)
   pos <- 1L
   ready <- TRUE
+  conflicts <- character(0)
 
   peek <- function() {
     if (pos <= length(toks)) toks[pos] else NA_character_
@@ -109,7 +117,13 @@
       ))
     }
     v <- mappings[[tk]]
-    if (is.null(v)) ready <<- FALSE
+    if (is.null(v)) {
+      ready <<- FALSE
+    } else {
+      # a stamped operand taints the expression; the stamp is trimmed
+      # to the surviving elements at the end
+      conflicts <<- unique(c(conflicts, attr(v, "origin_conflict")))
+    }
     v
   }
 
@@ -155,13 +169,12 @@
       } else if (op %=% "^") {
         acc <- data.table::funion(acc, rhs)
       } else {
-        # element-level intersection (manual 10.1.1.1): keep the
-        # accumulator's rows for every element present in both
-        # operands. A shared element whose origin coverage DISAGREES
-        # between the operands is ambiguous under aggregation (whose
-        # origins feed the data build?) -- abort rather than prefer
-        # one side; the old row-level fintersect dropped such
-        # elements from the result outright.
+        # element-level intersection (manual 10.1.1/11.7.3): the
+        # elements in both operands, keeping the accumulator's rows
+        # and order ("elements are ordered as in <set1>"). Disagreeing
+        # origin coverage for a shared element is recorded, not fatal:
+        # only consumers that read origin rows can be harmed and they
+        # check the stamp at the point of use
         shared <- intersect(unique(acc$mapping), unique(rhs$mapping))
         acc_sh <- acc[acc$mapping %in% shared, ]
         if (length(shared) %!=% 0L) {
@@ -169,13 +182,7 @@
           acc_or <- lapply(split(acc_sh$origin, acc_sh$mapping), unique)
           rhs_or <- lapply(split(rhs_sh$origin, rhs_sh$mapping), unique)
           agree <- mapply(setequal, acc_or, rhs_or[names(acc_or)])
-          if (!all(agree)) {
-            d <- names(acc_or)[!agree]
-            .cli_action(deploy_err$invalid_intersect,
-              action = c("abort", "inform"),
-              call = call
-            )
-          }
+          conflicts <<- unique(c(conflicts, names(acc_or)[!agree]))
         }
         acc <- acc_sh
       }
@@ -186,6 +193,16 @@
   out <- expr()
   if (!ready) {
     return(NULL)
+  }
+  if (!is.null(out)) {
+    # trim to surviving elements; data.table subsetting copies custom
+    # attributes through, so a stale operand stamp must be cleared
+    conflicts <- intersect(conflicts, unique(out$mapping))
+    data.table::setattr(
+      out,
+      "origin_conflict",
+      if (length(conflicts) > 0L) conflicts else NULL
+    )
   }
   out
 }

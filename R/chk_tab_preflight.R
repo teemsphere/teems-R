@@ -83,7 +83,13 @@
       call = call
     )
   }
-  if (any(grepl("\\(", reads))) {
+  # (by_elements) mapping reads are legal (manual 11.9.3); any other
+  # parenthesized form is a partial (indexed) read
+  reads_nq <- sub("^(\\s*read)\\s*\\(\\s*by_elements\\s*\\)", "\\1",
+    reads,
+    ignore.case = TRUE
+  )
+  if (any(grepl("\\(", reads_nq))) {
     .cli_action(model_err$invalid_read,
       action = "abort",
       call = call
@@ -119,10 +125,12 @@
   coef <- decl_name("coefficient")
   var <- decl_name("variable")
   set <- decl_name("set")
+  map <- decl_name("mapping")
 
   coef_l <- tolower(coef)
   var_l <- tolower(var)
   set_l <- tolower(set)
+  map_l <- tolower(map)
 
   clash <- intersect(coef_l, var_l)
   if (length(clash) > 0L) {
@@ -146,8 +154,28 @@
     )
   }
 
-  for (kind in c("coefficient", "variable")) {
-    n <- if (kind == "coefficient") coef_l else var_l
+  for (kind in c("coefficient", "variable", "set")) {
+    other <- switch(kind,
+      coefficient = coef_l,
+      variable = var_l,
+      set = set_l
+    )
+    clash <- intersect(map_l, other)
+    if (length(clash) > 0L) {
+      clash_kind <- kind
+      .cli_action(model_err$name_map_clash,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+  }
+
+  for (kind in c("coefficient", "variable", "mapping")) {
+    n <- switch(kind,
+      coefficient = coef_l,
+      variable = var_l,
+      mapping = map_l
+    )
     if (anyDuplicated(n) > 0L) {
       dup_names <- unique(n[duplicated(n)])
       dup_type <- kind
@@ -158,7 +186,7 @@
     }
   }
 
-  res_names <- unique(c(coef_l, var_l, set_l)[c(coef_l, var_l, set_l) %in% tab_reserved_words])
+  res_names <- unique(c(coef_l, var_l, set_l, map_l)[c(coef_l, var_l, set_l, map_l) %in% tab_reserved_words])
   if (length(res_names) > 0L) {
     .cli_action(model_err$name_reserved,
       action = "abort",
@@ -188,7 +216,7 @@
   }
 
   max_len <- 255L
-  all_names <- c(coef, var, set)
+  all_names <- c(coef, var, set, map)
   long_names <- unique(all_names[nchar(all_names) > max_len])
   if (length(long_names) > 0L) {
     long_names <- paste0(substr(long_names, 1, 20), "...")
@@ -363,12 +391,48 @@
                            call) {
   typ <- tolower(model$type)
   reads <- which(typ == "read")
+  map_names <- tolower(model$name[typ == "mapping"])
   if (length(reads) == 0L) {
+    if (length(map_names) > 0L) {
+      # mirror of the solver end-of-preliminary-pass fatal: a declared
+      # mapping with no by_elements read has no values
+      bad_maps <- unique(map_names)
+      .cli_action(model_err$map_read_missing,
+        action = "abort",
+        call = call
+      )
+    }
     return(invisible(NULL))
   }
   declared <- tolower(model$name[typ %in% c("coefficient", "variable")])
+  byele <- !is.na(model$qualifier_list[reads]) &
+    grepl("by_elements", model$qualifier_list[reads], ignore.case = TRUE)
+  tgt_all <- tolower(model$name[reads])
+
+  bad_targets <- unique(tgt_all[byele & !tgt_all %in% map_names])
+  if (length(bad_targets) > 0L) {
+    .cli_action(model_err$byele_nonmap,
+      action = "abort",
+      call = call
+    )
+  }
+  bad_targets <- unique(tgt_all[!byele & tgt_all %in% map_names])
+  if (length(bad_targets) > 0L) {
+    .cli_action(model_err$map_read_plain,
+      action = "abort",
+      call = call
+    )
+  }
+  bad_maps <- unique(map_names[!map_names %in% tgt_all[byele]])
+  if (length(bad_maps) > 0L) {
+    .cli_action(model_err$map_read_missing,
+      action = "abort",
+      call = call
+    )
+  }
+
   # PostSim reads get their own target diagnosis (.chk_tab_postsim)
-  ord_reads <- reads[!model$postsim[reads]]
+  ord_reads <- reads[!model$postsim[reads] & !byele]
   tgt <- tolower(model$name[ord_reads])
   undecl <- !is.na(tgt) & nzchar(tgt) & !tgt %in% declared
   if (any(undecl)) {

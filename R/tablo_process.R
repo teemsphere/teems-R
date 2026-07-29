@@ -160,6 +160,12 @@
     call = call
   )
 
+  mapping_extract <- .parse_tab_mapping(
+    extract = extract$model,
+    set_names = extract$set$name,
+    call = call
+  )
+
   tab <- paste0(tab, ";")
 
   tab <- tibble::tibble(
@@ -167,7 +173,7 @@
     row_id = seq_along(tab)
   )
 
-  tab_parsed <- rbind(var_extract, coeff_extract, extract$set, math_extract, read_extract)
+  tab_parsed <- rbind(var_extract, coeff_extract, extract$set, math_extract, read_extract, mapping_extract)
   tab <- tibble::as_tibble(merge(tab_parsed, tab, by = "row_id", all = TRUE))
   tab <- tab[order(tab$row_id), ]
 
