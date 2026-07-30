@@ -28,13 +28,8 @@
 #' @noRd
 .chk_raw_statements <- function(statements,
                                 call) {
-  fe <- grepl("^\\s*formula\\s*&\\s*equation\\b", tolower(statements))
-  if (any(fe)) {
-    .cli_action(model_err$formula_equation,
-      action = c("abort", "inform"),
-      call = call
-    )
-  }
+  # Formula&Equation is expanded into its two 10.9.1 halves by
+  # .check_statements before this runs (C0 levels support)
   ps_begin <- sum(grepl("^\\s*postsim\\s*\\(\\s*begin", statements, ignore.case = TRUE))
   ps_end <- sum(grepl("^\\s*postsim\\s*\\(\\s*end", statements, ignore.case = TRUE))
   if (ps_begin != ps_end) {
@@ -222,6 +217,21 @@
     long_names <- paste0(substr(long_names, 1, 20), "...")
     .cli_action(model_err$name_too_long,
       action = "abort",
+      call = call
+    )
+  }
+
+  # C0 levels: a levels variable named p_*/c_* collides with the
+  # linear-variable reference prefixes -- the solver's equation
+  # scanners cannot carry it (solver fatal mirrored here; the
+  # naming-normalization follow-on lifts this)
+  lev <- typ == "variable" & !is.na(model$qualifier_list) &
+    grepl("\\blevels\\b", model$qualifier_list, ignore.case = TRUE)
+  bad_lev <- lev & grepl("^[pc]_", tolower(model$name))
+  if (any(bad_lev)) {
+    bad_names <- unique(model$name[bad_lev])
+    .cli_action(model_err$levels_prefix_name,
+      action = c("abort", "inform"),
       call = call
     )
   }

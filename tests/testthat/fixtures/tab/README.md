@@ -30,7 +30,7 @@ input, not just clean strings.
 | read_no_header | U3 | headerless Read |
 | read_terminal | U2 | Read from terminal |
 | read_undeclared | U4 | Read into undeclared name |
-| formula_and_equation | U1 | `Formula & Equation` statement |
+| formula_and_equation | U1 | malformed `Formula & Equation` (no `=`; well-formed ones expand since C0) |
 | postsim_scope | PS2 | ordinary statement references PS name |
 | postsim_unbalanced | PS (markers) | lone `PostSim (Begin)` |
 | stmt_unknown_keyword | statement form | unknown keyword folded as implicit continuation |

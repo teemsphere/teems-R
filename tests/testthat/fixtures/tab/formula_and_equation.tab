@@ -4,4 +4,4 @@ Coefficient (all,r,REG) PPL(r) # population #;
 Read PPL from file GTAPDATA header "POP";
 Variable (all,r,REG) pop(r) # population growth #;
 Equation E_pop # identity # (all,r,REG) pop(r) = pop(r);
-Formula & Equation E_ppl # needs a levels equation # (all,r,REG) PPL(r) = 1;
+Formula & Equation E_ppl # malformed: no equals # (all,r,REG) PPL(r);

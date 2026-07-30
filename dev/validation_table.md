@@ -236,11 +236,12 @@ rows extend the same scan. Kit: `legacyq-test-kit`.
 
 | ID | Invariant | Trigger example | Solver msg (loc) | Layer | R msg | Test source |
 |---|---|---|---|---|---|---|
-| U1 | `Formula & Equation` unsupported (needs levels equation, 10.9.1) | | formula.c:1646 | both | `model_err$formula_equation` | kit `feq` |
+| U1 | `Formula & Equation` SUPPORTED since C0 (split into 10.9.1 halves R-side, linearized solver-side); malformed forms abort | | levels.c (tab_levels_transform) | both | `model_err$formula_equation` (malformed only) | test-tab_levels.R |
 | U2 | `Read ... from terminal` unsupported | | tab_parse.c:510 | both | `model_err$read_terminal` | new snapshot |
 | U3 | Every Read must carry a header | `Read (IfHeaderExists) ELX from file GTAPDATA;` | tab_parse.c:537/883 | both | `model_err$read_no_header` | kit `nohdr` |
-| U4 | Read target must be a declared coefficient/parameter | | tab_parse.c:861/1259 | both | `model_err$read_undeclared` | new snapshot |
+| U4 | Read target must be a declared coefficient/parameter OR a levels variable (reads of a levels name fill the solver-side pair coefficient since C0) | | tab_parse.c:861/1259 | both | `model_err$read_undeclared` | new snapshot |
 | U5 | `Omit`/`Substitute` must not reach the solver (resolved by `ems_model()`) | | tab_parse.c:4556/4564 | R (by construction) | existing condense path | test-ems_model.R |
+| U6 | Levels variable names must not start `p_`/`c_` (the solver's equation scanners key on the reference prefixes; naming-normalization follow-on lifts this) | | levels.c (lv_scan fatal) | both | `model_err$levels_prefix_name` | test-tab_levels.R |
 
 ## E — Equations / backsolve (manual 14.1.x)
 

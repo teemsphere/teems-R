@@ -6,7 +6,7 @@
       bound_dup.tab: x Duplicate lower bound in declaration: "Coefficient (ge 0, ge 1) (all,r,REG) BNDP(r) # duplicate lower bound #" i One lower (`ge`/`gt`) and one upper (`le`/`lt`) bound are allowed per declaration (GEMPACK manual 10.19.1).
       default_eq_levels.tab: x Equation `(default=levels)` is not supported; the solver handles linearized equations only (GEMPACK manual 10.19): "Equation (default=levels)"
       default_positional.tab: x Default statements are not supported by the teems pipeline: "Coefficient (default=parameter)" i Declare the qualifier on each affected statement instead; the positional Default semantics (GEMPACK manual 10.19) cannot be carried through model preparation.
-      formula_and_equation.tab: x `Formula & Equation` statements are not supported: the expansion needs a levels equation (GEMPACK manual 10.9.1). i Linearize the equation and set the base value with `Formula (initial)`.
+      formula_and_equation.tab: x Malformed `Formula & Equation` statement: expected `Formula [(initial)] & Equation [(levels)] name [quantifiers] lhs = rhs` (GEMPACK manual 10.9.1): "Formula & Equation E_ppl # malformed: no equals # (all,r,REG) PPL(r)"
       formula_no_equals.tab: x Formula statement without `=`: "Formula NOEQ 1" i Either the statement is malformed or its leading token is an unrecognized keyword that was read as an implicit Formula continuation.
       mapping_malformed.tab: x Malformed Mapping statement: "Mapping REGTOBLOC of REG onto BLOC" i Expected `Mapping [(onto)] <name> from <set> to <set>;` (GEMPACK manual 11.9.1).
       mapping_no_read.tab: x Mapping "regtobloc" has no `Read (by_elements)` statement assigning its values.

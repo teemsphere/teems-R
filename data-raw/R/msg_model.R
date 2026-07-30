@@ -121,12 +121,17 @@ build_model_err <- function() {
     postsim_lhs_ord = "{cli::qty(bad_lhs)}PostSim Formula{?s}
     assign{?s/} ordinary coefficient{?s} {.val {bad_lhs}}; the LHS must
     be a PostSim coefficient (GEMPACK manual 12.2.2).",
-    # test-chk_tab_preflight.R: "Formula & Equation aborts"
-    formula_equation = c(
-      "{.code Formula & Equation} statements are not supported: the
-      expansion needs a levels equation (GEMPACK manual 10.9.1).",
-      "Linearize the equation and set the base value with
-      {.code Formula (initial)}."
+    # test-tab_levels.R: "malformed Formula & Equation aborts"
+    formula_equation = "Malformed {.code Formula & Equation} statement:
+    expected {.code Formula [(initial)] & Equation [(levels)] name
+    [quantifiers] lhs = rhs} (GEMPACK manual 10.9.1): {.val {bad_stmt}}",
+    # test-tab_levels.R: "p_/c_-leading levels variable name aborts"
+    levels_prefix_name = c(
+      "{cli::qty(bad_names)}Levels variable{?s} {.val {bad_names}}
+      start{?s/} with {.code p_}/{.code c_}, colliding with the
+      linear-variable reference prefixes; the solver cannot carry such
+      names yet.",
+      "Rename the {cli::qty(bad_names)}variable{?s}."
     ),
     # test-chk_tab_preflight.R: "math statements without = abort"
     stmt_missing_equals = c(

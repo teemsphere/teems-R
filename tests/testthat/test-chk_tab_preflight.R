@@ -133,11 +133,8 @@ test_that("math statements without = abort", {
   expect_preflight_error("Frobnicate all the things;")
 })
 
-test_that("Formula & Equation aborts", {
-  expect_preflight_error(
-    "Coefficient (all,r,REG) FXX(r);\nFormula & Equation E_FXX (all,r,REG) FXX(r) = SAVE(r);"
-  )
-})
+# Formula & Equation is supported since C0 (split into its 10.9.1
+# halves by .check_statements) -- see test-tab_levels.R
 
 # reads (GEMPACK manual 10.6/11.11.8)
 

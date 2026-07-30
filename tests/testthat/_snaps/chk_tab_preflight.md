@@ -128,11 +128,6 @@
     x Formula statement without `=`: "Formula Frobnicate all the things"
     i Either the statement is malformed or its leading token is an unrecognized keyword that was read as an implicit Formula continuation.
 
-# Formula & Equation aborts
-
-    x `Formula & Equation` statements are not supported: the expansion needs a levels equation (GEMPACK manual 10.9.1).
-    i Linearize the equation and set the base value with `Formula (initial)`.
-
 # headerless reads abort
 
     x Read without a header is not supported (GEMPACK manual 11.11.8): "Read ELX from file GTAPDATA"

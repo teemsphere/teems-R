@@ -1038,9 +1038,11 @@
 
   parts <- c(
     "Equation",
+    # qualifiers precede the name in GEMPACK (manual 10.9); always NA
+    # for the linear equations this serializer sees today
+    if (!is.na(entry$qualifier_list)) entry$qualifier_list,
     entry$name,
     if (!is.na(entry$label)) paste0("# ", entry$label, " #"),
-    if (!is.na(entry$qualifier_list)) entry$qualifier_list,
     quant_text,
     paste(
       .serialize_linear(entry$lhs),
