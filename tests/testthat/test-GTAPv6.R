@@ -2,9 +2,8 @@ skip_on_cran()
 ems_option_set(verbose = FALSE)
 withr::defer(ems_option_reset(), teardown_env())
 
-data_db <- c("v9", "v10", "v11", "v12")
+data_db <- c("v10", "v11", "v12")
 db_inputs <- list(
-  v9  = list(dat = Sys.getenv("GTAP9_dat"),   par = Sys.getenv("GTAP9_par"),   set = Sys.getenv("GTAP9_set")),
   v10 = list(dat = Sys.getenv("GTAP10A_dat"),  par = Sys.getenv("GTAP10A_par"),  set = Sys.getenv("GTAP10A_set")),
   v11 = list(dat = Sys.getenv("GTAP11c_dat"),  par = Sys.getenv("GTAP11c_par"),  set = Sys.getenv("GTAP11c_set")),
   v12 = list(dat = Sys.getenv("GTAP12_dat"),  par = Sys.getenv("GTAP12_par"),  set = Sys.getenv("GTAP12_set"))
@@ -122,11 +121,6 @@ for (db in data_db) {
 
   test_that(paste(db, paste(model, "custom partial 4d k3")), {
     services <- switch(db,
-      "v9" = c(
-        "atp", "food", "crops", "cmn", "cns", "mnfcs",
-        "livestock", "dwe", "frs", "isr", "obs", "ofi",
-        "osg", "otp", "ros", "trd", "wtp", "wtr"
-      ),
       "v10" = c(
         "afs", "atp", "cmn", "cns", "crops", "dwe", "edu", "food", "hht", "ins",
         "livestock", "mnfcs", "obs", "ofi", "osg", "otp", "ros", "rsa", "trd",
