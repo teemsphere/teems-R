@@ -197,11 +197,13 @@
     )
   }
 
-  # variables whose second character is "_" collide with a coefficient
-  # named after their suffix (the solver generates p_/c_ linear names)
-  pre <- var_l[substr(var_l, 2, 2) == "_"]
+  # coefficient X + variable p_X/c_X is the supported hand-linearized
+  # pair idiom since the solver's section-6 naming resolution (GTAP-AEZ
+  # YIELD/p_YIELD); the genuine ambiguity is variable X + variable
+  # p_X/c_X coexisting -- the reference token p_X cannot be resolved
+  pre <- var_l[grepl("^[pc]_", var_l)]
   base <- substring(pre, 3)
-  hit <- base %in% coef_l
+  hit <- base %in% var_l
   if (any(hit)) {
     clash <- paste0(base[hit], "/", pre[hit])
     .cli_action(model_err$name_prefix_clash,

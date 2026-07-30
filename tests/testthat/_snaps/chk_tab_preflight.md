@@ -25,10 +25,10 @@
 
     x The `c_` prefix is reserved for change variables; rename coefficient "c_foo".
 
-# p_/c_ prefix clashes abort
+# p_/c_ variable-pair clashes abort
 
-    x Coefficient and variable pair sharing a base name: "vkb/p_vkb".
-    i The generated `p_`/`c_` linear variable names do not disambiguate; rename one of each pair.
+    x Variable pair sharing a base name: "qgdp/p_qgdp".
+    i A variable X cannot coexist with a variable p_X/c_X: the reference token `p_X` is ambiguous. Rename one of each pair (a coefficient X paired with a variable p_X is fine -- the hand-linearized pair idiom).
 
 # over-length names abort
 

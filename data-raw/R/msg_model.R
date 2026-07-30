@@ -40,10 +40,12 @@ build_model_err <- function() {
     reserved for change variables; rename coefficient{?s}
     {.val {bad_names}}.",
     name_prefix_clash = c(
-      "{cli::qty(clash)}Coefficient and variable pair{?s} sharing a base
-      name: {.val {clash}}.",
-      "The generated {.code p_}/{.code c_} linear variable names do not
-      disambiguate; rename one of each pair."
+      "{cli::qty(clash)}Variable pair{?s} sharing a base name:
+      {.val {clash}}.",
+      "A variable X cannot coexist with a variable p_X/c_X: the
+      reference token {.code p_X} is ambiguous. Rename one of each
+      pair (a coefficient X paired with a variable p_X is fine -- the
+      hand-linearized pair idiom)."
     ),
     name_too_long = "{cli::qty(long_names)}Declaration name{?s} longer
     than {max_len} characters: {.val {long_names}}.",

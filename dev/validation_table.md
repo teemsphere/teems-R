@@ -126,7 +126,7 @@ fatal. R: **new** `chk_names.R` over the statement tibble
 | N5 | No duplicate variable declaration | | tab_parse.c:1648 | both | `model_err$name_dup` | new snapshot |
 | N6 | Coefficient/variable/set names not reserved words | `Coefficient MAX` | tab_parse.c:1638/1652/1657 | both | `model_err$name_reserved` | kit `reserved` |
 | N7 | `c_`/`C_` prefix reserved for change variables | `Coefficient c_foo` | tab_parse.c:2597 | both | `model_err$name_c_prefix` | new snapshot |
-| N8 | Coef and var must not share a base name after `p_`/`c_` stripping | `Coefficient foo` + `Variable p_foo` | main.c:1124 | both | `model_err$name_prefix_clash` | new snapshot |
+| N8 | Variable X + variable p_X/c_X must not coexist (reference token p_X ambiguous); coefficient X + variable p_X is the SUPPORTED hand-linearized pair since the solver's section-6 naming resolution (GTAP-AEZ YIELD/p_YIELD) | `Variable foo` + `Variable p_foo` | tab_parse.c names_validate | both | `model_err$name_prefix_clash` | new snapshot |
 | N9 | Name length within manual 11.2.1 limits | 300-char set name (fuzz class: over-length names) | buffer-guarded, no named msg | R | `model_err$name_too_long` | fuzz catalog; snapshot |
 
 ## Q — Declaration qualifiers (manual 10.3)

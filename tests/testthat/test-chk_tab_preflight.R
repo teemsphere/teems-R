@@ -44,8 +44,23 @@ test_that("c_ prefixed coefficients abort", {
   expect_preflight_error("Coefficient c_foo;")
 })
 
-test_that("p_/c_ prefix clashes abort", {
-  expect_preflight_error("Variable (all,r,REG) p_VKB(r);")
+test_that("p_/c_ variable-pair clashes abort", {
+  # qgdp is a declared GTAPv7 variable: p_qgdp cannot coexist (the
+  # reference token p_qgdp is ambiguous)
+  expect_preflight_error("Variable (all,r,REG) p_qgdp(r);")
+})
+
+test_that("the hand-linearized pair idiom parses", {
+  # VKB is a declared GTAPv7 coefficient: coefficient X + variable
+  # p_X is the supported pair (solver section-6 naming resolution)
+  model <- .process_tablo(
+    tab_file = mutate_tab(
+      "Variable (all,r,REG) p_VKB(r) # pair of coefficient VKB #;"
+    ),
+    quiet = TRUE,
+    call = NULL
+  )
+  expect_true("p_VKB" %in% model$name[model$type == "Variable"])
 })
 
 test_that("over-length names abort", {
