@@ -319,6 +319,27 @@ All rows DONE 2026-07-28 (M4). Solver ground truth =
 | M12 | Rejected forms (updates/assertions/writes, formula-assigned, composition, leadlag, subset-ranged, non-mapping `:` conditions, quantifier conditions, backsolve-through-mapping) | solver (log-map) | — | kit fatal legs |
 | M13 | Mapping domain/codomain built by an INTERSECT whose operands disagree about an element's source composition (the `origin_conflict` stamp from `.eval_set_expr`) — the compose is the one origin-row consumer, so the ambiguity is fatal at the point of use. NOTE 2026-07-29: this replaced the f0c710b abort-inside-`&` (which regressed the IF-rewrite's synthetic `COMM & MARG` sets under aggregation); INTERSECT itself is now permissive element-level per manual 10.1.1/11.7.3, keeping the accumulator's rows and order | R only | `deploy_err$map_origin_conflict` | test-set_expr.R (stamp), test-tab_mapping.R (guard) |
 
+## CP — Complementarity statements (manual 10.17/11.14/51.7.2; teems-solver C1 @ 298c0f1)
+
+All rows DONE 2026-08-03 (C1-R). Solver ground truth =
+`.audit/comp-test-kit` (21 checks); R side in `chk_tab_comp.R`
+(test-tab_complementarity.R). C1 = parse/validation + derived
+statements; the solver solves a complementarity only INERT (variable
+fully exogenous) until the C2 state machinery lands.
+
+| ID | Invariant | Layer | R msg | Test source |
+|---|---|---|---|---|
+| CP1 | `Complementarity (variable = X, lower_bound/upper_bound = B) NAME [quants] expr;` form (qualifier keys, `=` split, name presence) | both | `model_err$comp_malformed` | kit parse legs; "malformed complementarity aborts" |
+| CP2 | VARIABLE qualifier required (11.14) | both | `model_err$comp_missing_variable` | kit `fmissvar` |
+| CP3 | X a declared LEVELS variable | both | `model_err$comp_not_levels` | kit `fnotlevels` |
+| CP4 | At least one bound; each a levels variable, `Coefficient (parameter)` or real constant | both | `model_err$comp_no_bound`, `comp_bad_bound` | kit `fnobound`/`fbadbound` |
+| CP5 | Name limited to 10 characters (11.2.1) | both | `model_err$comp_name_length` | kit `flongname` |
+| CP6 | Quantifier count == argument count of X and of each non-constant bound | both | `model_err$comp_quant_count` | kit `fquantcount` |
+| CP7 | Quantifier sets equal or same-ordered subsets of X's and bounds' argument sets (11.14 pts 2-3) | solver (needs resolved elements) | — | kit `fsubset` |
+| CP8 | 11.14.1 condensation guards: X not omitted/substituted/backsolved; bound variables not omitted/substituted (backsolve allowed) | both (R owns omit; solver owns backsolve) | `model_err$comp_condense` | "condensed complementarity variable aborts"; solver comp_closure_check |
+| CP9 | C1 inert mode: X exogenous over its full domain on the FINAL post-swap closure (C2 guard) | both | `cls_err$comp_endogenous` | kit `fstate`; "endogenous complementarity variable aborts at deploy" |
+| CP10 | Derived '@' names (comp@e/@d/@l/@u, del_comp@) are solver-managed: closure/shock mention fatal; compose drops them from solution output (exposure = C2) | solver (log-map) + R compose filter | — | kit `fclosure`; e2e leg |
+
 ## X — CLI / solver configuration
 
 `main.c:723-1351` CLI validation is unreachable from teems-R (R

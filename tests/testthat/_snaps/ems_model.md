@@ -58,7 +58,7 @@
     Condition
       Error in `ems_model()`:
       x teems version_number does not support Display statements.
-      i Supported statements include: File, Coefficient, Read, Update, Set, Subset, Formula, Assertion, Variable, Equation, Write, Zerodivide, Omit, Substitute, Backsolve, Postsim, and Mapping.
+      i Supported statements include: File, Coefficient, Read, Update, Set, Subset, Formula, Assertion, Variable, Equation, Write, Zerodivide, Omit, Substitute, Backsolve, Postsim, Mapping, and Complementarity.
 
 # invalid intertemporal header
 

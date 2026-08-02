@@ -14,6 +14,7 @@
   .chk_tab_names(model, call = call)
   .chk_tab_reads(model, call = call)
   .chk_tab_postsim(model, call = call)
+  .chk_tab_comp(model, call = call)
   return(invisible(NULL))
 }
 
@@ -223,13 +224,14 @@
     )
   }
 
-  # C0 levels: a levels variable named p_*/c_* collides with the
-  # linear-variable reference prefixes -- the solver's equation
-  # scanners cannot carry it (solver fatal mirrored here; the
-  # naming-normalization follow-on lifts this)
+  # C0/C1a levels: p_-leading levels names are carried by the solver's
+  # gen_lv pair rename; c_-leading names stay fatal -- the solver
+  # preprocess folds their value references into p_ column references
+  # on equation/update lines before the rename can see them (solver
+  # fatal mirrored here)
   lev <- typ == "variable" & !is.na(model$qualifier_list) &
     grepl("\\blevels\\b", model$qualifier_list, ignore.case = TRUE)
-  bad_lev <- lev & grepl("^[pc]_", tolower(model$name))
+  bad_lev <- lev & grepl("^c_", tolower(model$name))
   if (any(bad_lev)) {
     bad_names <- unique(model$name[bad_lev])
     .cli_action(model_err$levels_prefix_name,

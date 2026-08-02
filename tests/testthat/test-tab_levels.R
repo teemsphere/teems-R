@@ -6,8 +6,9 @@ skip_on_cran()
 # Formula&Equation (tab_levels_transform, teems-solver 126698d); R
 # splits Formula&Equation into its two 10.9.1 halves at the statement
 # stage, parses Equation (levels) qualifiers ahead of the name, and
-# mirrors the solver's p_/c_-leading levels-name fatal. Solver ground
-# truth: teems-solver/.audit/levels-test-kit (13 legs).
+# mirrors the solver's c_-leading levels-name fatal (p_-leading names
+# are carried by the C1a gen_lv pair rename). Solver ground truth:
+# teems-solver/.audit/levels-test-kit.
 
 dat_input <- Sys.getenv("GTAP12_dat")
 par_input <- Sys.getenv("GTAP12_par")
@@ -116,10 +117,23 @@ test_that("malformed Formula & Equation aborts", {
   )
 })
 
-test_that("p_/c_-leading levels variable name aborts", {
+test_that("p_-leading levels variable name parses (C1a gen_lv rename)", {
+  model <- .process_tablo(
+    tab_file = mutate_tab(paste(
+      "Variable (levels) p_ok # carried by the solver's pair rename #;",
+      "Formula (initial) p_ok = 1;",
+      sep = "\n"
+    )),
+    quiet = TRUE,
+    call = NULL
+  )
+  expect_true("p_ok" %in% model$name[model$type == "Variable"])
+})
+
+test_that("c_-leading levels variable name aborts", {
   expect_preflight_error(paste(
-    "Variable (levels) p_bad # solver scanners cannot carry this #;",
-    "Formula (initial) p_bad = 1;",
+    "Variable (levels) c_bad # value refs fold into p_ columns #;",
+    "Formula (initial) c_bad = 1;",
     sep = "\n"
   ))
 })

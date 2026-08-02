@@ -43,6 +43,16 @@
     call = call,
     model_call = model_call
   )
+  # C1 inert-mode guard on the post-swap closure: a complementarity
+  # deploys only with its variable fully exogenous until the solver's
+  # C2 state machinery exists (GMig2 swap idiom validates here)
+  .chk_comp_closure(
+    model = v$model,
+    closure = closure,
+    var_extract = var_extract,
+    sets = sets,
+    call = call
+  )
   size_metadata <- .compute_size_metadata(
     var_extract = var_extract,
     sets = sets,

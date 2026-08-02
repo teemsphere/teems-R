@@ -38,7 +38,7 @@ supported_state <- c(
   "File", "Coefficient", "Read", "Update", "Set", "Subset",
   "Formula", "Assertion", "Variable", "Equation", "Write",
   "Zerodivide", "Omit", "Substitute", "Backsolve", "Postsim",
-  "Mapping"
+  "Mapping", "Complementarity"
 )
 
 # vocabularies mirrored from teems-solver src (keep in sync; row
@@ -70,7 +70,7 @@ tab_default_values <- list(
 ignored_state <- character(0)
 
 invalid_state <- c(
-  "Loop", "Display", "Break", "Cycle", "Complementarity", "Transfer"
+  "Loop", "Display", "Break", "Cycle", "Transfer"
 )
 
 # mappings

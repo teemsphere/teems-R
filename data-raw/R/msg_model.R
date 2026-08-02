@@ -127,12 +127,15 @@ build_model_err <- function() {
     formula_equation = "Malformed {.code Formula & Equation} statement:
     expected {.code Formula [(initial)] & Equation [(levels)] name
     [quantifiers] lhs = rhs} (GEMPACK manual 10.9.1): {.val {bad_stmt}}",
-    # test-tab_levels.R: "p_/c_-leading levels variable name aborts"
+    # test-tab_levels.R: "c_-leading levels variable name aborts"
+    # (p_-leading names are supported since the solver's C1a gen_lv
+    # pair rename; c_-leading value references are folded into p_
+    # column references by the solver preprocess and cannot be
+    # distinguished)
     levels_prefix_name = c(
       "{cli::qty(bad_names)}Levels variable{?s} {.val {bad_names}}
-      start{?s/} with {.code p_}/{.code c_}, colliding with the
-      linear-variable reference prefixes; the solver cannot carry such
-      names yet.",
+      start{?s/} with {.code c_}, colliding with the change-reference
+      column prefix; the solver cannot carry such names.",
       "Rename the {cli::qty(bad_names)}variable{?s}."
     ),
     # test-chk_tab_preflight.R: "math statements without = abort"
@@ -179,6 +182,50 @@ build_model_err <- function() {
     map_read_missing = "{cli::qty(bad_maps)}Mapping{?s}
     {.val {bad_maps}} {?has/have} no {.code Read (by_elements)}
     statement assigning {?its/their} values.",
+    # Complementarity statements (GEMPACK manual 10.17/11.14; solver
+    # counterparts in tab_complementarity_transform, teems-solver C1)
+    # test-tab_complementarity.R: "malformed complementarity aborts"
+    comp_malformed = c(
+      "Malformed {.field Complementarity} statement: {.val {bad_stmt}}",
+      "Expected {.code Complementarity (variable = <levels var>,
+      lower_bound/upper_bound = <levels var | parameter | constant>)
+      <name> [quantifiers] <expression>;} (GEMPACK manual 10.17)."
+    ),
+    # test-tab_complementarity.R: "missing variable qualifier aborts"
+    comp_missing_variable = "{.field Complementarity} {.val {bad_stmt}}
+    needs a {.code variable =} qualifier (GEMPACK manual 11.14).",
+    # test-tab_complementarity.R: "non-levels complementarity variable aborts"
+    comp_not_levels = "The {.field Complementarity} variable
+    {.val {comp_var}} must be a declared levels variable (GEMPACK
+    manual 11.14).",
+    # test-tab_complementarity.R: "missing bound aborts"
+    comp_no_bound = "{.field Complementarity} {.val {comp_name}} needs
+    at least one of {.code lower_bound}/{.code upper_bound} (GEMPACK
+    manual 10.17).",
+    # test-tab_complementarity.R: "invalid bound aborts"
+    comp_bad_bound = c(
+      "Invalid bound {.val {bad_bound}} in {.field Complementarity}
+      {.val {comp_name}}.",
+      "A bound must be a levels variable, a
+      {.code Coefficient (parameter)} or a real constant (GEMPACK
+      manual 10.17)."
+    ),
+    # test-tab_complementarity.R: "long complementarity name aborts"
+    comp_name_length = "{.field Complementarity} name
+    {.val {comp_name}} exceeds the 10-character limit (GEMPACK manual
+    11.14/11.2.1).",
+    # test-tab_complementarity.R: "quantifier count mismatch aborts"
+    comp_quant_count = "{.field Complementarity} {.val {comp_name}}
+    has {n_quant} quantifier{?s} but {.val {ref_name}} has {n_args}
+    argument{?s} (GEMPACK manual 11.14).",
+    # test-tab_complementarity.R: "condensed complementarity variable aborts"
+    comp_condense = c(
+      "{.val {bad_var}} cannot be {bad_action}: it is the {comp_role}
+      of {.field Complementarity} {.val {comp_name}}.",
+      "The complementarity variable must not be omitted, substituted
+      out or backsolved; bound variables must not be omitted or
+      substituted out (GEMPACK manual 11.14.1)."
+    ),
     # test-ems_model.R: "ems_model rejects invalid variable names in omit"
     invalid_omit = "{.val {invalid_var}} designated for omission not found in the model.",
     # test-ems_model.R: "ems_model rejects invalid variable names in backsolve"

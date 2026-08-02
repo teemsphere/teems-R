@@ -66,6 +66,16 @@
   # bring in variable names by matrix size
   data_dt$var <- rep(vars$cofname, vars$matsize)
 
+  # solver-managed derived complementarity variables (comp@e/@d/@l/@u,
+  # del_comp@; teems-solver C1, design doc section 7) ride the
+  # solution binaries but are not model variables: drop them before
+  # the model-side alignment ('@' cannot occur in user names).
+  # Exposing comp@e values rides with C2.
+  derived <- grepl("@", vars$cofname, fixed = TRUE)
+  if (any(derived)) {
+    vars <- vars[!derived, ]
+  }
+
   data_dt <- purrr::map(vars$cofname, function(nm) {
     sets <- vars$dt[[nm]]
     dt_data <- data_dt[data_dt$var == nm, ]
