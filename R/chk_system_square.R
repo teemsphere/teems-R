@@ -17,13 +17,14 @@
                                  sets,
                                  closure,
                                  size_metadata,
+                                 n_comp_active = 0,
                                  call) {
   eqs <- model[model$type == "Equation", ]
   defining <- unique(stats::na.omit(model$condense_eq))
   if (length(defining) > 0L) {
     eqs <- eqs[!tolower(eqs$name) %in% tolower(defining), ]
   }
-  if (nrow(eqs) == 0L) {
+  if (nrow(eqs) == 0L && n_comp_active == 0) {
     return(invisible(NULL))
   }
 
@@ -45,6 +46,10 @@
     function(s) prod(set_sizes[s]),
     numeric(1)
   ))
+  # C2: one E_$comp equation element per ACTIVE (endogenous)
+  # complementarity component (11.14 counting; inert components are
+  # absorbed solver-side by their endogenous dummy, net zero)
+  n_eq_ele <- n_eq_ele + n_comp_active
 
   n_var_ele <- size_metadata$n_var_ele
   n_exo_ele <- size_metadata$n_exo_ele

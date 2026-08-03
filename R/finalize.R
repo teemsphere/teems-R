@@ -43,10 +43,13 @@
     call = call,
     model_call = model_call
   )
-  # C1 inert-mode guard on the post-swap closure: a complementarity
-  # deploys only with its variable fully exogenous until the solver's
-  # C2 state machinery exists (GMig2 swap idiom validates here)
-  .chk_comp_closure(
+  # C2: components whose complementarity variable stays endogenous in
+  # the post-swap closure are ACTIVE (solved by the solver's
+  # approximate-run state machinery) and each contributes one E_$comp
+  # equation element to the count-squaring below; exogenized
+  # components are inert and net zero (teems-solver design doc
+  # section 8)
+  n_comp_active <- .comp_active_count(
     model = v$model,
     closure = closure,
     var_extract = var_extract,
@@ -64,6 +67,7 @@
     sets = sets,
     closure = closure,
     size_metadata = size_metadata,
+    n_comp_active = n_comp_active,
     call = call
   )
   metadata$system_size <- size_metadata$system_size

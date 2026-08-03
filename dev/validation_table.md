@@ -319,7 +319,7 @@ All rows DONE 2026-07-28 (M4). Solver ground truth =
 | M12 | Rejected forms (updates/assertions/writes, formula-assigned, composition, leadlag, subset-ranged, non-mapping `:` conditions, quantifier conditions, backsolve-through-mapping) | solver (log-map) | — | kit fatal legs |
 | M13 | Mapping domain/codomain built by an INTERSECT whose operands disagree about an element's source composition (the `origin_conflict` stamp from `.eval_set_expr`) — the compose is the one origin-row consumer, so the ambiguity is fatal at the point of use. NOTE 2026-07-29: this replaced the f0c710b abort-inside-`&` (which regressed the IF-rewrite's synthetic `COMM & MARG` sets under aggregation); INTERSECT itself is now permissive element-level per manual 10.1.1/11.7.3, keeping the accumulator's rows and order | R only | `deploy_err$map_origin_conflict` | test-set_expr.R (stamp), test-tab_mapping.R (guard) |
 
-## CP — Complementarity statements (manual 10.17/11.14/51.7.2; teems-solver C1 @ 298c0f1)
+## CP — Complementarity statements (manual 10.17/11.14/ch.51; teems-solver C1 @ 298c0f1, C2 @ ed2b069)
 
 All rows DONE 2026-08-03 (C1-R). Solver ground truth =
 `.audit/comp-test-kit` (21 checks); R side in `chk_tab_comp.R`
@@ -337,8 +337,9 @@ fully exogenous) until the C2 state machinery lands.
 | CP6 | Quantifier count == argument count of X and of each non-constant bound | both | `model_err$comp_quant_count` | kit `fquantcount` |
 | CP7 | Quantifier sets equal or same-ordered subsets of X's and bounds' argument sets (11.14 pts 2-3) | solver (needs resolved elements) | — | kit `fsubset` |
 | CP8 | 11.14.1 condensation guards: X not omitted/substituted/backsolved; bound variables not omitted/substituted (backsolve allowed) | both (R owns omit; solver owns backsolve) | `model_err$comp_condense` | "condensed complementarity variable aborts"; solver comp_closure_check |
-| CP9 | C1 inert mode: X exogenous over its full domain on the FINAL post-swap closure (C2 guard) | both | `cls_err$comp_endogenous` | kit `fstate`; "endogenous complementarity variable aborts at deploy" |
-| CP10 | Derived '@' names (comp@e/@d/@l/@u, del_comp@) are solver-managed: closure/shock mention fatal; compose drops them from solution output (exposure = C2) | solver (log-map) + R compose filter | — | kit `fclosure`; e2e leg |
+| CP9 | C2 closure balance: endogenous X components are ACTIVE (dummy auto-exogenized, approximate-run state machinery); exogenized components inert (endogenous dummy absorbs the E_$comp row); each active component counts one E_$comp equation element (11.14) | both (solver comp_closure_check; R `.comp_active_count` + `.check_system_square`) | `cls_err$not_square` on miscounts | kit `cactive`..`cdown`; "endogenous complementarity variable deploys (C2 active mode)"; "active complementarity components join the squaring count" |
+| CP10 | Derived '@' names are solver-managed: closure/shock mention fatal; compose drops the machinery internals (comp@d, del_comp@) and exposes the value-carrying comp@e/@l/@u | solver (log-map) + R compose filter | — | kit `fclosure`; e2e legs (composed cmpa@e/cmpf@e values) |
+| CP11 | C2 approximate run: per-step states from the 51.7.5 whole-plane division, del_comp@ shocked 1 in full per step (NO_SPLIT), step redo at the crossing fraction (51.7.3), `complementarity steps_approx_run/redo_steps/redo_step_min_fraction` CMF statements (51.6), pre/post-sim 51.7.5 exactness warnings + 51.5.3-style state-change lines | solver | solver-side warnings/fatals | kit `cactive` (1->2 + redo + CMF steps), `cboth` (1->2->3), `clbound` (moving levels-var bound), `cdown` (2->1); R e2e "active complementarity solves the approximate run" |
 
 ## X — CLI / solver configuration
 

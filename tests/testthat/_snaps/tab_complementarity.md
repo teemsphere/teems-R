@@ -33,8 +33,10 @@
     x "CX" cannot be omitted: it is the variable of Complementarity "CMPA".
     i The complementarity variable must not be omitted, substituted out or backsolved; bound variables must not be omitted or substituted out (GEMPACK manual 11.14.1).
 
-# endogenous complementarity variable aborts at deploy
+# active complementarity components join the squaring count
 
-    x Complementarity "CMPA": variable "CX" is not exogenous over its full domain (0 of 1 element exogenous after swaps).
-    i The solver's complementarity state machinery is not implemented yet (C2); a complementarity currently deploys only with its variable fully exogenous.
+    x The closure does not square the system: 3487 endogenous variable elements against 3486 equation elements.
+    i Arithmetic: 4471 variable elements - 984 exogenous elements (closure after swaps) = 3487 endogenous; the equation system determines exactly 3486, so 1 element must still be exogenized.
+    i Candidates: exogenizing 1 element of one of globalcgds, pcgdswld, pt, qtm, rorg closes the gap exactly.
+    i If the counts look right but the partition is structurally deficient, run `teems::ems_probe()` on the deployed model for a named diagnosis.
 

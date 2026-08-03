@@ -1,13 +1,15 @@
 skip_on_cran()
 
-# C1-R (teems-solver docs/mapping_complementarity_design.md section 7):
-# Complementarity statements through the R pipeline. The solver parses
-# the statement, generates the 51.7.2 derived statements (comp@e/@d/
-# @l/@u, del_comp@) and -- until the C2 state machinery -- solves only
-# INERT (variable fully exogenous; comp_closure_check). R mirrors the
-# parse/validation fatals at preflight and the inert-mode guard on the
-# final post-swap closure. Solver ground truth:
-# teems-solver/.audit/comp-test-kit (21 checks).
+# C1-R + C2-R (teems-solver docs/mapping_complementarity_design.md
+# sections 7-8): Complementarity statements through the R pipeline.
+# The solver parses the statement, generates the 51.7.2 derived
+# statements (comp@e/@d/@l/@u, del_comp@, the E_$comp weight
+# coefficients) and solves endogenous components with the C2
+# approximate-run state machinery; exogenized components stay inert.
+# R mirrors the parse/validation fatals at preflight, counts one
+# E_$comp equation element per ACTIVE (endogenous) component in
+# .check_system_square, and compose exposes comp@e/@l/@u. Solver
+# ground truth: teems-solver/.audit/comp-test-kit (38 checks).
 
 dat_input <- Sys.getenv("GTAP12_dat")
 par_input <- Sys.getenv("GTAP12_par")
@@ -193,17 +195,31 @@ comp_e2e_block <- paste(
   sep = "\n"
 )
 
-test_that("endogenous complementarity variable aborts at deploy", {
+test_that("endogenous complementarity variable deploys (C2 active mode)", {
   nest_temp("comp_guard", write_dir)
   d <- cp_data()
   model <- ems_model(mutate_tab(comp_block, name = "comp1.tab"), closure_file)
-  # CX/CY not exogenized: the inert-mode guard on the post-swap
-  # closure aborts before any files are written
+  # CX stays endogenous: the component is ACTIVE (solver C2 state
+  # machinery); its E_$comp row squares the count, so the deploy that
+  # aborted at C1 now writes files
+  cmf_path <- ems_deploy(
+    d,
+    model,
+    swap_in = "CY"
+  )
+  expect_true(file.exists(cmf_path))
+})
+
+test_that("active complementarity components join the squaring count", {
+  nest_temp("comp_square", write_dir)
+  d <- cp_data()
+  model <- ems_model(mutate_tab(comp_block, name = "comp1b.tab"), closure_file)
+  # neither CX nor CY exogenized: two endogenous elements against the
+  # single E_$comp row of the active component -- not square
   expect_snapshot_error(
     ems_deploy(
       d,
-      model,
-      swap_in = "CY"
+      model
     )
   )
 })
@@ -220,8 +236,8 @@ test_that("fully exogenous complementarity variable deploys", {
   expect_true(file.exists(cmf_path))
 })
 
-# --- e2e solve leg (needs a teems image with the C1 solver,
-# --- teems-solver 298c0f1+; run with ems_option_set(docker_tag =
+# --- e2e solve legs (need a teems image with the C2 solver,
+# --- teems-solver ed2b069+; run with ems_option_set(docker_tag =
 # --- "dev") against a current rebuild) --------------------------------
 
 solver_has_comp <- function() {
@@ -233,7 +249,7 @@ solver_has_comp <- function() {
     "docker",
     c(
       "run", "--rm", img, "/bin/bash", "-c",
-      shQuote("grep -c 'state machinery is not implemented' /opt/teems-solver/solver/teems-solver")
+      shQuote("grep -c 'steps_approx_run' /opt/teems-solver/solver/teems-solver")
     ),
     stdout = TRUE,
     stderr = FALSE
@@ -246,7 +262,7 @@ test_that("inert complementarity solves with derived values pinned (e2e)", {
   nest_temp("comp_e2e", write_dir)
   skip_if(
     !solver_has_comp(),
-    "teems image absent or predates the C1 complementarity solver"
+    "teems image absent or predates the C2 complementarity solver"
   )
   # solver-kit values-leg shape: CX exogenous (inert), CY shocked 20%
   # (5 -> 6), comp expression CY - 3 tracked by the derived cmpa@e
@@ -262,4 +278,53 @@ test_that("inert complementarity solves with derived values pinned (e2e)", {
   )
   out <- suppressMessages(ems_solve(cmf_path))
   expect_s3_class(out, "data.frame")
+  # C2 compose exposure: the derived expression variable rides the
+  # solution and composes with its accumulated change (levels 2 -> 3
+  # under the shock; cmpa@e is a change variable)
+  expect_true("cmpa@e" %in% out$name)
+  expect_equal(out$dat[["cmpa@e"]]$Value, 1, tolerance = 1e-4)
+})
+
+active_block <- paste(
+  "Variable (change,levels) AIM # import volume #;",
+  "Formula (initial) AIM = 8;",
+  "Variable (change,levels) ATQ # power of the quota tariff #;",
+  "Formula (initial) ATQ = 1;",
+  "Variable (change) ASH # exogenous driver #;",
+  "Equation E_AIM  p_AIM = p_ASH - p_ATQ;",
+  "Complementarity (variable = ATQ, lower_bound = 1) CMPF 10 - AIM;",
+  "Assertion (postsim) # Quota Binds Low # AIM > 9.99;",
+  "Assertion (postsim) # Quota Binds High # AIM < 10.01;",
+  "Assertion (postsim) # Tariff Absorbs Low # ATQ > 3.39;",
+  "Assertion (postsim) # Tariff Absorbs High # ATQ < 3.41;",
+  sep = "\n"
+)
+
+test_that("active complementarity solves the approximate run (e2e)", {
+  nest_temp("comp_e2e_active", write_dir)
+  skip_if(
+    !solver_has_comp(),
+    "teems image absent or predates the C2 complementarity solver"
+  )
+  # solver-kit cactive-leg shape: ATQ endogenous (ACTIVE), quota 10,
+  # driver shocked +4.4 so imports cross the quota mid-run (state
+  # 1 -> 2 with a redone step); analytic ends AIM = 10 (Newton pull
+  # onto the quota) and ATQ = 1 + 4.4 - 2 = 3.4 (telescoping),
+  # pinned by the (postsim) assertions -- a wrong value fails the
+  # solve -- and by the composed values here
+  d <- cp_data()
+  model <- ems_model(mutate_tab(active_block, name = "comp4.tab"), closure_file)
+  cmf_path <- ems_deploy(
+    d,
+    model,
+    shock = ems_uniform_shock(var = "ASH", value = 4.4),
+    swap_in = "ASH"
+  )
+  out <- suppressMessages(ems_solve(cmf_path))
+  expect_s3_class(out, "data.frame")
+  expect_equal(out$dat[["AIM"]]$Value, 2, tolerance = 1e-3)
+  expect_equal(out$dat[["ATQ"]]$Value, 2.4, tolerance = 1e-3)
+  expect_true("cmpf@e" %in% out$name)
+  # expression levels 2 -> 0 (quota exactly met): change -2
+  expect_equal(out$dat[["cmpf@e"]]$Value, -2, tolerance = 1e-3)
 })

@@ -6,16 +6,6 @@ build_cls_err <- function() {
       {.val {var_discrepancy}} not found among the model's variables.",
       "Did you mean {.or {.val {candidates}}}?"
     ),
-    # test-tab_complementarity.R: "endogenous complementarity variable aborts"
-    # (solver counterpart: comp_closure_check C2 guard, teems-solver C1)
-    comp_endogenous = c(
-      "{.field Complementarity} {.val {comp_name}}: variable
-      {.val {comp_var}} is not exogenous over its full domain
-      ({n_exo} of {n_ele} element{?s} exogenous after swaps).",
-      "The solver's complementarity state machinery is not implemented
-      yet (C2); a complementarity currently deploys only with its
-      variable fully exogenous."
-    ),
     # test-chk_system_square.R: "unsquared closures abort with arithmetic"
     not_square = c(
       "The closure does not square the system: {n_endo} endogenous

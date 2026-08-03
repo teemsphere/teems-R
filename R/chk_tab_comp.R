@@ -195,29 +195,33 @@
   return(invisible(NULL))
 }
 
-#' Complementarity closure guard (C1 inert mode)
+#' Active complementarity components in the final closure (C2)
 #'
-#' Mirrors the solver's comp_closure_check C2 guard on the FINAL
-#' (post-swap) closure: until the approximate-run state machinery
-#' exists, a complementarity deploys only with its variable exogenous
-#' over the full domain. Runs after .finalize_closure so the GMig2
-#' idiom -- base closure endogenous, swap exogenizes -- validates on
-#' the closure the solver will see.
+#' Mirrors the solver's comp_closure_check rebalance (teems-solver C2,
+#' design doc section 8) on the FINAL (post-swap) closure: each
+#' complementarity contributes one E_$comp equation of quantifier size;
+#' components whose variable stays ENDOGENOUS are ACTIVE (the solver
+#' exogenizes their dummy and runs the approximate-run state
+#' machinery), components exogenized by the closure are inert (the
+#' endogenous dummy absorbs the row, net zero). For count-squaring the
+#' system therefore gains one equation element per ACTIVE component --
+#' this function returns that total; .check_system_square adds it.
 #'
 #' @importFrom purrr map_chr map_dbl
 #'
 #' @keywords internal
 #' @noRd
-.chk_comp_closure <- function(model,
-                              closure,
-                              var_extract,
-                              sets,
-                              call) {
+.comp_active_count <- function(model,
+                               closure,
+                               var_extract,
+                               sets,
+                               call) {
   comp_stmts <- model$tab[tolower(model$type) == "complementarity"]
   if (length(comp_stmts) == 0L) {
-    return(invisible(NULL))
+    return(0)
   }
   cls_vars <- tolower(purrr::map_chr(closure, attr, "var_name"))
+  n_active <- 0
   for (statement in comp_stmts) {
     cp <- .parse_comp_stmt(statement, call = call)
     v_row <- which(tolower(var_extract$name) == tolower(cp$comp_var))[1]
@@ -240,13 +244,7 @@
         nrow(ele)
       }
     ))
-    if (n_exo < n_ele) {
-      comp_name <- cp$name
-      .cli_action(cls_err$comp_endogenous,
-        action = c("abort", "inform"),
-        call = call
-      )
-    }
+    n_active <- n_active + max(n_ele - n_exo, 0)
   }
-  return(invisible(NULL))
+  n_active
 }

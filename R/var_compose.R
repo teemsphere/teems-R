@@ -1,6 +1,6 @@
 #' @importFrom purrr map map2
 #' @importFrom data.table data.table CJ setnames setkeyv
-#' @importFrom tibble tibble add_column
+#' @importFrom tibble tibble add_column add_row
 #' 
 #' @keywords internal
 #' @noRd
@@ -66,14 +66,45 @@
   # bring in variable names by matrix size
   data_dt$var <- rep(vars$cofname, vars$matsize)
 
-  # solver-managed derived complementarity variables (comp@e/@d/@l/@u,
-  # del_comp@; teems-solver C1, design doc section 7) ride the
-  # solution binaries but are not model variables: drop them before
-  # the model-side alignment ('@' cannot occur in user names).
-  # Exposing comp@e values rides with C2.
+  # solver-managed derived complementarity variables (teems-solver
+  # C1/C2, design doc sections 7-8) ride the solution binaries but are
+  # not model variables ('@' cannot occur in user names). The
+  # machinery internals -- the dummy comp@d and the Newton-correction
+  # del_comp@ -- are dropped; the VALUE-carrying derived variables
+  # (comp@e = the complementarity expression, comp@l/@u = variable
+  # minus bound) are exposed with var_extract rows synthesized below.
   derived <- grepl("@", vars$cofname, fixed = TRUE)
+  drop <- grepl("@d$", vars$cofname) | vars$cofname == "del_comp@"
+  if (any(drop)) {
+    vars <- vars[!drop, ]
+    derived <- derived[!drop]
+  }
   if (any(derived)) {
-    vars <- vars[!derived, ]
+    for (nm in vars$cofname[derived]) {
+      dt_cols <- colnames(vars$dt[[nm]])
+      scalar <- identical(dt_cols, "null_set")
+      var_extract <- tibble::add_row(
+        var_extract,
+        name = nm,
+        label = paste0(
+          "derived complementarity ",
+          switch(substring(nm, nchar(nm), nchar(nm)),
+            e = "expression",
+            l = "variable minus lower bound",
+            u = "variable minus upper bound",
+            "variable"
+          )
+        ),
+        ls_upper_idx = list(if (scalar) NA_character_ else dt_cols),
+        ls_mixed_idx = list(if (scalar) NA_character_ else dt_cols)
+      )
+    }
+    # the solver's variable order (post-drop) drives the alignment; a
+    # genuine mismatch falls through to the var_check abort below
+    ve_idx <- match(vars$cofname, tolower(var_extract$name))
+    if (!anyNA(ve_idx)) {
+      var_extract <- var_extract[ve_idx, ]
+    }
   }
 
   data_dt <- purrr::map(vars$cofname, function(nm) {
