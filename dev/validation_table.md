@@ -319,7 +319,7 @@ All rows DONE 2026-07-28 (M4). Solver ground truth =
 | M12 | Rejected forms (updates/assertions/writes, formula-assigned, composition, leadlag, subset-ranged, non-mapping `:` conditions, quantifier conditions, backsolve-through-mapping) | solver (log-map) | — | kit fatal legs |
 | M13 | Mapping domain/codomain built by an INTERSECT whose operands disagree about an element's source composition (the `origin_conflict` stamp from `.eval_set_expr`) — the compose is the one origin-row consumer, so the ambiguity is fatal at the point of use. NOTE 2026-07-29: this replaced the f0c710b abort-inside-`&` (which regressed the IF-rewrite's synthetic `COMM & MARG` sets under aggregation); INTERSECT itself is now permissive element-level per manual 10.1.1/11.7.3, keeping the accumulator's rows and order | R only | `deploy_err$map_origin_conflict` | test-set_expr.R (stamp), test-tab_mapping.R (guard) |
 
-## CP — Complementarity statements (manual 10.17/11.14/ch.51; teems-solver C1 @ 298c0f1, C2 @ ed2b069)
+## CP — Complementarity statements (manual 10.17/11.14/ch.51; teems-solver C1 @ 298c0f1, C2 @ ed2b069, C3 @ 79770af)
 
 All rows DONE 2026-08-03 (C1-R). Solver ground truth =
 `.audit/comp-test-kit` (21 checks); R side in `chk_tab_comp.R`
@@ -340,6 +340,7 @@ fully exogenous) until the C2 state machinery lands.
 | CP9 | C2 closure balance: endogenous X components are ACTIVE (dummy auto-exogenized, approximate-run state machinery); exogenized components inert (endogenous dummy absorbs the E_$comp row); each active component counts one E_$comp equation element (11.14) | both (solver comp_closure_check; R `.comp_active_count` + `.check_system_square`) | `cls_err$not_square` on miscounts | kit `cactive`..`cdown`; "endogenous complementarity variable deploys (C2 active mode)"; "active complementarity components join the squaring count" |
 | CP10 | Derived '@' names are solver-managed: closure/shock mention fatal; compose drops the machinery internals (comp@d, del_comp@) and exposes the value-carrying comp@e/@l/@u | solver (log-map) + R compose filter | — | kit `fclosure`; e2e legs (composed cmpa@e/cmpf@e values) |
 | CP11 | C2 approximate run: per-step states from the 51.7.5 whole-plane division, del_comp@ shocked 1 in full per step (NO_SPLIT), step redo at the crossing fraction (51.7.3), `complementarity steps_approx_run/redo_steps/redo_step_min_fraction` CMF statements (51.6), pre/post-sim 51.7.5 exactness warnings + 51.5.3-style state-change lines | solver | solver-side warnings/fatals | kit `cactive` (1->2 + redo + CMF steps), `cboth` (1->2->3), `clbound` (moving levels-var bound), `cdown` (2->1); R e2e "active complementarity solves the approximate run" |
+| CP12 | C3 accurate run: 51.7.1 closure/shock auto-modification from the approximate run's final states (state 2: comp@e to zero; state 1/3 constant/parameter bound: X to the bound; levels-var bound: @l/@u to zero; dummies endogenous), pipeline re-entry, the requested method solves; post-accurate 51.5.4/51.7.5 verification (fatal, warn via `state/bound_error`); `do_approx_run`/`do_acc_run` CMF statements | solver | solver-side named fatal/warning | kit `caccgragg`/`cnoacc`/`cnoapprox`/`cnoapproxbad`/`cwarn`; the C2 active legs' pins now hold through the accurate pass; R e2e legs solve approx+accurate |
 
 ## X — CLI / solver configuration
 
