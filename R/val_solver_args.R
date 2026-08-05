@@ -45,9 +45,17 @@
     verbosity = c("NULL", "numeric", "integer"),
     suppress_outputs = "logical",
     terminal_run = "logical",
+    complementarity = c("NULL", "teems_complementarity"),
     append_args = c("NULL", "character"),
     pre_probe = "logical"
   )
+  if (!is.null(a$complementarity) &&
+    !inherits(a$complementarity, "teems_complementarity")) {
+    .cli_action(solve_err$comp_spec_class,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
 
   .check_arg_class(
     args_list = a,

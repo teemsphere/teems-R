@@ -144,6 +144,11 @@
 #'   programs prior to running from the terminal. When `TRUE`
 #'   solver outputs are not automatically converted into
 #'   structured data with [`ems_compose()`].
+#' @param complementarity A `teems_complementarity` object built by
+#'   [`ems_complementarity()`] (default is `NULL`), run controls for
+#'   models with active `Complementarity` statements (GEMPACK manual
+#'   ch. 51). `NULL` applies the solver defaults; ignored by the
+#'   solver when the model has no active complementarity component.
 #' @param append_args Character vector (default `NULL`).
 #'   Additional arguments appended to the Docker run command
 #'   (e.g., `c("-smllthreads 2", "-maxthreads 2")`).
@@ -198,6 +203,7 @@ ems_solve <- function(cmf_path,
                       verbosity = NULL,
                       suppress_outputs = FALSE,
                       terminal_run = FALSE,
+                      complementarity = NULL,
                       append_args = NULL,
                       pre_probe = FALSE
 ) {

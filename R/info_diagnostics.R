@@ -70,3 +70,81 @@
 
   return(invisible(NULL))
 }
+#' Append the run's effective-configuration record to
+#' model_diagnostics.txt (posterity/reproducibility; the CMF stays a
+#' file manifest by design). Rendered from the `options` object the
+#' solver writes into sol.stats.json -- RESOLVED values after
+#' defaults, validation and forced changes, not what the caller
+#' passed. Silently skipped against solver images that predate the
+#' options record.
+#'
+#' @importFrom jsonlite read_json
+#'
+#' @keywords internal
+#' @noRd
+.solve_record_append <- function(run_dir) {
+  diagnostic_file <- file.path(run_dir, "model_diagnostics.txt")
+  stats_path <- file.path(run_dir, "out", "variables", "bin", "sol.stats.json")
+  if (!file.exists(diagnostic_file) || !file.exists(stats_path)) {
+    return(invisible(NULL))
+  }
+  stats <- tryCatch(
+    jsonlite::read_json(stats_path, simplifyVector = TRUE),
+    error = function(e) NULL
+  )
+  opt <- stats$options
+  if (is.null(opt)) {
+    return(invisible(NULL))
+  }
+  onoff <- function(x) ifelse(isTRUE(x), "on", "off")
+  lines <- c(
+    "",
+    sprintf("-- Solve record (%s) --", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
+    "",
+    sprintf(
+      "Solution method: %s%s (subintervals %s)",
+      stats$solution_method,
+      if (!is.null(opt$steps)) sprintf(" (steps %s)", paste(opt$steps, collapse = ", ")) else "",
+      opt$subintervals
+    ),
+    if (!is.null(opt$adaptive)) {
+      sprintf("Adaptive stepping: %s (eps tolerance %s)", opt$adaptive, opt$eps_tolerance)
+    },
+    sprintf(
+      "Matrix method: %s (laA %s, laDi %s, laD %s; fastrefac %s)",
+      stats$matrix_method, opt$laA, opt$laDi, opt$laD, onoff(opt$fastrefac)
+    ),
+    sprintf(
+      "Parallelism: %s MPI task(s), %s OpenMP thread(s)",
+      stats$mpi_size, opt$max_threads
+    ),
+    sprintf(
+      "System: %s equations, %s exogenous elements",
+      stats$vecsize, stats$nexo
+    ),
+    sprintf(
+      "Modes: assertions %s; range test initial %s, updated %s; postsim %s; gpzerodivide %s",
+      opt$assertions, opt$range_test_initial, opt$range_test_updated,
+      onoff(opt$postsim), onoff(opt$gpzerodivide)
+    ),
+    if (!is.null(opt$complementarity)) {
+      cp <- opt$complementarity
+      sprintf(
+        paste0(
+          "Complementarity: %s active component(s); approximate run %s ",
+          "Euler steps (%s; redo %s, min fraction %s); accurate run %s; ",
+          "state/bound errors %s"
+        ),
+        cp$active_components, cp$steps_approx_run,
+        onoff(cp$do_approx_run), onoff(cp$redo_steps),
+        cp$redo_step_min_fraction, onoff(cp$do_acc_run),
+        cp$state_bound_error
+      )
+    }
+  )
+  cat(paste(unlist(lines), collapse = "\n"), "\n",
+    sep = "",
+    append = TRUE, file = diagnostic_file
+  )
+  return(invisible(NULL))
+}

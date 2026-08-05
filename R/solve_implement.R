@@ -36,6 +36,7 @@
     n_subintervals = v$n_subintervals,
     inmemory = v$inmemory,
     verbosity = v$verbosity,
+    complementarity = v$complementarity,
     append_args = v$append_args
   )
 

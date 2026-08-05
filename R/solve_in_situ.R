@@ -64,6 +64,7 @@ solve_in_situ <- function(...,
                           verbosity = NULL,
                           suppress_outputs = FALSE,
                           terminal_run = FALSE,
+                          complementarity = NULL,
                           append_args = NULL
 ) {
 call <- match.call()
@@ -106,6 +107,7 @@ return(.implement_solve_in_situ(
   verbosity = verbosity,
   suppress_outputs = suppress_outputs,
   terminal_run = terminal_run,
+  complementarity = complementarity,
   append_args = append_args,
   call = call
 ))

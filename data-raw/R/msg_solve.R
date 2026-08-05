@@ -5,6 +5,21 @@ build_solve_err <- function() {
     insitu_no_file = "Input file{?s} not found: {.val {nonexist_files}}.",
     # test-ems_solve.R: "ems_solve errors when n_tasks is not integerish"
     x_integerish = "{.arg {arg}} must be integer-like.",
+    # test-ems_complementarity.R: constructor validation
+    comp_arg_type = "{.arg {bad_arg}} must be {requirement}.",
+    # test-ems_complementarity.R: "both runs disabled aborts"
+    comp_runs_off = c(
+      "{.arg do_approx_run} and {.arg do_acc_run} cannot both be {.val FALSE}.",
+      "Skipping the approximate run takes the pre-simulation states as
+      the accurate run's targets; skipping the accurate run keeps the
+      approximate solution as the result (GEMPACK manual 51.6).
+      Skipping both leaves nothing to solve."
+    ),
+    # test-ems_complementarity.R: "ems_solve rejects a non-spec complementarity"
+    comp_spec_class = c(
+      "{.arg complementarity} must be built by {.fun ems_complementarity}.",
+      "Example: {.code complementarity = ems_complementarity(steps_approx_run = 20L)}."
+    ),
     invalid_length = "{.arg {arg}} must be an integer-like numeric of length 1.",
     # test-ems_solve.R: "ems_solve errors when steps are not all even for Gragg"
     step_parity = c(

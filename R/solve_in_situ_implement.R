@@ -19,6 +19,7 @@
                                      verbosity,
                                      suppress_outputs,
                                      terminal_run,
+                                     complementarity,
                                      append_args,
                                      call) {
   cmf_path <- .in_situ_cmf(
@@ -46,6 +47,7 @@
     verbosity = verbosity,
     suppress_outputs = suppress_outputs,
     terminal_run = terminal_run,
+    complementarity = complementarity,
     append_args = append_args
   ))
 }

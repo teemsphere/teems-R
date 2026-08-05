@@ -17,6 +17,7 @@
                            eps_tolerance = 0.1,
                            inmemory = NULL,
                            verbosity = NULL,
+                           complementarity = NULL,
                            append_args) {
   docker_preamble <- paste(
     "docker run --rm --mount",
@@ -58,6 +59,13 @@
     paste("-maxthreads", 1),
     "-nox"
   )
+
+  # ch. 51 complementarity run controls (ems_complementarity();
+  # solver -comp_* flags, defaults applied solver-side when absent)
+  comp_flags <- .comp_cli_flags(complementarity)
+  if (!is.null(comp_flags) && nzchar(comp_flags)) {
+    solver_param <- paste(solver_param, comp_flags)
+  }
 
   if (!is.null(append_args)) {
     solver_param <- paste(solver_param, paste(append_args, collapse = " "))

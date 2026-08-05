@@ -95,6 +95,12 @@
     run_dir = paths$run,
     call = call
   )
+  # posterity record of the run's EFFECTIVE configuration (defaults,
+  # validation and forced changes applied), rendered from the
+  # solver-written sol.stats.json options object
+  .solve_record_append(
+    run_dir = paths$run
+  )
 
   return(invisible(NULL))
 }

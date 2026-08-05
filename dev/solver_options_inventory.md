@@ -1,12 +1,25 @@
 # Solver interface inventory: every knob vs. its R surface
 
-Compiled 2026-08-04 (solver @ 79770af, teems-R @ 5bbd963) by grepping
-every `PetscOptionsGet*` call and every CMF statement parser in the
-solver, cross-referenced against what `ems_solve()` / `ems_probe()`
-actually pass. Purpose: each row should get an explicit disposition —
-a designed R surface, a documented escape hatch, or removal — instead
-of existing by historical accident. Dispositions marked (?) are open
-decisions.
+Compiled 2026-08-04 (updated 2026-08-05; solver @ c6e7e80) by
+grepping every `PetscOptionsGet*` call and every CMF statement parser
+in the solver, cross-referenced against what `ems_solve()` /
+`ems_probe()` actually pass. Purpose: each row should get an explicit
+disposition — a designed R surface, a documented escape hatch, or
+removal — instead of existing by historical accident. Dispositions
+marked (?) are open decisions.
+
+DECIDED 2026-08-05 (the CMF-vs-record discussion): the CMF stays a
+FILE MANIFEST — run controls never go into it. Controls travel on the
+solver invocation (CLI flags); the POSTERITY RECORD of the effective
+configuration (defaults, validation and forced changes applied) is
+the `options` object the solver writes into `sol.stats.json`,
+rendered into `model_diagnostics.txt` by R after every solve. The six
+complementarity controls are the first fully-plumbed example:
+`ems_complementarity()` spec → `ems_solve(complementarity = )` →
+`-comp_*` flags → stats.json record → diagnostics appendix. The
+complementarity CMF statements were REMOVED (09bf33b); the remaining
+CMF switches in section 1 are still parsed but now presumptively
+follow the same path whenever they get a designed surface.
 
 ## 1. CMF statements the solver parses that R NEVER writes
 
@@ -19,12 +32,7 @@ None have any R plumbing.
 | `range test initial values = fatal\|warn\|no ;` | `cmf_range_test_modes` | warn | 25.4.4 bound checks on initial values | (?) |
 | `range test updated values = fatal\|warn\|no ;` | `cmf_range_test_modes` | warn | same, on updated values | (?) |
 | `postsim = yes\|no ;` | `cmf_postsim_on` | yes | run / skip the TAB's PostSim sections | (?) |
-| `complementarity steps_approx_run = N ;` | `cmf_comp_options` | accurate-run step sum | Euler steps in the approximate run (51.6) | ems_complementarity() (?) |
-| `complementarity redo_steps = yes\|no ;` | `cmf_comp_options` | yes | redo a step when a state flips (51.7.3) | ems_complementarity() (?) |
-| `complementarity redo_step_min_fraction = f ;` | `cmf_comp_options` | 0.005 | shortest redone step | ems_complementarity() (?) |
-| `complementarity do_approx_run = yes\|no ;` | `cmf_comp_options` | yes | skip the approximate run (pre-sim states as targets) | ems_complementarity() (?) |
-| `complementarity do_acc_run = yes\|no ;` | `cmf_comp_options` | yes | stop after the approximate run | ems_complementarity() (?) |
-| `complementarity state/bound_error = fatal\|warn ;` | `cmf_comp_options` | fatal | post-accurate 51.5.4/51.7.5 check severity | ems_complementarity() (?) |
+| ~~`complementarity …` (six statements)~~ | REMOVED 09bf33b | — | now `-comp_steps`/`-comp_redo`/`-comp_redo_min_frac`/`-comp_do_approx`/`-comp_do_acc`/`-comp_sberr_warn` CLI flags | **DONE**: `ems_complementarity()` → `ems_solve(complementarity = )`; effective values recorded in stats.json + model_diagnostics.txt |
 
 Note: `zerodivide ... ;` statements are TAB statements (model text),
 not CMF — they belong to the model author and are out of scope here.
