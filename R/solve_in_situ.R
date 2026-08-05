@@ -64,6 +64,10 @@ solve_in_situ <- function(...,
                           verbosity = NULL,
                           suppress_outputs = FALSE,
                           terminal_run = FALSE,
+                          assertions = NULL,
+                          range_test_initial = NULL,
+                          range_test_updated = NULL,
+                          postsim = NULL,
                           complementarity = NULL,
                           append_args = NULL
 ) {
@@ -107,6 +111,10 @@ return(.implement_solve_in_situ(
   verbosity = verbosity,
   suppress_outputs = suppress_outputs,
   terminal_run = terminal_run,
+  assertions = assertions,
+  range_test_initial = range_test_initial,
+  range_test_updated = range_test_updated,
+  postsim = postsim,
   complementarity = complementarity,
   append_args = append_args,
   call = call

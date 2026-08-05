@@ -45,6 +45,10 @@
     verbosity = c("NULL", "numeric", "integer"),
     suppress_outputs = "logical",
     terminal_run = "logical",
+    assertions = c("NULL", "character"),
+    range_test_initial = c("NULL", "character"),
+    range_test_updated = c("NULL", "character"),
+    postsim = c("NULL", "logical"),
     complementarity = c("NULL", "teems_complementarity"),
     append_args = c("NULL", "character"),
     pre_probe = "logical"
@@ -53,6 +57,26 @@
     !inherits(a$complementarity, "teems_complementarity")) {
     .cli_action(solve_err$comp_spec_class,
       action = c("abort", "inform"),
+      call = call
+    )
+  }
+  for (nme in c("assertions", "range_test_initial", "range_test_updated")) {
+    x <- a[[nme]]
+    if (!is.null(x) &&
+      (!is.character(x) || length(x) != 1L || !x %in% c("fatal", "warn", "off"))) {
+      bad_arg <- nme
+      .cli_action(solve_err$switch_mode,
+        action = "abort",
+        call = call
+      )
+    }
+  }
+  if (!is.null(a$postsim) &&
+    (!is.logical(a$postsim) || length(a$postsim) != 1L || is.na(a$postsim))) {
+    bad_arg <- "postsim"
+    requirement <- "a non-missing logical of length 1"
+    .cli_action(solve_err$comp_arg_type,
+      action = "abort",
       call = call
     )
   }

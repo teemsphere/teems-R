@@ -13,13 +13,14 @@ FILE MANIFEST — run controls never go into it. Controls travel on the
 solver invocation (CLI flags); the POSTERITY RECORD of the effective
 configuration (defaults, validation and forced changes applied) is
 the `options` object the solver writes into `sol.stats.json`,
-rendered into `model_diagnostics.txt` by R after every solve. The six
-complementarity controls are the first fully-plumbed example:
+rendered into `model_diagnostics.txt` by R after every solve. Section 1 is now FULLY MIGRATED (no CMF statement parsers remain in
+the solver — the CMF is purely a file manifest). The six
+complementarity controls were the first fully-plumbed example:
 `ems_complementarity()` spec → `ems_solve(complementarity = )` →
 `-comp_*` flags → stats.json record → diagnostics appendix. The
-complementarity CMF statements were REMOVED (09bf33b); the remaining
-CMF switches in section 1 are still parsed but now presumptively
-follow the same path whenever they get a designed surface.
+complementarity CMF statements were REMOVED (09bf33b) and the
+assertions/range-test/postsim statements followed (solver c099d5f,
+same pattern: flags + `ems_solve()` named args + record).
 
 ## 1. CMF statements the solver parses that R NEVER writes
 
@@ -28,10 +29,10 @@ None have any R plumbing.
 
 | Statement | Parser | Default | Meaning | Disposition |
 |---|---|---|---|---|
-| `Assertions = yes\|warn\|no ;` | `cmf_assertions_mode` | yes (fatal) | TAB Assertion failures abort / warn / are skipped | (?) |
-| `range test initial values = fatal\|warn\|no ;` | `cmf_range_test_modes` | warn | 25.4.4 bound checks on initial values | (?) |
-| `range test updated values = fatal\|warn\|no ;` | `cmf_range_test_modes` | warn | same, on updated values | (?) |
-| `postsim = yes\|no ;` | `cmf_postsim_on` | yes | run / skip the TAB's PostSim sections | (?) |
+| ~~`Assertions = …`~~ | REMOVED c099d5f | fatal | now `-assertions 0\|1\|2` | **DONE**: `ems_solve(assertions = "fatal"\|"warn"\|"off")`; recorded |
+| ~~`range test initial values = …`~~ | REMOVED c099d5f | warn | now `-range_test_initial 0\|1\|2` | **DONE**: `ems_solve(range_test_initial = )`; recorded |
+| ~~`range test updated values = …`~~ | REMOVED c099d5f | warn | now `-range_test_updated 0\|1\|2` | **DONE**: `ems_solve(range_test_updated = )`; recorded |
+| ~~`postsim = yes\|no ;`~~ | REMOVED c099d5f | yes | now `-postsim 0\|1` | **DONE**: `ems_solve(postsim = )`; recorded |
 | ~~`complementarity …` (six statements)~~ | REMOVED 09bf33b | — | now `-comp_steps`/`-comp_redo`/`-comp_redo_min_frac`/`-comp_do_approx`/`-comp_do_acc`/`-comp_sberr_warn` CLI flags | **DONE**: `ems_complementarity()` → `ems_solve(complementarity = )`; effective values recorded in stats.json + model_diagnostics.txt |
 
 Note: `zerodivide ... ;` statements are TAB statements (model text),
@@ -75,11 +76,10 @@ not CMF — they belong to the model author and are out of scope here.
 
 ## 3. Suggested buckets (recommendations only, nothing decided)
 
-- **Designed surface**: the six complementarity controls →
-  `ems_complementarity()` spec object on `ems_solve` (CLI flags to be
-  added solver-side; CMF parse retained or dropped per row-1 decision).
-  Candidates for the same treatment if demand appears: `Assertions`,
-  range-test modes, `postsim` (an `ems_solve` toggle would be trivial).
+- **Designed surface** (DONE for all of section 1): the six
+  complementarity controls via `ems_complementarity()`, and
+  `assertions`/`range_test_initial`/`range_test_updated`/`postsim` as
+  `ems_solve()` named arguments.
 - **Documented escape hatch**: expert HSL/ordering knobs (`-cntl_3`,
   `-cntl_6`, `-nsbbdblocks`, `-withmc66`) and performance toggles
   (`-fastrefac`, `-maxthreads`, `-smllthreads`) — document

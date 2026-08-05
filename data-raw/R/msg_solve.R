@@ -15,6 +15,8 @@ build_solve_err <- function() {
       approximate solution as the result (GEMPACK manual 51.6).
       Skipping both leaves nothing to solve."
     ),
+    # test-solver_switches.R: mode-switch validation
+    switch_mode = "{.arg {bad_arg}} must be one of {.val fatal}, {.val warn} or {.val off}.",
     # test-ems_complementarity.R: "ems_solve rejects a non-spec complementarity"
     comp_spec_class = c(
       "{.arg complementarity} must be built by {.fun ems_complementarity}.",

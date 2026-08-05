@@ -144,6 +144,19 @@
 #'   programs prior to running from the terminal. When `TRUE`
 #'   solver outputs are not automatically converted into
 #'   structured data with [`ems_compose()`].
+#' @param assertions Character length 1, `"fatal"`, `"warn"` or
+#'   `"off"` (default `NULL`, solver default `"fatal"`). Severity of
+#'   TAB `Assertion` statement failures (GEMPACK manual 25.3):
+#'   `"warn"` reports and continues, `"off"` skips the checks.
+#' @param range_test_initial Character length 1, `"fatal"`, `"warn"`
+#'   or `"off"` (default `NULL`, solver default `"warn"`). Severity of
+#'   declared-range violations (e.g. `(ge 0)`) on initial values
+#'   (GEMPACK manual 25.4.4).
+#' @param range_test_updated Character length 1, `"fatal"`, `"warn"`
+#'   or `"off"` (default `NULL`, solver default `"warn"`). As
+#'   `range_test_initial`, for updated values.
+#' @param postsim Logical length 1 (default `NULL`, solver default
+#'   `TRUE`). `FALSE` skips the TAB's `PostSim` sections.
 #' @param complementarity A `teems_complementarity` object built by
 #'   [`ems_complementarity()`] (default is `NULL`), run controls for
 #'   models with active `Complementarity` statements (GEMPACK manual
@@ -203,6 +216,10 @@ ems_solve <- function(cmf_path,
                       verbosity = NULL,
                       suppress_outputs = FALSE,
                       terminal_run = FALSE,
+                      assertions = NULL,
+                      range_test_initial = NULL,
+                      range_test_updated = NULL,
+                      postsim = NULL,
                       complementarity = NULL,
                       append_args = NULL,
                       pre_probe = FALSE

@@ -17,6 +17,10 @@
                            eps_tolerance = 0.1,
                            inmemory = NULL,
                            verbosity = NULL,
+                           assertions = NULL,
+                           range_test_initial = NULL,
+                           range_test_updated = NULL,
+                           postsim = NULL,
                            complementarity = NULL,
                            append_args) {
   docker_preamble <- paste(
@@ -59,6 +63,22 @@
     paste("-maxthreads", 1),
     "-nox"
   )
+
+  # run-mode switches (solver defaults applied when absent; effective
+  # values recorded in sol.stats.json and model_diagnostics.txt)
+  mode_flag <- function(flag, x) {
+    if (is.null(x)) {
+      return(NULL)
+    }
+    paste(flag, c(off = 0L, warn = 1L, fatal = 2L)[[x]])
+  }
+  solver_param <- paste(c(
+    solver_param,
+    mode_flag("-assertions", assertions),
+    mode_flag("-range_test_initial", range_test_initial),
+    mode_flag("-range_test_updated", range_test_updated),
+    if (!is.null(postsim)) paste("-postsim", as.integer(postsim))
+  ), collapse = " ")
 
   # ch. 51 complementarity run controls (ems_complementarity();
   # solver -comp_* flags, defaults applied solver-side when absent)

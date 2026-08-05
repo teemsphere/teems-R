@@ -19,6 +19,10 @@
                                      verbosity,
                                      suppress_outputs,
                                      terminal_run,
+                                     assertions,
+                                     range_test_initial,
+                                     range_test_updated,
+                                     postsim,
                                      complementarity,
                                      append_args,
                                      call) {
@@ -47,6 +51,10 @@
     verbosity = verbosity,
     suppress_outputs = suppress_outputs,
     terminal_run = terminal_run,
+    assertions = assertions,
+    range_test_initial = range_test_initial,
+    range_test_updated = range_test_updated,
+    postsim = postsim,
     complementarity = complementarity,
     append_args = append_args
   ))

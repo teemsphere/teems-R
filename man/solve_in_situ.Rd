@@ -24,6 +24,10 @@ solve_in_situ(
   verbosity = NULL,
   suppress_outputs = FALSE,
   terminal_run = FALSE,
+  assertions = NULL,
+  range_test_initial = NULL,
+  range_test_updated = NULL,
+  postsim = NULL,
   complementarity = NULL,
   append_args = NULL
 )
@@ -199,6 +203,23 @@ solver. This allows the user to close any R IDE or other
 programs prior to running from the terminal. When \code{TRUE}
 solver outputs are not automatically converted into
 structured data with \code{\link[=ems_compose]{ems_compose()}}.}
+
+\item{assertions}{Character length 1, \code{"fatal"}, \code{"warn"} or
+\code{"off"} (default \code{NULL}, solver default \code{"fatal"}). Severity of
+TAB \code{Assertion} statement failures (GEMPACK manual 25.3):
+\code{"warn"} reports and continues, \code{"off"} skips the checks.}
+
+\item{range_test_initial}{Character length 1, \code{"fatal"}, \code{"warn"}
+or \code{"off"} (default \code{NULL}, solver default \code{"warn"}). Severity of
+declared-range violations (e.g. \verb{(ge 0)}) on initial values
+(GEMPACK manual 25.4.4).}
+
+\item{range_test_updated}{Character length 1, \code{"fatal"}, \code{"warn"}
+or \code{"off"} (default \code{NULL}, solver default \code{"warn"}). As
+\code{range_test_initial}, for updated values.}
+
+\item{postsim}{Logical length 1 (default \code{NULL}, solver default
+\code{TRUE}). \code{FALSE} skips the TAB's \code{PostSim} sections.}
 
 \item{complementarity}{A \code{teems_complementarity} object built by
 \code{\link[=ems_complementarity]{ems_complementarity()}} (default is \code{NULL}), run controls for
