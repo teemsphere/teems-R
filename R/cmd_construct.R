@@ -15,6 +15,9 @@
                            steps,
                            adaptive = "no",
                            eps_tolerance = 0.1,
+                           max_retries = NULL,
+                           retry_adjust = NULL,
+                           n_threads = 1L,
                            inmemory = NULL,
                            verbosity = NULL,
                            assertions = NULL,
@@ -60,7 +63,7 @@
     if (!is.null(verbosity)) {
       paste("-verbosity", as.integer(verbosity))
     },
-    paste("-maxthreads", 1),
+    paste("-maxthreads", as.integer(n_threads)),
     "-nox"
   )
 
@@ -74,6 +77,8 @@
   }
   solver_param <- paste(c(
     solver_param,
+    if (!is.null(max_retries)) paste("-maxretries", as.integer(max_retries)),
+    if (!is.null(retry_adjust)) paste("-retryadj", retry_adjust),
     mode_flag("-assertions", assertions),
     mode_flag("-range_test_initial", range_test_initial),
     mode_flag("-range_test_updated", range_test_updated),

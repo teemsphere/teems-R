@@ -94,11 +94,22 @@
 #'   retried at a reduced step size.
 #'   * `"accuracy-only"`: As `"yes"`, but only the error metric is
 #'   acted on; check failures are ignored.
+#' @param max_retries Integer length 1 (default `NULL`, solver
+#'   default `3L`), Runge-Kutta methods with `adaptive = "yes"` only:
+#'   how many times a step failing the -100% crossing check is
+#'   retried at reduced length before the run aborts.
+#' @param retry_adjust Numeric length 1 in (0, 1) (default `NULL`,
+#'   solver default `0.5`), Runge-Kutta adaptive methods only: the
+#'   step-length multiplier applied on each retry.
 #' @param eps_tolerance Numeric length 1 (default is `0.1`), the
 #'   per-step error-metric bound targeted by `adaptive` control.
 #'   `0.1` suffices for most simulations; use `0.01` for more
 #'   accurate solutions. Values below `0.005` are hard to achieve
 #'   numerically. Ignored when `adaptive = "no"`.
+#' @param n_threads Integer length 1 (default `1L`), OpenMP threads
+#'   per MPI task. Results with more than one thread are numerically
+#'   equivalent but not bit-reproducible across thread counts
+#'   (parallel reduction order).
 #' @param n_tasks Integer length 1 (default is `1L`), number of
 #'   tasks to run in parallel. Must be `1L` if `"matrix_method"`
 #'   == "LU".
@@ -163,8 +174,19 @@
 #'   ch. 51). `NULL` applies the solver defaults; ignored by the
 #'   solver when the model has no active complementarity component.
 #' @param append_args Character vector (default `NULL`).
-#'   Additional arguments appended to the Docker run command
-#'   (e.g., `c("-smllthreads 2", "-maxthreads 2")`).
+#'   Additional arguments appended to the Docker run command — the
+#'   escape hatch for expert solver flags without a named argument:
+#'   `-fastrefac 1` (persistent-pivot refactorization, experimental),
+#'   `-gpzerodivide 1` (GEMPACK dual-class ZERODIVIDE semantics),
+#'   `-cntl_3`/`-cntl_6` (HSL pivot/ordering thresholds),
+#'   `-nsbbdblocks` (SBBD block-count override), `-withmc66 1`
+#'   (MC66 row ordering for SBBD), `-smllthreads` (OpenMP threads
+#'   for small sections), `-tempdir` (container-side scratch
+#'   directory), `-nowrites 1` (skip the solver-side output-file
+#'   dumps; coefficient composition then has nothing to read —
+#'   distinct from `suppress_outputs`, which only skips the R-side
+#'   composition). Effective values of recorded flags land in
+#'   `sol.stats.json` regardless of how they were passed.
 #' @param pre_probe Logical length 1 (default `FALSE`). When `TRUE`,
 #'   run the solver's structural probe first and abort — with the
 #'   defective variable and equation elements named — if the deployed
@@ -208,7 +230,10 @@ ems_solve <- function(cmf_path,
                       steps = c(2L, 4L, 8L),
                       adaptive = c("no", "yes", "accuracy-only"),
                       eps_tolerance = 0.1,
+                      max_retries = NULL,
+                      retry_adjust = NULL,
                       n_tasks = 1L,
+                      n_threads = 1L,
                       laA = 300L,
                       laD = 200L,
                       laDi = 500L,

@@ -5,6 +5,12 @@ skip_on_cran()
 # statements are gone -- the CMF is a file manifest). Effective values
 # are recorded in sol.stats.json and model_diagnostics.txt.
 
+test_that("numeric-knob validation aborts", {
+  expect_snapshot_error(ems_solve("nope.cmf", n_threads = 0))
+  expect_snapshot_error(ems_solve("nope.cmf", max_retries = 0))
+  expect_snapshot_error(ems_solve("nope.cmf", retry_adjust = 1))
+})
+
 test_that("mode-switch validation aborts", {
   expect_snapshot_error(
     ems_solve("nope.cmf", assertions = "maybe"),
@@ -52,6 +58,61 @@ solver_has_switches <- function() {
   length(out) > 0L && !is.na(suppressWarnings(as.integer(out[1]))) &&
     as.integer(out[1]) > 0L
 }
+
+solver_has_retry_record <- function() {
+  img <- paste0("teems:", .resolve_docker_tag())
+  if (!.docker_image_present(img)) {
+    return(FALSE)
+  }
+  out <- suppressWarnings(system2(
+    "docker",
+    c(
+      "run", "--rm", img, "/bin/bash", "-c",
+      shQuote("grep -c 'max_retries' /opt/teems-solver/solver/teems-solver")
+    ),
+    stdout = TRUE,
+    stderr = FALSE
+  ))
+  length(out) > 0L && !is.na(suppressWarnings(as.integer(out[1]))) &&
+    as.integer(out[1]) > 0L
+}
+
+test_that("RK retry policy reaches the solver and the record (e2e)", {
+  nest_temp("retry_e2e", write_dir)
+  skip_if(
+    !solver_has_retry_record(),
+    "teems image absent or predates the retry-policy record"
+  )
+  conv <- GTAP_convert(dat_input, par_input, set_input)
+  d <- suppressMessages(ems_data(
+    dat_input = conv$dat,
+    par_input = conv$par,
+    set_input = conv$set,
+    REG = "big3",
+    ACTS = "macro_sector",
+    ENDW = "labor_agg"
+  ))
+  model_files <- ems_example("GTAPv7", write_dir)
+  model <- ems_model(model_files[["model_file"]], model_files[["closure_file"]])
+  cmf_path <- ems_deploy(d, model)
+  out <- suppressMessages(ems_solve(
+    cmf_path,
+    solution_method = "DoPri54",
+    steps = 4L,
+    adaptive = "yes",
+    max_retries = 5,
+    retry_adjust = 0.3,
+    n_threads = 2
+  ))
+  expect_s3_class(out, "data.frame")
+  stats <- jsonlite::read_json(
+    file.path(dirname(cmf_path), "out", "variables", "bin", "sol.stats.json"),
+    simplifyVector = TRUE
+  )
+  expect_identical(stats$options$max_retries, 5L)
+  expect_equal(stats$options$retry_adjust, 0.3)
+  expect_identical(stats$options$max_threads, 2L)
+})
 
 test_that("switches reach the solver and the run records them (e2e)", {
   nest_temp("switches_e2e", write_dir)

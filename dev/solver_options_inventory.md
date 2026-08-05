@@ -61,18 +61,18 @@ not CMF — they belong to the model author and are out of scope here.
 
 | Flag | Default | Meaning | Disposition |
 |---|---|---|---|
-| `-maxthreads` | 1 (R hardcodes 1) | OpenMP threads per rank | (?) |
-| `-smllthreads` | = maxthreads | OpenMP threads for small sections | (?) |
-| `-fastrefac` | 0 (off) | persistent-pivot refactorization (adoption plan 0bdd621; force-cleared for complementarity runs) | (?) |
-| `-gpzerodivide` | 0 (legacy) | GEMPACK dual-class ZERODIVIDE semantics (parity plan A1; adoption = re-anchor-class change) | (?) |
-| `-maxretries` | driver default | RK adaptive: retry cap | (?) — `adaptive`/`eps_tolerance` exposed, retry tuning not |
-| `-retryadj` | driver default | RK adaptive: step-shrink factor on retry | (?) |
-| `-cntl_3` | HSL default | MA48 iterative/pivot threshold | (?) — expert HSL knob |
-| `-cntl_6` | HSL default | ordering CNTL(6) threshold | (?) — expert HSL knob |
-| `-nsbbdblocks` | derived | SBBD block-count override | (?) |
-| `-withmc66` | build/default | MC66 ordering toggle for SBBD | (?) |
-| `-nowrites` | 0 | suppress solver-side coefficient dumps (distinct from R's `suppress_outputs`, which only skips R-side composition) | (?) |
-| `-tempdir` | scratch default | solver scratch directory override | (?) |
+| ~~`-maxthreads`~~ | 1 | OpenMP threads per task | **DONE**: `ems_solve(n_threads = )` (default 1; >1 not bit-reproducible across counts — reduction order); recorded as `max_threads` |
+| `-smllthreads` | = maxthreads | OpenMP threads for small sections | **escape hatch** (documented on `append_args`) |
+| `-fastrefac` | 0 (off) | persistent-pivot refactorization (adoption plan 0bdd621; force-cleared for complementarity runs) | **escape hatch** until the adoption decision (recorded effective in stats.json) |
+| `-gpzerodivide` | 0 (legacy) | GEMPACK dual-class ZERODIVIDE semantics (parity plan A1) | **deliberately unexposed** — adoption is a golden re-anchor decision, not a per-run knob; escape hatch for experiments (recorded) |
+| ~~`-maxretries`~~ | 3 | RK adaptive: retry cap | **DONE**: `ems_solve(max_retries = )`; recorded |
+| ~~`-retryadj`~~ | 0.5 | RK adaptive: step-shrink factor on retry | **DONE**: `ems_solve(retry_adjust = )`; recorded |
+| `-cntl_3` | HSL default | MA48 iterative/pivot threshold | **escape hatch** (expert HSL; documented) |
+| `-cntl_6` | HSL default | ordering CNTL(6) threshold | **escape hatch** (expert HSL; documented) |
+| `-nsbbdblocks` | derived | SBBD block-count override | **escape hatch** (partition auto-selection is the designed path) |
+| `-withmc66` | 0 (off) | MC66 row ordering for SBBD | **escape hatch** (documented) |
+| `-nowrites` | 0 | skip the post-solve output-file dumps (outputs_write_csv; solution binaries unaffected). Distinct from `suppress_outputs` (R-side compose skip); passing it breaks coefficient composition | **escape hatch** (documented with the distinction); promote to a named arg only with compose-narrowing plumbing |
+| `-tempdir` | TMPDIR/scratch | container-side scratch directory for !inmemory spills | **escape hatch** (container-internal path; documented) |
 
 ## 3. Suggested buckets (recommendations only, nothing decided)
 

@@ -16,7 +16,10 @@ solve_in_situ(
   steps = c(2L, 4L, 8L),
   adaptive = c("no", "yes", "accuracy-only"),
   eps_tolerance = 0.1,
+  max_retries = NULL,
+  retry_adjust = NULL,
   n_tasks = 1L,
+  n_threads = 1L,
   laA = 300L,
   laD = 200L,
   laDi = 500L,
@@ -165,9 +168,23 @@ per-step error-metric bound targeted by \code{adaptive} control.
 accurate solutions. Values below \code{0.005} are hard to achieve
 numerically. Ignored when \code{adaptive = "no"}.}
 
+\item{max_retries}{Integer length 1 (default \code{NULL}, solver
+default \code{3L}), Runge-Kutta methods with \code{adaptive = "yes"} only:
+how many times a step failing the -100\% crossing check is
+retried at reduced length before the run aborts.}
+
+\item{retry_adjust}{Numeric length 1 in (0, 1) (default \code{NULL},
+solver default \code{0.5}), Runge-Kutta adaptive methods only: the
+step-length multiplier applied on each retry.}
+
 \item{n_tasks}{Integer length 1 (default is \code{1L}), number of
 tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}
 == "LU".}
+
+\item{n_threads}{Integer length 1 (default \code{1L}), OpenMP threads
+per MPI task. Results with more than one thread are numerically
+equivalent but not bit-reproducible across thread counts
+(parallel reduction order).}
 
 \item{laA}{Integer length 1 (default is \code{300L}). Memory
 parameter (\%) for \code{"LU"} and \code{"SBBD"}.}
@@ -228,8 +245,19 @@ ch. 51). \code{NULL} applies the solver defaults; ignored by the
 solver when the model has no active complementarity component.}
 
 \item{append_args}{Character vector (default \code{NULL}).
-Additional arguments appended to the Docker run command
-(e.g., \code{c("-smllthreads 2", "-maxthreads 2")}).}
+Additional arguments appended to the Docker run command — the
+escape hatch for expert solver flags without a named argument:
+\verb{-fastrefac 1} (persistent-pivot refactorization, experimental),
+\verb{-gpzerodivide 1} (GEMPACK dual-class ZERODIVIDE semantics),
+\code{-cntl_3}/\code{-cntl_6} (HSL pivot/ordering thresholds),
+\code{-nsbbdblocks} (SBBD block-count override), \verb{-withmc66 1}
+(MC66 row ordering for SBBD), \code{-smllthreads} (OpenMP threads
+for small sections), \code{-tempdir} (container-side scratch
+directory), \verb{-nowrites 1} (skip the solver-side output-file
+dumps; coefficient composition then has nothing to read —
+distinct from \code{suppress_outputs}, which only skips the R-side
+composition). Effective values of recorded flags land in
+\code{sol.stats.json} regardless of how they were passed.}
 }
 \value{
 A tibble containing model output variables and

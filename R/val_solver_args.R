@@ -37,7 +37,10 @@
     steps = c("numeric", "integer"),
     adaptive = "character",
     eps_tolerance = c("numeric", "integer"),
+    max_retries = c("NULL", "numeric", "integer"),
+    retry_adjust = c("NULL", "numeric"),
     n_tasks = c("numeric", "integer"),
+    n_threads = c("numeric", "integer"),
     laA = c("numeric", "integer"),
     laD = c("numeric", "integer"),
     laDi = c("numeric", "integer"),
@@ -57,6 +60,36 @@
     !inherits(a$complementarity, "teems_complementarity")) {
     .cli_action(solve_err$comp_spec_class,
       action = c("abort", "inform"),
+      call = call
+    )
+  }
+  if (!rlang::is_integerish(a$n_threads) || length(a$n_threads) != 1L ||
+    a$n_threads < 1) {
+    bad_arg <- "n_threads"
+    requirement <- "a positive integer-like numeric of length 1"
+    .cli_action(solve_err$comp_arg_type,
+      action = "abort",
+      call = call
+    )
+  }
+  if (!is.null(a$max_retries) &&
+    (!rlang::is_integerish(a$max_retries) || length(a$max_retries) != 1L ||
+      a$max_retries < 1)) {
+    bad_arg <- "max_retries"
+    requirement <- "a positive integer-like numeric of length 1"
+    .cli_action(solve_err$comp_arg_type,
+      action = "abort",
+      call = call
+    )
+  }
+  if (!is.null(a$retry_adjust) &&
+    (!is.numeric(a$retry_adjust) || length(a$retry_adjust) != 1L ||
+      is.na(a$retry_adjust) ||
+      a$retry_adjust <= 0 || a$retry_adjust >= 1)) {
+    bad_arg <- "retry_adjust"
+    requirement <- "a numeric of length 1 in (0, 1)"
+    .cli_action(solve_err$comp_arg_type,
+      action = "abort",
       call = call
     )
   }
