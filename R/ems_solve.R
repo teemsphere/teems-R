@@ -82,30 +82,11 @@
 #'   take one step count (e.g. `steps = 8L`), which under
 #'   `adaptive` control is the initial step count only. Ignored
 #'   when `solution_method = "Johansen"`.
-#' @param adaptive Character length 1, adaptive step-size control
-#'   for the embedded Runge-Kutta methods (`"BoSha32"`,
-#'   `"DoPri54"`); default is `"no"`. Choices:
-#'   * `"no"`: Fixed steps.
-#'   * `"yes"`: After each step the worst per-component error
-#'   metric is compared against `eps_tolerance`; failing steps are
-#'   redone with a smaller step size and passing steps adjust the
-#'   next step size (at most halving or doubling it). A step on
-#'   which a percentage-change variable crosses `-100%` is also
-#'   retried at a reduced step size.
-#'   * `"accuracy-only"`: As `"yes"`, but only the error metric is
-#'   acted on; check failures are ignored.
-#' @param max_retries Integer length 1 (default `NULL`, solver
-#'   default `3L`), Runge-Kutta methods with `adaptive = "yes"` only:
-#'   how many times a step failing the -100% crossing check is
-#'   retried at reduced length before the run aborts.
-#' @param retry_adjust Numeric length 1 in (0, 1) (default `NULL`,
-#'   solver default `0.5`), Runge-Kutta adaptive methods only: the
-#'   step-length multiplier applied on each retry.
-#' @param eps_tolerance Numeric length 1 (default is `0.1`), the
-#'   per-step error-metric bound targeted by `adaptive` control.
-#'   `0.1` suffices for most simulations; use `0.01` for more
-#'   accurate solutions. Values below `0.005` are hard to achieve
-#'   numerically. Ignored when `adaptive = "no"`.
+#' @param ... Runge-Kutta step-control arguments (`adaptive`,
+#'   `eps_tolerance`, `max_retries`, `retry_adjust`), accepted here so
+#'   Runge-Kutta runs remain fully configurable without the dedicated
+#'   front end; see [`ems_RK()`] for their documentation and
+#'   RK-tuned defaults. Any other argument is an error.
 #' @param n_threads Integer length 1 (default `1L`), OpenMP threads
 #'   per MPI task. Results with more than one thread are numerically
 #'   equivalent but not bit-reproducible across thread counts
@@ -239,10 +220,6 @@ ems_solve <- function(cmf_path,
                       matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
                       n_subintervals = 1L,
                       steps = c(2L, 4L, 8L),
-                      adaptive = c("no", "yes", "accuracy-only"),
-                      eps_tolerance = 0.1,
-                      max_retries = NULL,
-                      retry_adjust = NULL,
                       n_tasks = 1L,
                       n_threads = 1L,
                       precision = c("single", "double"),
@@ -259,13 +236,36 @@ ems_solve <- function(cmf_path,
                       postsim = NULL,
                       complementarity = NULL,
                       append_args = NULL,
-                      pre_probe = FALSE
+                      pre_probe = FALSE,
+                      ...
 ) {
 if (missing(cmf_path)) {
   .cli_missing(cmf_path)
 }
-args_list <- mget(names(formals()))
 call <- match.call()
+# Runge-Kutta step controls ride through the dots — full functionality
+# without four method-specific formals; ems_RK() is the documented
+# front end. Anything else here is an error, never silently ignored.
+rk_args <- list(
+  adaptive = c("no", "yes", "accuracy-only"),
+  eps_tolerance = 0.1,
+  max_retries = NULL,
+  retry_adjust = NULL
+)
+dots <- list(...)
+unknown_args <- setdiff(names(dots), names(rk_args))
+if (length(dots) &&
+  (is.null(names(dots)) || !all(nzchar(names(dots))) || length(unknown_args))) {
+  if (!length(unknown_args)) unknown_args <- "<unnamed>"
+  .cli_action(solve_err$rk_dots,
+    action = c("abort", "inform"),
+    call = call
+  )
+}
+for (nm in names(dots)) {
+  rk_args[nm] <- dots[nm]
+}
+args_list <- c(mget(setdiff(names(formals()), "...")), rk_args)
 output <- .implement_solve(
   args_list = args_list,
   call = call

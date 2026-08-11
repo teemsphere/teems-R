@@ -28,6 +28,19 @@
 #'   with .shf extension representing a fully prepared shock
 #'   file. No checks or modifications are carried out on this
 #'   file.
+#' @param adaptive Character length 1, adaptive step-size control
+#'   for the embedded Runge-Kutta methods (`"BoSha32"`,
+#'   `"DoPri54"`); default is `"no"`. See [`ems_RK()`] for the
+#'   choices.
+#' @param eps_tolerance Numeric length 1 (default is `0.1`), the
+#'   per-step error-metric bound targeted by `adaptive` control.
+#'   Ignored when `adaptive = "no"`. See [`ems_RK()`].
+#' @param max_retries Integer length 1 (default `NULL`, solver
+#'   default `3L`), `adaptive = "yes"` only: retries of a step
+#'   failing the -100% crossing check. See [`ems_RK()`].
+#' @param retry_adjust Numeric length 1 in (0, 1) (default `NULL`,
+#'   solver default `0.5`), adaptive control only: the step-length
+#'   multiplier applied on each retry. See [`ems_RK()`].
 #' @seealso [`ems_solve()`] for the standard package-supported
 #'   solver.
 #' @examples

@@ -150,33 +150,20 @@ when \code{solution_method = "Johansen"}.}
 
 \item{adaptive}{Character length 1, adaptive step-size control
 for the embedded Runge-Kutta methods (\code{"BoSha32"},
-\code{"DoPri54"}); default is \code{"no"}. Choices:
-\itemize{
-\item \code{"no"}: Fixed steps.
-\item \code{"yes"}: After each step the worst per-component error
-metric is compared against \code{eps_tolerance}; failing steps are
-redone with a smaller step size and passing steps adjust the
-next step size (at most halving or doubling it). A step on
-which a percentage-change variable crosses \verb{-100\%} is also
-retried at a reduced step size.
-\item \code{"accuracy-only"}: As \code{"yes"}, but only the error metric is
-acted on; check failures are ignored.
-}}
+\code{"DoPri54"}); default is \code{"no"}. See \code{\link[=ems_RK]{ems_RK()}} for the
+choices.}
 
 \item{eps_tolerance}{Numeric length 1 (default is \code{0.1}), the
 per-step error-metric bound targeted by \code{adaptive} control.
-\code{0.1} suffices for most simulations; use \code{0.01} for more
-accurate solutions. Values below \code{0.005} are hard to achieve
-numerically. Ignored when \code{adaptive = "no"}.}
+Ignored when \code{adaptive = "no"}. See \code{\link[=ems_RK]{ems_RK()}}.}
 
 \item{max_retries}{Integer length 1 (default \code{NULL}, solver
-default \code{3L}), Runge-Kutta methods with \code{adaptive = "yes"} only:
-how many times a step failing the -100\% crossing check is
-retried at reduced length before the run aborts.}
+default \code{3L}), \code{adaptive = "yes"} only: retries of a step
+failing the -100\% crossing check. See \code{\link[=ems_RK]{ems_RK()}}.}
 
 \item{retry_adjust}{Numeric length 1 in (0, 1) (default \code{NULL},
-solver default \code{0.5}), Runge-Kutta adaptive methods only: the
-step-length multiplier applied on each retry.}
+solver default \code{0.5}), adaptive control only: the step-length
+multiplier applied on each retry. See \code{\link[=ems_RK]{ems_RK()}}.}
 
 \item{n_tasks}{Integer length 1 (default is \code{1L}), number of
 tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}

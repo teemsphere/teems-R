@@ -10,10 +10,6 @@ ems_solve(
   matrix_method = c("auto", "LU", "DBBD", "SBBD", "NDBBD"),
   n_subintervals = 1L,
   steps = c(2L, 4L, 8L),
-  adaptive = c("no", "yes", "accuracy-only"),
-  eps_tolerance = 0.1,
-  max_retries = NULL,
-  retry_adjust = NULL,
   n_tasks = 1L,
   n_threads = 1L,
   precision = c("single", "double"),
@@ -30,7 +26,8 @@ ems_solve(
   postsim = NULL,
   complementarity = NULL,
   append_args = NULL,
-  pre_probe = FALSE
+  pre_probe = FALSE,
+  ...
 )
 }
 \arguments{
@@ -119,36 +116,6 @@ Runge-Kutta methods compute a single solution and instead
 take one step count (e.g. \code{steps = 8L}), which under
 \code{adaptive} control is the initial step count only. Ignored
 when \code{solution_method = "Johansen"}.}
-
-\item{adaptive}{Character length 1, adaptive step-size control
-for the embedded Runge-Kutta methods (\code{"BoSha32"},
-\code{"DoPri54"}); default is \code{"no"}. Choices:
-\itemize{
-\item \code{"no"}: Fixed steps.
-\item \code{"yes"}: After each step the worst per-component error
-metric is compared against \code{eps_tolerance}; failing steps are
-redone with a smaller step size and passing steps adjust the
-next step size (at most halving or doubling it). A step on
-which a percentage-change variable crosses \verb{-100\%} is also
-retried at a reduced step size.
-\item \code{"accuracy-only"}: As \code{"yes"}, but only the error metric is
-acted on; check failures are ignored.
-}}
-
-\item{eps_tolerance}{Numeric length 1 (default is \code{0.1}), the
-per-step error-metric bound targeted by \code{adaptive} control.
-\code{0.1} suffices for most simulations; use \code{0.01} for more
-accurate solutions. Values below \code{0.005} are hard to achieve
-numerically. Ignored when \code{adaptive = "no"}.}
-
-\item{max_retries}{Integer length 1 (default \code{NULL}, solver
-default \code{3L}), Runge-Kutta methods with \code{adaptive = "yes"} only:
-how many times a step failing the -100\% crossing check is
-retried at reduced length before the run aborts.}
-
-\item{retry_adjust}{Numeric length 1 in (0, 1) (default \code{NULL},
-solver default \code{0.5}), Runge-Kutta adaptive methods only: the
-step-length multiplier applied on each retry.}
 
 \item{n_tasks}{Integer length 1 (default is \code{1L}), number of
 tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}
@@ -252,6 +219,12 @@ with an unnamed singularity. Adds a probe run's cost (the
 pre-solve pipeline plus a maximum matching: negligible below
 ~10^5 equations, tens of seconds around 10^6). See
 \code{\link[=ems_probe]{ems_probe()}} for the full diagnosis.}
+
+\item{...}{Runge-Kutta step-control arguments (\code{adaptive},
+\code{eps_tolerance}, \code{max_retries}, \code{retry_adjust}), accepted here so
+Runge-Kutta runs remain fully configurable without the dedicated
+front end; see \code{\link[=ems_RK]{ems_RK()}} for their documentation and
+RK-tuned defaults. Any other argument is an error.}
 }
 \value{
 A tibble of model output variables and coefficients.

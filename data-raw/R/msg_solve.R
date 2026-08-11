@@ -47,6 +47,14 @@ build_solve_err <- function() {
     ),
     # test-ems_solve.R: "ems_solve errors when eps_tolerance is invalid"
     epstol_range = "{.arg eps_tolerance} must be a positive numeric of length 1.",
+    # test-ems_RK.R: unknown arguments in the ems_solve dots
+    rk_dots = c(
+      "Unknown argument{?s} {.arg {unknown_args}} passed to {.arg ...}.",
+      "{.arg ...} accepts the Runge-Kutta step controls only:
+      {.arg adaptive}, {.arg eps_tolerance}, {.arg max_retries} and
+      {.arg retry_adjust}. See {.fun ems_RK} for the dedicated
+      Runge-Kutta interface."
+    ),
     # test-ems_solve.R: "ems_solve errors when steps are not increasing"
     step_increasing = c(
       "{.arg steps} must be strictly increasing for {.arg solution_method} {.val {solution_method}}.",

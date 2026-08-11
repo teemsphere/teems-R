@@ -42,10 +42,6 @@
     matrix_method = "character",
     n_subintervals = c("numeric", "integer"),
     steps = c("numeric", "integer"),
-    adaptive = "character",
-    eps_tolerance = c("numeric", "integer"),
-    max_retries = c("NULL", "numeric", "integer"),
-    retry_adjust = c("NULL", "numeric"),
     n_tasks = c("numeric", "integer"),
     n_threads = c("numeric", "integer"),
     precision = "character",
@@ -62,7 +58,14 @@
     postsim = c("NULL", "logical"),
     complementarity = c("NULL", "teems_complementarity"),
     append_args = c("NULL", "character"),
-    pre_probe = "logical"
+    pre_probe = "logical",
+    # dot-passed Runge-Kutta controls sit after the formals in
+    # args_list (ems_solve appends them; .check_arg_class is
+    # positional)
+    adaptive = "character",
+    eps_tolerance = c("numeric", "integer"),
+    max_retries = c("NULL", "numeric", "integer"),
+    retry_adjust = c("NULL", "numeric")
   )
   if (!is.null(a$complementarity) &&
     !inherits(a$complementarity, "teems_complementarity")) {
