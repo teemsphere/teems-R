@@ -260,24 +260,6 @@
     a$enable_time <- FALSE
   }
 
-  # mapped equations restrict the solver to LU until the bordered
-  # methods learn to classify mapping-indexed references (teems-solver
-  # interim fatal); flag set at deploy (.finalize)
-  metadata_path <- file.path(dirname(paths$cmf), "metadata.rds")
-  mapped_equations <- file.exists(metadata_path) &&
-    isTRUE(readRDS(metadata_path)$mapped_equations)
-  if (mapped_equations) {
-    if (a$matrix_method %=% "auto") {
-      a$matrix_method <- "LU"
-    } else if (a$matrix_method %!=% "LU") {
-      matrix_method <- a$matrix_method
-      .cli_action(solve_err$map_matsol,
-        action = c("abort", "inform"),
-        call = call
-      )
-    }
-  }
-
   if (a$matrix_method %=% "auto") {
     a$matrix_method <- .resolve_auto_method(
       enable_time = a$enable_time,

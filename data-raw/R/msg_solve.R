@@ -54,14 +54,6 @@ build_solve_err <- function() {
     ),
     # test-ems_solve.R: "ems_solve errors when SBBD used with static model"
     invalid_method = "{.arg matrix_method} {.val {matrix_method}} only applicable to intertemporal model runs.",
-    # test-ems_solve.R: "mapped equations force the LU matrix method"
-    map_matsol = c(
-      "{.arg matrix_method} {.val {matrix_method}} is not available for
-      models with mapped equations; use {.val LU}.",
-      "The bordered methods cannot yet classify mapping-indexed
-      references across block borders (teems-solver interim
-      restriction)."
-    ),
     solution_err = "Errors detected during solution. See {.path {paths$diag_out}}.",
     solution_sing = c(
       "Singularity detected during solution. See {.path {paths$diag_out}}.",

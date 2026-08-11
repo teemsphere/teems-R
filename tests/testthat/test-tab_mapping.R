@@ -402,18 +402,29 @@ test_that("a mapped-index equation solves to the pinned total (e2e)", {
   )
 })
 
-test_that("mapped equations force the LU matrix method", {
-  nest_temp("map_matsol", write_dir)
-  skip_if(
-    !.docker_image_present(paste0("teems:", .resolve_docker_tag())),
-    "teems image not available"
-  )
+test_that("a mapped-index equation solves under a bordered method (e2e)", {
+  nest_temp("map_bordered", write_dir)
+  skip_if_no_mapping_e2e()
+  # same pinned model as the LU e2e, solved with DBBD: the solver's
+  # border classification routes mapped references, so the bordered
+  # methods accept mapped equations (bordered pair, Part A)
   d <- map_data(consistent_mblc)
   model <- ems_model(tab_file, closure_file)
-  cmf_path <- ems_deploy(d, model, swap_in = "vbloc")
-  expect_error(
-    ems_solve(cmf_path, matrix_method = "DBBD"),
-    "mapped equations"
+  cmf_path <- ems_deploy(
+    d,
+    model,
+    shock = ems_uniform_shock(var = "vbloc", value = 10),
+    swap_in = "vbloc"
+  )
+  out <- suppressMessages(
+    ems_solve(cmf_path, matrix_method = "DBBD", n_tasks = 2)
+  )
+  vtot <- out[out$name == "vtot", ]
+  expect_identical(nrow(vtot), 1L)
+  expect_equal(
+    as.numeric(vtot$dat[[1]][["Value"]]),
+    30,
+    tolerance = 1e-6
   )
 })
 

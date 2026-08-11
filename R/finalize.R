@@ -92,8 +92,9 @@
     call = call,
     data_call = data_call
   ))
-  # mapped equations restrict the solver to the LU matrix method
-  # (validated at solve time from the deploy metadata)
+  # record only: the bordered methods classify mapping-indexed
+  # references as border since the Part A slice, so every matrix
+  # method accepts mapped equations
   map_names <- v$model$name[v$model$type == "Mapping"]
   metadata$mapped_equations <- length(map_names) > 0L &&
     any(grepl(
