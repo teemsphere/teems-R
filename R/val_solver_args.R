@@ -28,6 +28,13 @@
     values = c("LU", "DBBD", "SBBD", "NDBBD", "auto"),
     error_call = call
   )
+
+  precision <- a$precision
+  a$precision <- rlang::arg_match(
+    arg = precision,
+    values = c("single", "double"),
+    error_call = call
+  )
   
   checklist <- list(
     cmf_path = "character",
@@ -41,6 +48,7 @@
     retry_adjust = c("NULL", "numeric"),
     n_tasks = c("numeric", "integer"),
     n_threads = c("numeric", "integer"),
+    precision = "character",
     laA = c("numeric", "integer"),
     laD = c("numeric", "integer"),
     laDi = c("numeric", "integer"),

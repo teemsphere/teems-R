@@ -36,6 +36,7 @@
     max_retries = v$max_retries,
     retry_adjust = v$retry_adjust,
     n_threads = v$n_threads,
+    precision = v$precision,
     n_subintervals = v$n_subintervals,
     inmemory = v$inmemory,
     verbosity = v$verbosity,

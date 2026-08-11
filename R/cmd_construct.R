@@ -18,6 +18,7 @@
                            max_retries = NULL,
                            retry_adjust = NULL,
                            n_threads = 1L,
+                           precision = "single",
                            inmemory = NULL,
                            verbosity = NULL,
                            assertions = NULL,
@@ -32,11 +33,18 @@
     paste0("teems", ":", .resolve_docker_tag()),
     "/bin/bash -c"
   )
+  # precision = "double" selects the f64 coefficient-storage binary
+  # shipped alongside the default in the same image
+  solver_bin <- if (precision %=% "double") {
+    "/opt/teems-solver/solver/teems-solver-f64"
+  } else {
+    "/opt/teems-solver/solver/teems-solver"
+  }
   exec_preamble <- paste(
     docker_preamble,
     '"/opt/teems-solver/lib/mpi/bin/mpiexec',
     "-n", n_tasks,
-    "/opt/teems-solver/solver/teems-solver",
+    solver_bin,
     "-cmdfile", paths$docker_cmf
   )
 

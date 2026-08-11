@@ -118,6 +118,9 @@
       "Parallelism: %s MPI task(s), %s OpenMP thread(s)",
       stats$mpi_size, opt$max_threads
     ),
+    if (!is.null(opt$store_precision)) {
+      sprintf("Coefficient storage: %s precision", opt$store_precision)
+    },
     sprintf(
       "System: %s equations, %s exogenous elements",
       stats$vecsize, stats$nexo

@@ -16,6 +16,7 @@ ems_solve(
   retry_adjust = NULL,
   n_tasks = 1L,
   n_threads = 1L,
+  precision = c("single", "double"),
   laA = 300L,
   laD = 200L,
   laDi = 500L,
@@ -157,6 +158,18 @@ tasks to run in parallel. Must be \code{1L} if \code{"matrix_method"}
 per MPI task. Results with more than one thread are numerically
 equivalent but not bit-reproducible across thread counts
 (parallel reduction order).}
+
+\item{precision}{Character length 1, \code{"single"} (default) or
+\code{"double"}: floating-point precision of the solver's coefficient
+storage. \code{"single"} halves memory traffic and suffices for
+ordinary step counts. \code{"double"} selects the double-precision
+solver binary shipped in the same image, removing the
+single-precision update-rounding floor that deep extrapolation
+ladders and many-step large-shock runs otherwise converge onto
+(per-pass rounding accumulates with step count, so beyond the
+floor extra steps stop helping). Roughly doubles
+coefficient-array memory. The effective precision is recorded in
+\code{sol.stats.json} and the model diagnostics solve record.}
 
 \item{laA}{Integer length 1 (default is \code{300L}). Memory
 parameter (\%) for \code{"LU"} and \code{"SBBD"}.}
