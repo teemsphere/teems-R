@@ -95,7 +95,7 @@ test_that("0/0 with zero_by_zero off maps to a named runtime abort (Z1)", {
       "Formula ZDTD = 0/0;",
       sep = "\n"
     ),
-    append_args = "-gpzerodivide 1"
+    gpzerodivide = TRUE
   )
   expect_match(msg, "runtime error")
   expect_match(msg, "zero divided by zero in a formula", fixed = TRUE)
@@ -112,7 +112,7 @@ test_that("1/0 with nonzero_by_zero off maps to a named runtime abort (Z2)", {
       "Formula ZDTE = 1/0;",
       sep = "\n"
     ),
-    append_args = "-gpzerodivide 1"
+    gpzerodivide = TRUE
   )
   expect_match(msg, "runtime error")
   expect_match(msg, "division by zero in a formula", fixed = TRUE)
@@ -144,7 +144,9 @@ test_that("a fatal range-test bound violation maps to a named runtime abort (B2)
       "Formula (all,r,REG) BNDP(r) = 20;",
       sep = "\n"
     ),
-    cmf_lines = "range test initial values = yes;"
+    # range-test modes are CLI controls via the R API; the solver no
+    # longer parses CMF statements (CMF = file manifest only)
+    range_test_initial = "fatal"
   )
   expect_match(msg, "runtime error")
   expect_match(msg, "has a value above its declared upper bound", fixed = TRUE)
