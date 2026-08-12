@@ -47,13 +47,36 @@ build_solve_err <- function() {
     ),
     # test-ems_solve.R: "ems_solve errors when eps_tolerance is invalid"
     epstol_range = "{.arg eps_tolerance} must be a positive numeric of length 1.",
-    # test-ems_RK.R: unknown arguments in the ems_solve dots
-    rk_dots = c(
+    # test-ems_RK.R / test-ems_solve.R: unknown arguments in the
+    # ems_solve dots
+    solver_dots = c(
       "Unknown argument{?s} {.arg {unknown_args}} passed to {.arg ...}.",
-      "{.arg ...} accepts the Runge-Kutta step controls only:
-      {.arg adaptive}, {.arg eps_tolerance}, {.arg max_retries} and
-      {.arg retry_adjust}. See {.fun ems_RK} for the dedicated
-      Runge-Kutta interface."
+      "{.arg ...} accepts the Runge-Kutta step controls
+      ({.arg adaptive}, {.arg eps_tolerance}, {.arg max_retries},
+      {.arg retry_adjust}; see {.fun ems_RK}), the MA48 workspace
+      initial guesses ({.arg laA}, {.arg laD}, {.arg laDi}) and the
+      expert solver flags ({.arg fastrefac}, {.arg gpzerodivide},
+      {.arg cntl_3}, {.arg cntl_6}, {.arg nsbbdblocks},
+      {.arg withmc66}, {.arg smllthreads}, {.arg tempdir},
+      {.arg nowrites})."
+    ),
+    # test-solve_in_situ.R: solver_args must be a fully named list
+    solver_args_list = c(
+      "{.arg solver_args} must be a fully named list.",
+      "It carries the named solver arguments {.fun ems_solve} accepts
+      through {.arg ...}; the in-situ {.arg ...} is reserved for the
+      input files."
+    ),
+    # test-solve_in_situ.R: unknown names in solver_args
+    solver_args_unknown = c(
+      "Unknown argument{?s} {.arg {unknown_args}} in {.arg solver_args}.",
+      "Accepted: the MA48 workspace initial guesses ({.arg laA},
+      {.arg laD}, {.arg laDi}) and the expert solver flags
+      ({.arg fastrefac}, {.arg gpzerodivide}, {.arg cntl_3},
+      {.arg cntl_6}, {.arg nsbbdblocks}, {.arg withmc66},
+      {.arg smllthreads}, {.arg tempdir}, {.arg nowrites}). The
+      Runge-Kutta step controls are formal arguments of
+      {.fun solve_in_situ}."
     ),
     # test-ems_solve.R: "ems_solve errors when steps are not increasing"
     step_increasing = c(

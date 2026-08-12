@@ -41,6 +41,15 @@
 #' @param retry_adjust Numeric length 1 in (0, 1) (default `NULL`,
 #'   solver default `0.5`), adaptive control only: the step-length
 #'   multiplier applied on each retry. See [`ems_RK()`].
+#' @param solver_args Named list (default `NULL`). The additional
+#'   named solver arguments [`ems_solve()`] accepts through `...` —
+#'   the MA48 workspace initial guesses (`laA`, `laD`, `laDi`) and
+#'   the expert solver flags (`fastrefac`, `gpzerodivide`, `cntl_3`,
+#'   `cntl_6`, `nsbbdblocks`, `withmc66`, `smllthreads`, `tempdir`,
+#'   `nowrites`) — passed as a list because the in-situ `...` carries
+#'   the input files. The Runge-Kutta step controls are formal
+#'   arguments here. See the [`ems_solve()`] `...` documentation for
+#'   each argument's meaning.
 #' @seealso [`ems_solve()`] for the standard package-supported
 #'   solver.
 #' @examples
@@ -74,9 +83,6 @@ solve_in_situ <- function(...,
                           n_tasks = 1L,
                           n_threads = 1L,
                           precision = c("single", "double"),
-                          laA = 300L,
-                          laD = 200L,
-                          laDi = 500L,
                           inmemory = NULL,
                           verbosity = NULL,
                           suppress_outputs = FALSE,
@@ -86,9 +92,27 @@ solve_in_situ <- function(...,
                           range_test_updated = NULL,
                           postsim = NULL,
                           complementarity = NULL,
-                          append_args = NULL
+                          solver_args = NULL
 ) {
 call <- match.call()
+# the in-situ dots carry the input files, so the named solver extras
+# ems_solve() takes through its dots arrive as a list here instead
+if (!is.null(solver_args)) {
+  if (!is.list(solver_args) || length(solver_args) == 0L ||
+    is.null(names(solver_args)) || !all(nzchar(names(solver_args)))) {
+    .cli_action(solve_err$solver_args_list,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
+  unknown_args <- setdiff(names(solver_args), names(.solver_extra_args()))
+  if (length(unknown_args)) {
+    .cli_action(solve_err$solver_args_unknown,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
+}
 if (missing(model_dir)) {
   .cli_missing(model_dir)
 }
@@ -125,9 +149,6 @@ return(.implement_solve_in_situ(
   n_tasks = n_tasks,
   n_threads = n_threads,
   precision = precision,
-  laA = laA,
-  laD = laD,
-  laDi = laDi,
   inmemory = inmemory,
   verbosity = verbosity,
   suppress_outputs = suppress_outputs,
@@ -137,7 +158,7 @@ return(.implement_solve_in_situ(
   range_test_updated = range_test_updated,
   postsim = postsim,
   complementarity = complementarity,
-  append_args = append_args,
+  solver_args = solver_args,
   call = call
 ))
 }

@@ -13,9 +13,6 @@ ems_solve(
   n_tasks = 1L,
   n_threads = 1L,
   precision = c("single", "double"),
-  laA = 300L,
-  laD = 200L,
-  laDi = 500L,
   inmemory = NULL,
   verbosity = NULL,
   suppress_outputs = FALSE,
@@ -25,7 +22,6 @@ ems_solve(
   range_test_updated = NULL,
   postsim = NULL,
   complementarity = NULL,
-  append_args = NULL,
   pre_probe = FALSE,
   ...
 )
@@ -138,15 +134,6 @@ floor extra steps stop helping). Roughly doubles
 coefficient-array memory. The effective precision is recorded in
 \code{sol.stats.json} and the model diagnostics solve record.}
 
-\item{laA}{Integer length 1 (default is \code{300L}). Memory
-parameter (\%) for \code{"LU"} and \code{"SBBD"}.}
-
-\item{laD}{Integer length 1 (default is \code{200L}). Memory
-parameter (\%) for \code{"DBBD"} and \code{"NDBBD"}.}
-
-\item{laDi}{Integer length 1 (default is \code{500L}). Memory
-parameter (\%) for \code{"NDBBD"} only.}
-
 \item{inmemory}{Logical length 1 or \code{NULL} (default). When
 \code{TRUE}, the solver keeps value arrays and block factors
 resident in memory instead of spilling them to scratch
@@ -196,21 +183,6 @@ models with active \code{Complementarity} statements (GEMPACK manual
 ch. 51). \code{NULL} applies the solver defaults; ignored by the
 solver when the model has no active complementarity component.}
 
-\item{append_args}{Character vector (default \code{NULL}).
-Additional arguments appended to the Docker run command — the
-escape hatch for expert solver flags without a named argument:
-\verb{-fastrefac 1} (persistent-pivot refactorization, experimental),
-\verb{-gpzerodivide 1} (GEMPACK dual-class ZERODIVIDE semantics),
-\code{-cntl_3}/\code{-cntl_6} (HSL pivot/ordering thresholds),
-\code{-nsbbdblocks} (SBBD block-count override), \verb{-withmc66 1}
-(MC66 row ordering for SBBD), \code{-smllthreads} (OpenMP threads
-for small sections), \code{-tempdir} (container-side scratch
-directory), \verb{-nowrites 1} (skip the solver-side output-file
-dumps; coefficient composition then has nothing to read —
-distinct from \code{suppress_outputs}, which only skips the R-side
-composition). Effective values of recorded flags land in
-\code{sol.stats.json} regardless of how they were passed.}
-
 \item{pre_probe}{Logical length 1 (default \code{FALSE}). When \code{TRUE},
 run the solver's structural probe first and abort — with the
 defective variable and equation elements named — if the deployed
@@ -220,11 +192,30 @@ pre-solve pipeline plus a maximum matching: negligible below
 ~10^5 equations, tens of seconds around 10^6). See
 \code{\link[=ems_probe]{ems_probe()}} for the full diagnosis.}
 
-\item{...}{Runge-Kutta step-control arguments (\code{adaptive},
-\code{eps_tolerance}, \code{max_retries}, \code{retry_adjust}), accepted here so
-Runge-Kutta runs remain fully configurable without the dedicated
-front end; see \code{\link[=ems_RK]{ems_RK()}} for their documentation and
-RK-tuned defaults. Any other argument is an error.}
+\item{...}{Additional named solver arguments; anything else is an
+error, never a silently ignored flag. Three groups are accepted:
+the Runge-Kutta step controls (\code{adaptive}, \code{eps_tolerance},
+\code{max_retries}, \code{retry_adjust}; see \code{\link[=ems_RK]{ems_RK()}} for their
+documentation and RK-tuned defaults); the MA48 workspace initial
+guesses \code{laA}, \code{laD} and \code{laDi} (integer percents of the system
+nonzeros — \code{laA} for \code{"LU"}/\code{"SBBD"} and the diagonal blocks,
+\code{laD} for the \code{"DBBD"}/\code{"NDBBD"} interface systems, \code{laDi} for
+\code{"NDBBD"} intermediate interfaces; when omitted, a previous run
+of the same deployment warm-starts them from its recorded
+\code{la_used} in \code{sol.stats.json}, else package defaults apply, and
+the solver grows the workspace itself if any guess proves too
+small); and the expert solver flags \code{fastrefac} (persistent-pivot
+refactorization, logical), \code{gpzerodivide} (GEMPACK dual-class
+ZERODIVIDE semantics, logical), \code{cntl_3}/\code{cntl_6} (HSL
+pivot/ordering thresholds, numeric), \code{nsbbdblocks} (SBBD
+block-count override, integer), \code{withmc66} (MC66 row ordering
+for SBBD, logical), \code{smllthreads} (OpenMP threads for small
+sections, integer), \code{tempdir} (container-side scratch directory,
+character) and \code{nowrites} (skip the solver-side output-file
+dumps, logical; coefficient composition then has nothing to read
+— distinct from \code{suppress_outputs}, which only skips the R-side
+composition). Effective values of recorded flags land in
+\code{sol.stats.json} regardless of how they were passed.}
 }
 \value{
 A tibble of model output variables and coefficients.
@@ -249,10 +240,12 @@ time; set \code{matrix_method} explicitly to override it. Runs
 without deploy metadata (e.g. \code{\link[=solve_in_situ]{solve_in_situ()}}) fall back
 to \code{"LU"} for static models regardless of size.
 
-Increase \code{laA}, \code{laD}, or \code{laDi} gradually if the
-solver returns "Error return from MA48B/BD because LA is
-...". The relevant parameter depends on the \code{matrix_method}
-in use (see above).
+The MA48 workspace sizes (\code{laA}, \code{laD}, \code{laDi}) never need
+manual tuning: the solver reallocates and retries on a
+too-small workspace, logging each growth, and records the
+effective sizes as \code{la_used} in \code{sol.stats.json}, which later
+runs of the same deployment reuse as their starting point. Pass
+them through \code{...} only to pin a specific starting size.
 }
 \examples{
 \dontrun{

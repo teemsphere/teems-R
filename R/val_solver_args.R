@@ -36,36 +36,37 @@
     error_call = call
   )
   
-  checklist <- list(
-    cmf_path = "character",
-    solution_method = "character",
-    matrix_method = "character",
-    n_subintervals = c("numeric", "integer"),
-    steps = c("numeric", "integer"),
-    n_tasks = c("numeric", "integer"),
-    n_threads = c("numeric", "integer"),
-    precision = "character",
-    laA = c("numeric", "integer"),
-    laD = c("numeric", "integer"),
-    laDi = c("numeric", "integer"),
-    inmemory = c("NULL", "logical"),
-    verbosity = c("NULL", "numeric", "integer"),
-    suppress_outputs = "logical",
-    terminal_run = "logical",
-    assertions = c("NULL", "character"),
-    range_test_initial = c("NULL", "character"),
-    range_test_updated = c("NULL", "character"),
-    postsim = c("NULL", "logical"),
-    complementarity = c("NULL", "teems_complementarity"),
-    append_args = c("NULL", "character"),
-    pre_probe = "logical",
-    # dot-passed Runge-Kutta controls sit after the formals in
-    # args_list (ems_solve appends them; .check_arg_class is
-    # positional)
-    adaptive = "character",
-    eps_tolerance = c("numeric", "integer"),
-    max_retries = c("NULL", "numeric", "integer"),
-    retry_adjust = c("NULL", "numeric")
+  checklist <- c(
+    list(
+      cmf_path = "character",
+      solution_method = "character",
+      matrix_method = "character",
+      n_subintervals = c("numeric", "integer"),
+      steps = c("numeric", "integer"),
+      n_tasks = c("numeric", "integer"),
+      n_threads = c("numeric", "integer"),
+      precision = "character",
+      inmemory = c("NULL", "logical"),
+      verbosity = c("NULL", "numeric", "integer"),
+      suppress_outputs = "logical",
+      terminal_run = "logical",
+      assertions = c("NULL", "character"),
+      range_test_initial = c("NULL", "character"),
+      range_test_updated = c("NULL", "character"),
+      postsim = c("NULL", "logical"),
+      complementarity = c("NULL", "teems_complementarity"),
+      pre_probe = "logical",
+      # dot-passed Runge-Kutta controls sit after the formals in
+      # args_list (ems_solve appends them; .check_arg_class is
+      # positional)
+      adaptive = "character",
+      eps_tolerance = c("numeric", "integer"),
+      max_retries = c("NULL", "numeric", "integer"),
+      retry_adjust = c("NULL", "numeric")
+    ),
+    # dot-passed la* initial guesses and expert flags follow the RK
+    # controls, in .solver_extra_args() order
+    .solver_extra_checklist()
   )
   if (!is.null(a$complementarity) &&
     !inherits(a$complementarity, "teems_complementarity")) {
@@ -124,6 +125,7 @@
       call = call
     )
   }
+  .validate_solver_extras(a = a, call = call)
 
   .check_arg_class(
     args_list = a,

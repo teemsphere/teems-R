@@ -26,9 +26,6 @@
     timeID = timeID,
     n_tasks = v$n_tasks,
     steps = v$steps,
-    laA = v$laA,
-    laDi = v$laDi,
-    laD = v$laD,
     matsol = v$matsol,
     solmed = v$solmed,
     adaptive = v$adaptive,
@@ -45,7 +42,10 @@
     range_test_updated = v$range_test_updated,
     postsim = v$postsim,
     complementarity = v$complementarity,
-    append_args = v$append_args
+    laA = v$laA,
+    laD = v$laD,
+    laDi = v$laDi,
+    extra_flags = .extra_cli_flags(v)
   )
 
   # need a process running in parallel, grepping output for error and then kill appropriate PID

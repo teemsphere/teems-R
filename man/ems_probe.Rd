@@ -4,7 +4,7 @@
 \alias{ems_probe}
 \title{Structural probe of a deployed model}
 \usage{
-ems_probe(cmf_path, fine = TRUE, append_args = NULL)
+ems_probe(cmf_path, fine = TRUE, ...)
 }
 \arguments{
 \item{cmf_path}{Character length 1, path to the CMF file generated
@@ -16,8 +16,12 @@ view of the system — its irreducible simultaneous cores versus the
 recursively solvable remainder — including the composition of the
 largest cores by equation and variable.}
 
-\item{append_args}{Character vector (default \code{NULL}). Additional
-arguments appended to the solver command.}
+\item{...}{Additional named solver arguments: the MA48 workspace
+initial guesses (\code{laA}, \code{laD}, \code{laDi}) and the expert solver
+flags (\code{fastrefac}, \code{gpzerodivide}, \code{cntl_3}, \code{cntl_6},
+\code{nsbbdblocks}, \code{withmc66}, \code{smllthreads}, \code{tempdir},
+\code{nowrites}); see the \code{\link[=ems_solve]{ems_solve()}} \code{...} documentation.
+Anything else is an error, never a silently ignored flag.}
 }
 \value{
 A \code{teems_probe} object: validity verdict and rank per

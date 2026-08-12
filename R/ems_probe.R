@@ -15,8 +15,12 @@
 #'   view of the system — its irreducible simultaneous cores versus the
 #'   recursively solvable remainder — including the composition of the
 #'   largest cores by equation and variable.
-#' @param append_args Character vector (default `NULL`). Additional
-#'   arguments appended to the solver command.
+#' @param ... Additional named solver arguments: the MA48 workspace
+#'   initial guesses (`laA`, `laD`, `laDi`) and the expert solver
+#'   flags (`fastrefac`, `gpzerodivide`, `cntl_3`, `cntl_6`,
+#'   `nsbbdblocks`, `withmc66`, `smllthreads`, `tempdir`,
+#'   `nowrites`); see the [`ems_solve()`] `...` documentation.
+#'   Anything else is an error, never a silently ignored flag.
 #' @details The probe runs on a single MPI rank; its cost is the
 #'   pre-solve pipeline plus the matching (milliseconds at 10^4
 #'   equations, ~a minute at 10^6). A structurally singular result does
@@ -43,11 +47,26 @@
 #' }
 ems_probe <- function(cmf_path,
                       fine = TRUE,
-                      append_args = NULL) {
+                      ...) {
   if (missing(cmf_path)) {
     .cli_missing(cmf_path)
   }
   call <- match.call()
+  xtr_args <- .solver_extra_args()
+  dots <- list(...)
+  unknown_args <- setdiff(names(dots), names(xtr_args))
+  if (length(dots) &&
+    (is.null(names(dots)) || !all(nzchar(names(dots))) || length(unknown_args))) {
+    if (!length(unknown_args)) unknown_args <- "<unnamed>"
+    .cli_action(probe_err$probe_dots,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
+  for (nm in names(dots)) {
+    xtr_args[nm] <- dots[nm]
+  }
+  .validate_solver_extras(a = xtr_args, call = call)
   if (!rlang::is_logical(fine, n = 1) || is.na(fine)) {
     arg <- "fine"
     .cli_action(probe_err$x_logical,
@@ -69,7 +88,7 @@ ems_probe <- function(cmf_path,
     paths = paths,
     timeID = paste0(timeID, "_probe"),
     fine = fine,
-    append_args = append_args
+    extra = xtr_args
   )
   .run_solver_cmd(probe_cmd)
   probe <- .collect_probe(
@@ -93,7 +112,7 @@ ems_probe <- function(cmf_path,
 .construct_probe_cmd <- function(paths,
                                  timeID,
                                  fine,
-                                 append_args = NULL) {
+                                 extra = NULL) {
   docker_preamble <- paste(
     "docker run --rm --mount",
     paste("type=bind", paste0("src=", paths$run), "dst=/opt/teems", sep = ","),
@@ -119,8 +138,20 @@ ems_probe <- function(cmf_path,
     "-maxthreads", 1L,
     "-nox"
   )
-  if (!is.null(append_args)) {
-    solver_param <- paste(solver_param, paste(append_args, collapse = " "))
+  if (!is.null(extra)) {
+    # the la* guesses ride explicitly (the probe factorizes the same
+    # condensed system); the remaining flags render as in ems_solve
+    la_flags <- paste(c(
+      if (!is.null(extra$laA)) paste("-laA", as.integer(extra$laA)),
+      if (!is.null(extra$laD)) paste("-laD", as.integer(extra$laD)),
+      if (!is.null(extra$laDi)) paste("-laDi", as.integer(extra$laDi))
+    ), collapse = " ")
+    extra_flags <- .extra_cli_flags(extra)
+    for (flags in c(la_flags, extra_flags)) {
+      if (!is.null(flags) && nzchar(flags)) {
+        solver_param <- paste(solver_param, flags)
+      }
+    }
   }
   solver_out <- paste("2>&1 | tee", paste0(docker_diagnostic_out, "\""))
   paste(exec_preamble, solver_param, solver_out)

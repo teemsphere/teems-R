@@ -21,9 +21,6 @@ solve_in_situ(
   n_tasks = 1L,
   n_threads = 1L,
   precision = c("single", "double"),
-  laA = 300L,
-  laD = 200L,
-  laDi = 500L,
   inmemory = NULL,
   verbosity = NULL,
   suppress_outputs = FALSE,
@@ -33,7 +30,7 @@ solve_in_situ(
   range_test_updated = NULL,
   postsim = NULL,
   complementarity = NULL,
-  append_args = NULL
+  solver_args = NULL
 )
 }
 \arguments{
@@ -186,15 +183,6 @@ floor extra steps stop helping). Roughly doubles
 coefficient-array memory. The effective precision is recorded in
 \code{sol.stats.json} and the model diagnostics solve record.}
 
-\item{laA}{Integer length 1 (default is \code{300L}). Memory
-parameter (\%) for \code{"LU"} and \code{"SBBD"}.}
-
-\item{laD}{Integer length 1 (default is \code{200L}). Memory
-parameter (\%) for \code{"DBBD"} and \code{"NDBBD"}.}
-
-\item{laDi}{Integer length 1 (default is \code{500L}). Memory
-parameter (\%) for \code{"NDBBD"} only.}
-
 \item{inmemory}{Logical length 1 or \code{NULL} (default). When
 \code{TRUE}, the solver keeps value arrays and block factors
 resident in memory instead of spilling them to scratch
@@ -244,20 +232,15 @@ models with active \code{Complementarity} statements (GEMPACK manual
 ch. 51). \code{NULL} applies the solver defaults; ignored by the
 solver when the model has no active complementarity component.}
 
-\item{append_args}{Character vector (default \code{NULL}).
-Additional arguments appended to the Docker run command — the
-escape hatch for expert solver flags without a named argument:
-\verb{-fastrefac 1} (persistent-pivot refactorization, experimental),
-\verb{-gpzerodivide 1} (GEMPACK dual-class ZERODIVIDE semantics),
-\code{-cntl_3}/\code{-cntl_6} (HSL pivot/ordering thresholds),
-\code{-nsbbdblocks} (SBBD block-count override), \verb{-withmc66 1}
-(MC66 row ordering for SBBD), \code{-smllthreads} (OpenMP threads
-for small sections), \code{-tempdir} (container-side scratch
-directory), \verb{-nowrites 1} (skip the solver-side output-file
-dumps; coefficient composition then has nothing to read —
-distinct from \code{suppress_outputs}, which only skips the R-side
-composition). Effective values of recorded flags land in
-\code{sol.stats.json} regardless of how they were passed.}
+\item{solver_args}{Named list (default \code{NULL}). The additional
+named solver arguments \code{\link[=ems_solve]{ems_solve()}} accepts through \code{...} —
+the MA48 workspace initial guesses (\code{laA}, \code{laD}, \code{laDi}) and
+the expert solver flags (\code{fastrefac}, \code{gpzerodivide}, \code{cntl_3},
+\code{cntl_6}, \code{nsbbdblocks}, \code{withmc66}, \code{smllthreads}, \code{tempdir},
+\code{nowrites}) — passed as a list because the in-situ \code{...} carries
+the input files. The Runge-Kutta step controls are formal
+arguments here. See the \code{\link[=ems_solve]{ems_solve()}} \code{...} documentation for
+each argument's meaning.}
 }
 \value{
 A tibble containing model output variables and

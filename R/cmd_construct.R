@@ -8,9 +8,6 @@
                            n_tasks,
                            n_subintervals,
                            solmed,
-                           laA,
-                           laDi,
-                           laD,
                            matsol,
                            steps,
                            adaptive = "no",
@@ -26,7 +23,10 @@
                            range_test_updated = NULL,
                            postsim = NULL,
                            complementarity = NULL,
-                           append_args) {
+                           laA = NULL,
+                           laD = NULL,
+                           laDi = NULL,
+                           extra_flags = NULL) {
   docker_preamble <- paste(
     "docker run --rm --mount",
     paste("type=bind", paste0("src=", paths$run), "dst=/opt/teems", sep = ","),
@@ -49,6 +49,15 @@
   )
 
   docker_diagnostic_out <- file.path(paths$docker_run, "out", paste0("solver_out", "_", timeID, ".txt"))
+  # la* initial guesses: user-passed > previous run's recorded la_used
+  # > package cold defaults; the solver grows the workspace itself on
+  # a too-small guess, so these only set the starting size
+  la <- .resolve_la_args(
+    laA = laA,
+    laD = laD,
+    laDi = laDi,
+    cmf_path = paths$cmf
+  )
   solver_param <- paste(
     "-matsol", matsol,
     if (solmed %in% c("Gragg", "Euler")) {
@@ -62,9 +71,9 @@
     },
     "-nsubints", n_subintervals,
     "-solmed", solmed,
-    "-laA", laA,
-    "-laDi", laDi,
-    "-laD", laD,
+    "-laA", la$laA,
+    "-laDi", la$laDi,
+    "-laD", la$laD,
     if (!is.null(inmemory)) {
       paste("-inmemory", as.integer(inmemory))
     },
@@ -100,8 +109,8 @@
     solver_param <- paste(solver_param, comp_flags)
   }
 
-  if (!is.null(append_args)) {
-    solver_param <- paste(solver_param, paste(append_args, collapse = " "))
+  if (!is.null(extra_flags) && nzchar(extra_flags)) {
+    solver_param <- paste(solver_param, extra_flags)
   }
 
   solver_out <- paste("2>&1 | tee", paste0(docker_diagnostic_out, "\""))

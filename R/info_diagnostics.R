@@ -114,6 +114,14 @@
       "Matrix method: %s (laA %s, laDi %s, laD %s; fastrefac %s)",
       stats$matrix_method, opt$laA, opt$laDi, opt$laD, onoff(opt$fastrefac)
     ),
+    # effective MA48 workspace sizes after any in-solver growth
+    # (solver >= la auto-sizing); the next run warm-starts from these
+    if (!is.null(stats$la_used)) {
+      sprintf(
+        "Workspace used (equivalent percents): laA %s, laDi %s, laD %s",
+        stats$la_used$laA, stats$la_used$laDi, stats$la_used$laD
+      )
+    },
     sprintf(
       "Parallelism: %s MPI task(s), %s OpenMP thread(s)",
       stats$mpi_size, opt$max_threads

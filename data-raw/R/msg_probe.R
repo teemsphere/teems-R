@@ -2,6 +2,15 @@ build_probe_err <- function() {
   list(
     # test-ems_probe.R: "ems_probe errors when fine is not a logical scalar"
     x_logical = "{.arg {arg}} must be a logical of length 1.",
+    # test-ems_probe.R: unknown arguments in the ems_probe dots
+    probe_dots = c(
+      "Unknown argument{?s} {.arg {unknown_args}} passed to {.arg ...}.",
+      "{.arg ...} accepts the MA48 workspace initial guesses
+      ({.arg laA}, {.arg laD}, {.arg laDi}) and the expert solver
+      flags ({.arg fastrefac}, {.arg gpzerodivide}, {.arg cntl_3},
+      {.arg cntl_6}, {.arg nsbbdblocks}, {.arg withmc66},
+      {.arg smllthreads}, {.arg tempdir}, {.arg nowrites})."
+    ),
     # test-ems_probe.R: "probe report errors when the report is absent"
     no_report = c(
       "No probe report was produced at {.path {probe_path}}.",

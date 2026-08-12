@@ -82,11 +82,30 @@
 #'   take one step count (e.g. `steps = 8L`), which under
 #'   `adaptive` control is the initial step count only. Ignored
 #'   when `solution_method = "Johansen"`.
-#' @param ... Runge-Kutta step-control arguments (`adaptive`,
-#'   `eps_tolerance`, `max_retries`, `retry_adjust`), accepted here so
-#'   Runge-Kutta runs remain fully configurable without the dedicated
-#'   front end; see [`ems_RK()`] for their documentation and
-#'   RK-tuned defaults. Any other argument is an error.
+#' @param ... Additional named solver arguments; anything else is an
+#'   error, never a silently ignored flag. Three groups are accepted:
+#'   the Runge-Kutta step controls (`adaptive`, `eps_tolerance`,
+#'   `max_retries`, `retry_adjust`; see [`ems_RK()`] for their
+#'   documentation and RK-tuned defaults); the MA48 workspace initial
+#'   guesses `laA`, `laD` and `laDi` (integer percents of the system
+#'   nonzeros — `laA` for `"LU"`/`"SBBD"` and the diagonal blocks,
+#'   `laD` for the `"DBBD"`/`"NDBBD"` interface systems, `laDi` for
+#'   `"NDBBD"` intermediate interfaces; when omitted, a previous run
+#'   of the same deployment warm-starts them from its recorded
+#'   `la_used` in `sol.stats.json`, else package defaults apply, and
+#'   the solver grows the workspace itself if any guess proves too
+#'   small); and the expert solver flags `fastrefac` (persistent-pivot
+#'   refactorization, logical), `gpzerodivide` (GEMPACK dual-class
+#'   ZERODIVIDE semantics, logical), `cntl_3`/`cntl_6` (HSL
+#'   pivot/ordering thresholds, numeric), `nsbbdblocks` (SBBD
+#'   block-count override, integer), `withmc66` (MC66 row ordering
+#'   for SBBD, logical), `smllthreads` (OpenMP threads for small
+#'   sections, integer), `tempdir` (container-side scratch directory,
+#'   character) and `nowrites` (skip the solver-side output-file
+#'   dumps, logical; coefficient composition then has nothing to read
+#'   — distinct from `suppress_outputs`, which only skips the R-side
+#'   composition). Effective values of recorded flags land in
+#'   `sol.stats.json` regardless of how they were passed.
 #' @param n_threads Integer length 1 (default `1L`), OpenMP threads
 #'   per MPI task. Results with more than one thread are numerically
 #'   equivalent but not bit-reproducible across thread counts
@@ -105,12 +124,6 @@
 #' @param n_tasks Integer length 1 (default is `1L`), number of
 #'   tasks to run in parallel. Must be `1L` if `"matrix_method"`
 #'   == "LU".
-#' @param laA Integer length 1 (default is `300L`). Memory
-#'   parameter (%) for `"LU"` and `"SBBD"`.
-#' @param laD Integer length 1 (default is `200L`). Memory
-#'   parameter (%) for `"DBBD"` and `"NDBBD"`.
-#' @param laDi Integer length 1 (default is `500L`). Memory
-#'   parameter (%) for `"NDBBD"` only.
 #' @param inmemory Logical length 1 or `NULL` (default). When
 #'   `TRUE`, the solver keeps value arrays and block factors
 #'   resident in memory instead of spilling them to scratch
@@ -134,10 +147,12 @@
 #'   without deploy metadata (e.g. [`solve_in_situ()`]) fall back
 #'   to `"LU"` for static models regardless of size.
 #'
-#'   Increase `laA`, `laD`, or `laDi` gradually if the
-#'   solver returns "Error return from MA48B/BD because LA is
-#'   ...". The relevant parameter depends on the `matrix_method`
-#'   in use (see above).
+#'   The MA48 workspace sizes (`laA`, `laD`, `laDi`) never need
+#'   manual tuning: the solver reallocates and retries on a
+#'   too-small workspace, logging each growth, and records the
+#'   effective sizes as `la_used` in `sol.stats.json`, which later
+#'   runs of the same deployment reuse as their starting point. Pass
+#'   them through `...` only to pin a specific starting size.
 #' @param suppress_outputs Logical length 1 (default is `FALSE`).
 #'   When `TRUE` solver outputs are not automatically converted
 #'   into structured data with [`ems_compose()`].
@@ -165,20 +180,6 @@
 #'   models with active `Complementarity` statements (GEMPACK manual
 #'   ch. 51). `NULL` applies the solver defaults; ignored by the
 #'   solver when the model has no active complementarity component.
-#' @param append_args Character vector (default `NULL`).
-#'   Additional arguments appended to the Docker run command — the
-#'   escape hatch for expert solver flags without a named argument:
-#'   `-fastrefac 1` (persistent-pivot refactorization, experimental),
-#'   `-gpzerodivide 1` (GEMPACK dual-class ZERODIVIDE semantics),
-#'   `-cntl_3`/`-cntl_6` (HSL pivot/ordering thresholds),
-#'   `-nsbbdblocks` (SBBD block-count override), `-withmc66 1`
-#'   (MC66 row ordering for SBBD), `-smllthreads` (OpenMP threads
-#'   for small sections), `-tempdir` (container-side scratch
-#'   directory), `-nowrites 1` (skip the solver-side output-file
-#'   dumps; coefficient composition then has nothing to read —
-#'   distinct from `suppress_outputs`, which only skips the R-side
-#'   composition). Effective values of recorded flags land in
-#'   `sol.stats.json` regardless of how they were passed.
 #' @param pre_probe Logical length 1 (default `FALSE`). When `TRUE`,
 #'   run the solver's structural probe first and abort — with the
 #'   defective variable and equation elements named — if the deployed
@@ -223,9 +224,6 @@ ems_solve <- function(cmf_path,
                       n_tasks = 1L,
                       n_threads = 1L,
                       precision = c("single", "double"),
-                      laA = 300L,
-                      laD = 200L,
-                      laDi = 500L,
                       inmemory = NULL,
                       verbosity = NULL,
                       suppress_outputs = FALSE,
@@ -235,7 +233,6 @@ ems_solve <- function(cmf_path,
                       range_test_updated = NULL,
                       postsim = NULL,
                       complementarity = NULL,
-                      append_args = NULL,
                       pre_probe = FALSE,
                       ...
 ) {
@@ -243,29 +240,35 @@ if (missing(cmf_path)) {
   .cli_missing(cmf_path)
 }
 call <- match.call()
-# Runge-Kutta step controls ride through the dots — full functionality
-# without four method-specific formals; ems_RK() is the documented
-# front end. Anything else here is an error, never silently ignored.
+# Named extras ride through the dots: the Runge-Kutta step controls
+# (ems_RK() is the documented front end), the MA48 workspace initial
+# guesses and the expert solver flags. Anything else here is an
+# error, never silently ignored.
 rk_args <- list(
   adaptive = c("no", "yes", "accuracy-only"),
   eps_tolerance = 0.1,
   max_retries = NULL,
   retry_adjust = NULL
 )
+xtr_args <- .solver_extra_args()
 dots <- list(...)
-unknown_args <- setdiff(names(dots), names(rk_args))
+unknown_args <- setdiff(names(dots), c(names(rk_args), names(xtr_args)))
 if (length(dots) &&
   (is.null(names(dots)) || !all(nzchar(names(dots))) || length(unknown_args))) {
   if (!length(unknown_args)) unknown_args <- "<unnamed>"
-  .cli_action(solve_err$rk_dots,
+  .cli_action(solve_err$solver_dots,
     action = c("abort", "inform"),
     call = call
   )
 }
 for (nm in names(dots)) {
-  rk_args[nm] <- dots[nm]
+  if (nm %in% names(rk_args)) {
+    rk_args[nm] <- dots[nm]
+  } else {
+    xtr_args[nm] <- dots[nm]
+  }
 }
-args_list <- c(mget(setdiff(names(formals()), "...")), rk_args)
+args_list <- c(mget(setdiff(names(formals()), "...")), rk_args, xtr_args)
 output <- .implement_solve(
   args_list = args_list,
   call = call
