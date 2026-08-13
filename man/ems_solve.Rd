@@ -240,6 +240,15 @@ time; set \code{matrix_method} explicitly to override it. Runs
 without deploy metadata (e.g. \code{\link[=solve_in_situ]{solve_in_situ()}}) fall back
 to \code{"LU"} for static models regardless of size.
 
+Condensation interacts with that choice. Backsolving (see the
+\code{backsolve} argument of \code{\link[=ems_model]{ems_model()}}) substitutes variables
+out of the system, which densifies the diagonal blocks the
+bordered methods exploit: it pays under \code{"LU"} on static models
+and costs wall time everywhere else. A condensed deployment
+solved with a bordered method, or any condensed intertemporal
+deployment, is flagged at run time. Omission (\code{omit}) does not
+densify anything and is never flagged.
+
 The MA48 workspace sizes (\code{laA}, \code{laD}, \code{laDi}) never need
 manual tuning: the solver reallocates and retries on a
 too-small workspace, logging each growth, and records the

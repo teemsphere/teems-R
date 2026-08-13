@@ -113,3 +113,68 @@ test_that("pre_probe verdict aborts on a structurally singular system", {
     regexp = "structurally singular.*rank 10527 of 10530"
   )
 })
+
+# probe-informed condensation advice (roadmap 6.2 via 6.10): the verdict
+# reads the measured block structure, so it is exercised against stats
+# variants of the healthy fixture
+probe_stats_variant <- function(...) {
+  stats <- jsonlite::fromJSON(file.path(fx, "healthy.stats.json"))
+  stats <- utils::modifyList(stats, list(...))
+  path <- file.path(tempfile(), "sol.stats.json")
+  dir.create(dirname(path))
+  writeLines(jsonlite::toJSON(stats, auto_unbox = TRUE, null = "null"), path)
+  .probe_object(
+    probe_path = file.path(fx, "healthy.probe.json"),
+    stats_path = path
+  )$condense
+}
+
+test_that("probe reports no condensation verdict for a small plain system", {
+  cond <- probe_stats_variant()
+  expect_false(cond$condensed)
+  expect_false(cond$partitioned)
+  expect_identical(cond$verdict, "none")
+})
+
+test_that("probe advises against condensation when a partition exists", {
+  cond <- probe_stats_variant(
+    nbacksolve = 68, nbselems = 2000,
+    bordered = TRUE, ndblock = 35, netcut = 400, partition_set = "REG"
+  )
+  expect_true(cond$condensed)
+  expect_true(cond$partitioned)
+  expect_identical(cond$verdict, "hurts")
+  expect_equal(cond$elimination_share, 2000 / 12524, tolerance = 1e-12)
+  expect_equal(cond$border_share, 400 / 10524, tolerance = 1e-12)
+})
+
+test_that("probe confirms condensation on an LU-bound system", {
+  cond <- probe_stats_variant(nbacksolve = 68, nbselems = 2000)
+  expect_true(cond$condensed)
+  expect_false(cond$partitioned)
+  expect_identical(cond$verdict, "helps")
+})
+
+test_that("probe suggests condensation for a large LU-bound system", {
+  expect_identical(probe_stats_variant(vecsize = 1.35e6)$verdict, "candidate")
+  # too small for the measured gain to show
+  expect_identical(probe_stats_variant(vecsize = 2e5)$verdict, "none")
+  # a partitioned system of the same size is never a candidate
+  expect_identical(
+    probe_stats_variant(vecsize = 1.35e6, bordered = TRUE, ndblock = 35)$verdict,
+    "none"
+  )
+})
+
+test_that("probe prints each condensation verdict", {
+  expect_snapshot({
+    for (v in list(
+      list(nbacksolve = 68, nbselems = 2000, bordered = TRUE, ndblock = 35,
+           netcut = 400, partition_set = "REG"),
+      list(nbacksolve = 68, nbselems = 2000),
+      list(vecsize = 1.35e6)
+    )) {
+      .probe_print_condense(do.call(probe_stats_variant, v))
+    }
+  })
+})

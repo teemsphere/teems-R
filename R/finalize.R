@@ -43,6 +43,27 @@
     call = call,
     model_call = model_call
   )
+  # opt-in at ems_model(): unshocked wholly-exogenous variables leave the
+  # deployed model, which the post-swap closure and finalized shocks are
+  # the first point able to establish
+  n_auto_omit <- 0L
+  if (isTRUE(attr(args_list$model, "auto_omit"))) {
+    auto <- .auto_omit(
+      model = v$model,
+      closure = closure,
+      sets = sets,
+      shock = v$shock,
+      call = call
+    )
+    if (!is.null(auto)) {
+      v$model <- auto$model
+      closure <- auto$closure
+      n_auto_omit <- length(auto$omitted)
+      var_extract <- v$model[
+        v$model$type == "Variable" & is.na(v$model$condense),
+      ]
+    }
+  }
   # C2: components whose complementarity variable stays endogenous in
   # the post-swap closure are ACTIVE (solved by the solver's
   # approximate-run state machinery) and each contributes one E_$comp
@@ -71,7 +92,16 @@
     call = call
   )
   metadata$system_size <- size_metadata$system_size
+  metadata$n_var_ele <- size_metadata$n_var_ele
+  metadata$n_exo_ele <- size_metadata$n_exo_ele
   metadata$n_reg <- size_metadata$n_reg
+  # read back at solve/probe time by the condensation advisory
+  metadata$condense <- .compute_condense_metadata(
+    model = v$model,
+    sets = sets,
+    system_size = size_metadata$system_size
+  )
+  metadata$condense$n_auto_omit <- n_auto_omit
   shocks <- .finalize_shocks(
     shock = v$shock,
     closure = closure,

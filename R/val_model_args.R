@@ -18,6 +18,7 @@
     closure_file = "character",
     omit = c("NULL", "character"),
     backsolve = c("NULL", "character"),
+    auto_omit = "logical",
     ignore_condense = "logical",
     mod_coeff = c("logical", "list")
   )
@@ -28,11 +29,14 @@
     call = call
   )
 
-  if (length(a$ignore_condense) != 1L || is.na(a$ignore_condense)) {
-    .cli_action("{.arg ignore_condense} must be {.val TRUE} or {.val FALSE}.",
-      action = "abort",
-      call = call
-    )
+  for (nme in c("ignore_condense", "auto_omit")) {
+    if (length(a[[nme]]) != 1L || is.na(a[[nme]])) {
+      bad_arg <- nme
+      .cli_action("{.arg {bad_arg}} must be {.val TRUE} or {.val FALSE}.",
+        action = "abort",
+        call = call
+      )
+    }
   }
 
   a$model_file <- .check_input(

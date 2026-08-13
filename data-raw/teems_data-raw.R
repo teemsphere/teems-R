@@ -295,6 +295,7 @@ data_err <- build_data_err()
 data_info <- build_data_info()
 data_wrn <- build_data_wrn()
 deploy_err <- build_deploy_err()
+deploy_info <- build_deploy_info()
 exp_err <- build_exp_err()
 gen_err <- build_gen_err()
 gen_info <- build_gen_info()
@@ -332,6 +333,7 @@ usethis::use_data(
   data_info,
   data_wrn,
   deploy_err,
+  deploy_info,
   exp_err,
   gen_err,
   gen_info,

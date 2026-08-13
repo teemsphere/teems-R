@@ -24,9 +24,8 @@
   } else {
     chosen <- "LU"
     model_type <- "static"
-    metadata_path <- file.path(dirname(cmf_path), "metadata.rds")
-    if (file.exists(metadata_path)) {
-      metadata <- readRDS(metadata_path)
+    metadata <- .deploy_metadata(cmf_path = cmf_path)
+    if (!is.null(metadata)) {
       system_size <- metadata$system_size
       n_reg <- metadata$n_reg %|||% 0L
       if (!is.null(system_size)) {

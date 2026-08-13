@@ -27,7 +27,8 @@ Anything else is an error, never a silently ignored flag.}
 A \code{teems_probe} object: validity verdict and rank per
 pattern, named defect tibble, statement-level incidence tibbles
 (\code{statements}, \code{incidence}), core structure (\code{cores}), ordering
-evidence (\code{structure}), and report paths.
+evidence (\code{structure}), the condensation verdict (\code{condense}), and
+report paths.
 }
 \description{
 Runs the solver's structural probe (\verb{-solmed probe}) on
@@ -47,6 +48,14 @@ not error here — the object reports it (see
 \code{\link[=plot.teems_probe]{plot.teems_probe()}} and the \code{defects} tibble). Use
 \code{ems_solve(pre_probe = TRUE)} to abort a solve on structural
 singularity instead.
+
+The probe also settles the condensation question, which the
+deploy-time advice in \code{\link[=ems_solve]{ems_solve()}} can only guess at: the
+measured block partition decides whether backsolving helps. A
+system with a usable partition belongs to a bordered method, where
+substitution densifies the blocks; a system without one is
+\code{"LU"}-bound, where condensation is the lever. The verdict prints
+with the object and is carried in \code{condense$verdict}.
 }
 \examples{
 \dontrun{

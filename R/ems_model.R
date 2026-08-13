@@ -27,6 +27,12 @@
 #'   in solve outputs. Nominations are validated against the
 #'   GEMPACK substitution requirements (GEMPACK manual, section
 #'   14.1.10).
+#' @param auto_omit Logical length 1 (default is `FALSE`). When
+#'   `TRUE`, [`ems_deploy()`] omits variables that are exogenous in
+#'   every element and carry no shock. Their change is zero, so
+#'   dropping them shrinks the shock vector without altering the
+#'   solved system. Omitted variables are reported at deploy time
+#'   and are absent from solve outputs.
 #' @param ignore_condense Logical length 1 (default is `FALSE`).
 #'   If `TRUE`, `Omit`, `Substitute`, and `Backsolve` statements
 #'   found in the model file are ignored (the equivalent of the
@@ -82,6 +88,7 @@ ems_model <- function(
     closure_file,
     omit = NULL,
     backsolve = NULL,
+    auto_omit = FALSE,
     ignore_condense = FALSE,
     ...
 ) {

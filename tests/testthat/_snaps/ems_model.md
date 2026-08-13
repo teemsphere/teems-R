@@ -258,3 +258,7 @@
     x Shock variable "atall" was condensed out of the model (omit).
     i Omitted variables must stay unshocked and backsolved variables are endogenous; drop the condensation action in `teems::ems_model()` to shock this variable.
 
+# ems_model rejects a non-logical auto_omit
+
+    x `auto_omit` must be "TRUE" or "FALSE".
+

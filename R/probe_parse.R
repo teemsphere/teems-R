@@ -40,6 +40,10 @@
       incidence = incidence,
       cores = .probe_cores(probe$fine),
       structure = .probe_stats(stats),
+      condense = .probe_condense(
+        stats = .probe_stats(stats),
+        cmf_path = cmf_path
+      ),
       paths = list(
         report = normalizePath(probe_path, "/", mustWork = FALSE),
         stats = if (is.null(stats_path)) NULL else normalizePath(stats_path, "/", mustWork = FALSE),
@@ -245,7 +249,7 @@
     "version", "vecsize", "nvarele", "nexo", "nbacksolve", "nbselems",
     "matrix_method", "solution_method", "mpi_size", "bordered",
     "chain_source", "partition_source", "chain_set", "partition_set",
-    "ndblock", "netcut"
+    "ntime", "nreg", "ndblock", "netcut", "nintraeq", "border_neq"
   )
   out <- stats[intersect(keep, names(stats))]
   if (!is.null(stats$partition_auto) && NROW(stats$partition_auto)) {

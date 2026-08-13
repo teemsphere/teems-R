@@ -33,6 +33,7 @@ dat <- ems_data(
 )
 
 model <- ems_model(model_file, closure_file)
+auto_model <- ems_model(model_file, closure_file, auto_omit = TRUE)
 
 test_that("ems_deploy errors when .data is missing", {
   expect_snapshot_error(ems_deploy())
@@ -245,6 +246,44 @@ test_that("ems_deploy examples work", {
    swap_out = list(dppriv_row, "tfd")
   )
   expect_true(is.character(cmf_path))
+})
+
+
+test_that("auto_omit drops unshocked exogenous variables (roadmap 6.2)", {
+  nest_temp("deploy_auto_omit", write_dir)
+  expect_snapshot(cmf_path <- ems_deploy(dat, auto_model))
+
+  condense <- readRDS(file.path(dirname(cmf_path), "metadata.rds"))$condense
+  expect_true(condense$n_auto_omit > 0L)
+  expect_identical(condense$n_omit, condense$n_auto_omit)
+  # omission removes exogenous columns only: the solved system is the
+  # same size as the plain deployment's
+  nest_temp("deploy_auto_omit_plain", write_dir)
+  plain_cmf <- ems_deploy(dat, model)
+  plain_meta <- readRDS(file.path(dirname(plain_cmf), "metadata.rds"))
+  auto_meta <- readRDS(file.path(dirname(cmf_path), "metadata.rds"))
+  expect_identical(auto_meta$system_size, plain_meta$system_size)
+  expect_true(auto_meta$n_exo_ele < plain_meta$n_exo_ele)
+
+  # omitted declarations are gone from the deployed TAB
+  tab <- readLines(list.files(dirname(cmf_path), pattern = "\\.tab$", full.names = TRUE))
+  expect_false(any(grepl("^Variable.*\\bpop\\b", tab)))
+})
+
+test_that("auto_omit retains shocked variables", {
+  nest_temp("deploy_auto_omit_shk", write_dir)
+  cmf_path <- ems_deploy(dat, auto_model, ems_uniform_shock("pop", 1))
+  tab <- readLines(list.files(dirname(cmf_path), pattern = "\\.tab$", full.names = TRUE))
+  expect_true(any(grepl("\\bpop\\b", tab)))
+})
+
+test_that("auto_omit is skipped when a shock file is supplied", {
+  nest_temp("deploy_auto_omit_file", write_dir)
+  shf <- file.path(temp_dir, "usr_shock.shf")
+  writeLines("pop = 1 ;", shf)
+  expect_snapshot(cmf_path <- ems_deploy(dat, auto_model, shock_file = shf))
+  condense <- readRDS(file.path(dirname(cmf_path), "metadata.rds"))$condense
+  expect_identical(condense$n_auto_omit, 0L)
 })
 
 unlink(tools::R_user_dir("teems", "cache"), recursive = TRUE)

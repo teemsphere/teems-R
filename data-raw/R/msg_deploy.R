@@ -72,3 +72,21 @@ build_deploy_err <- function() {
     )
   )
 }
+
+build_deploy_info <- function() {
+  list(
+    # test-ems_deploy.R: "auto_omit drops unshocked exogenous variables"
+    auto_omit = c(
+      "{.arg auto_omit}: {n_auto_omit} unshocked exogenous variable{?s}
+      omitted ({.val {omitted_shown}}).",
+      "Omitted variables are absent from solve outputs."
+    ),
+    auto_omit_none = "{.arg auto_omit}: no variable qualifies for omission.",
+    # test-ems_deploy.R: "auto_omit is skipped for a supplied shock file"
+    auto_omit_shock_file = c(
+      "{.arg auto_omit} is skipped when {.arg shock_file} is supplied:
+      the file's shocked variables are not parsed.",
+      "Nominate omissions with {.arg omit} in {.fun ems_model} instead."
+    )
+  )
+}

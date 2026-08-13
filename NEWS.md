@@ -1,3 +1,9 @@
+# teems (development version)
+* `ems_model(auto_omit = TRUE)` omits unshocked, wholly exogenous variables at deploy time
+* `ems_solve()` reports when a condensed deployment meets a bordered method, or is intertemporal
+* `ems_probe()` returns a condensation verdict read from the measured block structure
+* Deploy metadata records the condensation state and the exogenous/variable element counts
+
 # teems 0.1.1
 * `ems_example()` example typo fixed
 * verbatim tests for all exported function examples added

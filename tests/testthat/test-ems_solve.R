@@ -571,6 +571,82 @@ test_that("condensed models solve equivalently and recover backsolved values (ro
   expect_true(max(abs(pfactwld$Value - 5)) < 1e-6)
 })
 
+test_that("deploy metadata records the condensation state", {
+  nest_temp("solve_condense_meta", write_dir)
+  cond_model <- suppressWarnings(
+    ems_model(static_model_file, static_closure_file,
+      omit = c("tfd", "tfm"),
+      backsolve = c("qint", "qva")
+    )
+  )
+  cmf_path <- ems_deploy(static_data, cond_model)
+  condense <- readRDS(file.path(dirname(cmf_path), "metadata.rds"))$condense
+  expect_identical(condense$n_omit, 2L)
+  expect_identical(condense$n_backsolve, 2L)
+  expect_true(condense$n_backsolve_ele > 0)
+  expect_true(condense$elimination_share > 0 && condense$elimination_share < 1)
+
+  # an uncondensed deployment records zeros, so the advisory stays quiet
+  plain_cmf <- ems_deploy(static_data, static_model)
+  plain <- readRDS(file.path(dirname(plain_cmf), "metadata.rds"))$condense
+  expect_identical(plain$n_backsolve, 0L)
+  expect_identical(plain$elimination_share, 0)
+})
+
+test_that("condensed deployments are advised against bordered methods (roadmap 6.2)", {
+  nest_temp("solve_condense_advice", write_dir)
+  cond_model <- suppressWarnings(
+    ems_model(static_model_file, static_closure_file, backsolve = c("qint", "qva"))
+  )
+  cmf_path <- ems_deploy(static_data, cond_model)
+  expect_snapshot(
+    ems_solve(cmf_path,
+      matrix_method = "DBBD",
+      n_tasks = 2L,
+      terminal_run = TRUE
+    ),
+    transform = function(lines) {
+      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
+    },
+    variant = variant
+  )
+
+  # LU is the method condensation was measured to help: no advice
+  lu_msg <- testthat::capture_messages(
+    ems_solve(cmf_path, matrix_method = "LU", terminal_run = TRUE)
+  )
+  expect_false(any(grepl("bordered method", lu_msg)))
+
+  # omission alone does not densify anything
+  om_model <- suppressWarnings(
+    ems_model(static_model_file, static_closure_file, omit = c("tfd", "tfm"))
+  )
+  om_cmf <- ems_deploy(static_data, om_model)
+  om_msg <- testthat::capture_messages(
+    ems_solve(om_cmf, matrix_method = "DBBD", n_tasks = 2L, terminal_run = TRUE)
+  )
+  expect_false(any(grepl("bordered method", om_msg)))
+})
+
+test_that("condensed intertemporal deployments are advised against (roadmap 6.2)", {
+  nest_temp("solve_condense_inter", write_dir)
+  cond_model <- suppressWarnings(
+    ems_model(dynamic_model_file, dynamic_closure_file, backsolve = c("qint", "qva"))
+  )
+  cmf_path <- ems_deploy(dynamic_data, cond_model)
+  expect_snapshot(
+    ems_solve(cmf_path,
+      solution_method = "Gragg",
+      matrix_method = "SBBD",
+      terminal_run = TRUE
+    ),
+    transform = function(lines) {
+      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
+    },
+    variant = variant
+  )
+})
+
 test_that("ems_solve returns the same output across static matrix methods", {
   nest_temp("solve_static_method", write_dir)
   numeraire <- ems_uniform_shock("pfactwld", 5)

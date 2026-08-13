@@ -519,6 +519,7 @@ test_that("ems_model errors dots passed without names", {
       closure_file,
       omit = NULL,
       backsolve = NULL,
+      auto_omit = FALSE,
       ignore_condense = FALSE,
       1
     )
@@ -804,3 +805,6 @@ test_that("GTAP standard condensation condenses cleanly", {
 })
 
 unlink(tools::R_user_dir("teems", "cache"), recursive = TRUE)
+test_that("ems_model rejects a non-logical auto_omit", {
+  expect_snapshot_error(ems_model(model_file, closure_file, auto_omit = NA))
+})

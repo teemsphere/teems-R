@@ -151,6 +151,18 @@ build_solve_info <- function() {
     # test-ems_solve.R: "matrix_method auto resolves by model type"
     auto_method = "{.arg matrix_method} {.val auto}: using {.val {chosen}} for this {model_type} model.",
     auto_dbbd_hint = "This static model's size favors {.val DBBD}: {.code n_tasks = 4} with {.arg matrix_method} {.val DBBD} (or {.val auto}) may solve faster than single-task {.val LU}.",
+    # test-ems_solve.R: "condensed deployments advise against bordered methods"
+    condense_bordered = c(
+      "This deployment is condensed ({n_backsolve} backsolved variable{?s}, {share} of the uncondensed system) and {.val {matrix_method}} is a bordered method.",
+      "Substitution densifies the diagonal blocks the bordered methods exploit: condensed deployments solve slower at every elimination share.",
+      "Condensation pays under {.val LU}; deploy without {.arg backsolve} for bordered runs ({.arg omit} is unaffected -- omission does not densify)."
+    ),
+    # test-ems_solve.R: "condensed intertemporal deployments are advised against"
+    condense_intertemporal = c(
+      "This intertemporal deployment is condensed ({n_backsolve} backsolved variable{?s}, {share} of the uncondensed system).",
+      "Condensation is counterproductive on intertemporal models: bordered runs solve slower condensed, and a fully condensed {.val LU} run is slower still than plain {.val SBBD}.",
+      "Deploy without {.arg backsolve} and solve with {.val SBBD} ({.arg omit} is unaffected -- omission does not densify)."
+    ),
     # test-ems_solve.R: "docker tag auto-selection"
     docker_tag_auto = "Using image {.field teems:{tag}} (matches host CPU capability {.val {level}}). Set {.arg docker_tag} via {.fn ems_option_set} to override.",
     terminal_run = "{.arg terminal_run} activated. To solve and compose outputs:",

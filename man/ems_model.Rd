@@ -9,6 +9,7 @@ ems_model(
   closure_file,
   omit = NULL,
   backsolve = NULL,
+  auto_omit = FALSE,
   ignore_condense = FALSE,
   ...
 )
@@ -39,6 +40,13 @@ variables must be endogenous; their values remain available
 in solve outputs. Nominations are validated against the
 GEMPACK substitution requirements (GEMPACK manual, section
 14.1.10).}
+
+\item{auto_omit}{Logical length 1 (default is \code{FALSE}). When
+\code{TRUE}, \code{\link[=ems_deploy]{ems_deploy()}} omits variables that are exogenous in
+every element and carry no shock. Their change is zero, so
+dropping them shrinks the shock vector without altering the
+solved system. Omitted variables are reported at deploy time
+and are absent from solve outputs.}
 
 \item{ignore_condense}{Logical length 1 (default is \code{FALSE}).
 If \code{TRUE}, \code{Omit}, \code{Substitute}, and \code{Backsolve} statements

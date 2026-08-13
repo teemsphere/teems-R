@@ -147,6 +147,15 @@
 #'   without deploy metadata (e.g. [`solve_in_situ()`]) fall back
 #'   to `"LU"` for static models regardless of size.
 #'
+#'   Condensation interacts with that choice. Backsolving (see the
+#'   `backsolve` argument of [`ems_model()`]) substitutes variables
+#'   out of the system, which densifies the diagonal blocks the
+#'   bordered methods exploit: it pays under `"LU"` on static models
+#'   and costs wall time everywhere else. A condensed deployment
+#'   solved with a bordered method, or any condensed intertemporal
+#'   deployment, is flagged at run time. Omission (`omit`) does not
+#'   densify anything and is never flagged.
+#'
 #'   The MA48 workspace sizes (`laA`, `laD`, `laDi`) never need
 #'   manual tuning: the solver reallocates and retries on a
 #'   too-small workspace, logging each growth, and records the

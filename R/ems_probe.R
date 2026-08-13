@@ -28,13 +28,22 @@
 #'   [`plot.teems_probe()`] and the `defects` tibble). Use
 #'   `ems_solve(pre_probe = TRUE)` to abort a solve on structural
 #'   singularity instead.
+#'
+#'   The probe also settles the condensation question, which the
+#'   deploy-time advice in [`ems_solve()`] can only guess at: the
+#'   measured block partition decides whether backsolving helps. A
+#'   system with a usable partition belongs to a bordered method, where
+#'   substitution densifies the blocks; a system without one is
+#'   `"LU"`-bound, where condensation is the lever. The verdict prints
+#'   with the object and is carried in `condense$verdict`.
 #' @seealso [`ems_deploy()`] for generating `"cmf_path"`;
 #'   [`plot.teems_probe()`] for the incidence, Dulmage-Mendelsohn and
 #'   core visualizations; [`ems_solve()`] and its `pre_probe` argument.
 #' @return A `teems_probe` object: validity verdict and rank per
 #'   pattern, named defect tibble, statement-level incidence tibbles
 #'   (`statements`, `incidence`), core structure (`cores`), ordering
-#'   evidence (`structure`), and report paths.
+#'   evidence (`structure`), the condensation verdict (`condense`), and
+#'   report paths.
 #' @examples
 #' \dontrun{
 #' # The following examples require the teems solver to be built.

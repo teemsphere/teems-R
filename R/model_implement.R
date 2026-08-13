@@ -43,6 +43,7 @@
   model <- structure(model,
     closure = closure,
     closure_file = attr(v$closure, "file"),
+    auto_omit = v$auto_omit,
     call = call
   )
 

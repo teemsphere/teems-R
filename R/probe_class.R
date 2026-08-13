@@ -61,6 +61,7 @@ print.teems_probe <- function(x, ...) {
       partition {x$structure$partition_source %|||% 'none'}"
     )
   }
+  .probe_print_condense(x$condense)
   invisible(x)
 }
 

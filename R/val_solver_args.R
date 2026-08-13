@@ -281,6 +281,16 @@
     )
   }
 
+  metadata <- .deploy_metadata(cmf_path = paths$cmf)
+  if (!is.null(metadata)) {
+    .advise_condense(
+      metadata = metadata,
+      matrix_method = a$matrix_method,
+      enable_time = a$enable_time,
+      call = call
+    )
+  }
+
   if (a$matrix_method %in% c("SBBD", "NDBBD") && !a$enable_time) {
     matrix_method <- a$matrix_method
     .cli_action(solve_err$invalid_method,
