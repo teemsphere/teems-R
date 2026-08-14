@@ -28,9 +28,7 @@
     xval_col[duplicated(xval_col)] <- paste0(xval_col[duplicated(xval_col)], ".1")
     colnames(dt)[seq_along(xval_col)] <- xval_col
   }
-  data.table::setkeyv(dt, xval_col)
-  dt <- dt[, sum(Value), by = xval_col]
-  data.table::setnames(dt, "V1", "Value")
+  dt <- dt[, list(Value = sum(Value)), keyby = xval_col]
   if (!rlang::is_integerish(dt$Value) && !shock) {
     dt[, let(Value = round(Value, ndigits))]
   } 

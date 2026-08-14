@@ -15,17 +15,40 @@
     i_data[purrr::map_lgl(i_data, is.character)],
     function(h) tolower(trimws(unclass(h)))
   )
-  i_data <- .array2DT(i_data = i_data)
-  i_data <- .weight_param(
-    i_data = i_data,
+  nm_order <- names(i_data)
+  # dat arrays with named dimnames aggregate directly via the C++
+  # scatter-add kernel; everything else (par, set, unnamed/scalar
+  # headers) keeps the data.table path
+  is_arr <- purrr::map_lgl(i_data, function(x) {
+    inherits(x, "dat") && is.numeric(x) &&
+      !is.null(dimnames(x)) && !is.null(names(dimnames(x)))
+  })
+  arr_data <- i_data[is_arr]
+  dt_data <- .array2DT(i_data = i_data[!is_arr])
+
+  weight_headers <- gsub("-", "", unique(unlist(param_weights[[metadata$data_format]])))
+  weights <- c(arr_data, dt_data)
+  weights <- weights[names(weights) %in% weight_headers]
+
+  dt_data <- .weight_param(
+    i_data = dt_data,
+    weights = weights,
     data_format = metadata$data_format
   )
-  
-  i_data <- lapply(i_data,
+
+  ndigits <- .o_ndigits()
+  dt_agg <- lapply(dt_data,
     .aggregate_data,
     sets = set_mappings,
-    ndigits = .o_ndigits()
+    ndigits = ndigits
   )
+  arr_agg <- lapply(arr_data,
+    .aggregate_array,
+    sets = set_mappings,
+    ndigits = ndigits
+  )
+  i_data <- c(dt_agg, arr_agg)[nm_order]
+  names(i_data) <- nm_order
   i_data <- purrr::compact(i_data)
   attr(i_data, "metadata") <- metadata
   attr(i_data, "call") <- call

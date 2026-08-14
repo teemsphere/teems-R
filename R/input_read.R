@@ -41,22 +41,15 @@
                             attach_metadata = FALSE,
                             call = NULL) {
   if (is.character(input)) {
-    input <- file(input, "rb")
+    cf <- readBin(input, raw(), n = file.size(input))
+  } else {
+    # Read all bytes into a vector
+    cf <- raw()
+    while (length(a <- readBin(input, raw(), n = 1e9)) > 0) {
+      cf <- c(cf, a)
+    }
+    close(input)
   }
-
-  # Read all bytes into a vector
-  cf <- raw()
-  while (length(a <- readBin(input, raw(), n = 1e9)) > 0) {
-    cf <- c(cf, a)
-  }
-
-  # Read until you hit the end of the file
-  while (length(charRead <- readBin(input, raw())) > 0) {
-    cf <- c(cf, charRead)
-  }
-
-  # Close the file
-  close(input)
 
   if (cf[1] == 0xfd) {
     currentHeader <- ""
@@ -122,54 +115,10 @@
       i <- i + length(expectedEnd)
     }
   } else {
-    headers <- list()
-    i <- 1
-    while (i < length(cf)) {
-      # Read the length of the record
-      toRead <- readBin(cf[i:(i + 3)], "integer", size = 4)
-      if (toRead == 4) {
-        if (!all(cf[(i + 4):(i + 3 + toRead)] == 0x20)) {
-          headers[[trimws(rawToChar(cf[(i + 4):(i + 3 + toRead)]))]] <- list(
-            start =
-              i
-          )
-        }
-      }
-      i <- i + 3 + toRead + 1
-      hasRead <- readBin(cf[i:(i + 3)], "integer", size = 4)
-      if (hasRead != toRead) {
-        warning(paste("A broken record", i, hasRead, toRead))
-      }
-      i <- i + 4
-    }
-
-    for (h in 1:length(headers)) {
-      headers[[h]]$binary <- cf[headers[[h]]$start:ifelse(h < length(headers), headers[[h +
-        1]]$start - 1, length(cf))]
-    }
-
-    # Separate records
-    for (h in names(headers)) {
-      headers[[h]]$records <- list()
-
-      i <- 1
-
-      while (i < length(headers[[h]]$binary)) {
-        toRead <- readBin(headers[[h]]$binary[i:(i + 3)], "integer", size = 4)
-        i <- i + 4
-        headers[[h]]$records[[length(headers[[h]]$records) + 1]] <- readBin(headers[[h]]$binary[i:(i +
-          toRead - 1)], raw(), n = toRead)
-        i <- i + toRead
-        hasRead <- readBin(headers[[h]]$binary[i:(i + 3)], "integer",
-          size =
-            4
-        )
-        i <- i + 4
-        if (toRead != hasRead) {
-          warning(paste("toRead different from hasRead in ", h))
-        }
-      }
-    }
+    headers <- lapply(
+      har_split_records(cf),
+      function(r) list(records = r)
+    )
   }
 
   # Process first and second records
@@ -198,36 +147,23 @@
   # Process character headers 1CFULL
   for (h in names(headers)) {
     if (headers[[h]]$type == "1CFULL") {
-      contents <- Reduce(
-        \(a, f) {
-          c(a, headers[[h]]$records[[f]][17:length(headers[[h]]$records[[f]])])
-        },
-        3:length(headers[[h]]$records),
-        c()
-      )
-
-      contents[contents == 0x00] <- as.raw(0x20)
-
-      m <- matrix(
-        rawToChar(contents, multiple = TRUE),
-        nrow =
-          headers[[h]]$dimensions[[2]],
-        ncol =
-          headers[[h]]$dimensions[[1]]
+      contents <- har_payload_concat(
+        headers[[h]]$records[3:length(headers[[h]]$records)],
+        16L
       )
 
       # do not remove empty space in the history header
       # LREG in GTAP11 uses LATIN1 encoding
       if (tolower(h) == "xxhs") {
-        toRet <- apply(m, 2, paste, collapse = "")
+        toRet <- har_fixed_width_strings(contents, headers[[h]]$dimensions[[2]], FALSE)
       } else if (h == "LREG") {
         toRet <- trimws(iconv(
-          apply(m, 2, paste, collapse = ""),
+          har_fixed_width_strings(contents, headers[[h]]$dimensions[[2]], FALSE),
           from = "latin1",
           to = "UTF-8"
         ))
       } else {
-        toRet <- trimws(apply(m, 2, paste, collapse = ""))
+        toRet <- har_fixed_width_strings(contents, headers[[h]]$dimensions[[2]], TRUE)
       }
 
       headers[[h]]$data <- toRet
@@ -238,17 +174,10 @@
   for (h in names(headers)) {
     if (headers[[h]]$type == "2IFULL") {
       m <- matrix(
-        readBin(
-          Reduce(
-            \(a, f) {
-              c(a, headers[[h]]$records[[f]][33:length(headers[[h]]$records[[f]])])
-            },
-            3:length(headers[[h]]$records),
-            c()
-          ),
-          "integer",
-          size = 4,
-          n = prod(headers[[h]]$dimensions)
+        har_payload_i32(
+          headers[[h]]$records[3:length(headers[[h]]$records)],
+          32L,
+          prod(headers[[h]]$dimensions)
         ),
         nrow =
           headers[[h]]$dimensions[[1]],
@@ -263,17 +192,10 @@
   for (h in names(headers)) {
     if (headers[[h]]$type == "2RFULL") {
       m <- array(
-        readBin(
-          Reduce(
-            \(a, f) {
-              c(a, headers[[h]]$records[[f]][33:length(headers[[h]]$records[[f]])])
-            },
-            3:length(headers[[h]]$records),
-            c()
-          ),
-          "double",
-          size = 4,
-          n = prod(headers[[h]]$dimensions)
+        har_payload_f32(
+          headers[[h]]$records[3:length(headers[[h]]$records)],
+          32L,
+          prod(headers[[h]]$dimensions)
         ),
         dim = headers[[h]]$dimensions
       )
@@ -295,16 +217,11 @@
       )
 
       if (headers[[h]]$usedDimensions > 0) {
-        m <- matrix(
-          strsplit(rawToChar(headers[[h]]$records[[3]][33:(33 + headers[[h]]$usedDimensions *
-            12 - 1)]), "")[[1]],
-          nrow =
-            12,
-          ncol =
-            headers[[h]]$usedDimensions
+        dnames <- har_fixed_width_strings(
+          headers[[h]]$records[[3]][33:(33 + headers[[h]]$usedDimensions * 12 - 1)],
+          12L,
+          FALSE
         )
-
-        dnames <- apply(m, 2, paste, collapse = "")
         dimNames <- Map(\(f) {
           NULL
         }, 1:headers[[h]]$usedDimensions)
@@ -317,17 +234,14 @@
           for (d in 1:length(uniqueDimNames)) {
             nele <- readBin(headers[[h]]$records[[3 + d]][13:16], "integer", size = 4)
 
-            m <- matrix(
-              strsplit(rawToChar(headers[[h]]$records[[3 + d]][17:(17 +
-                nele * 12 - 1)]), "")[[1]],
-              nrow =
-                12,
-              ncol =
-                nele
+            ele_names <- har_fixed_width_strings(
+              headers[[h]]$records[[3 + d]][17:(17 + nele * 12 - 1)],
+              12L,
+              TRUE
             )
 
             for (dd in which(dnames == uniqueDimNames[d])) {
-              dimNames[[dd]] <- trimws(apply(m, 2, paste, collapse = ""))
+              dimNames[[dd]] <- ele_names
               # Add dimension name
               names(dimNames)[dd] <- trimws(uniqueDimNames[d])
             }
@@ -340,45 +254,22 @@
           numberOfFrames <- readBin(headers[[h]]$records[[dataStart]][5:8], "integer")
           numberOfDataFrames <- (numberOfFrames - 1) / 2
           dataFrames <- (dataStart) + 1:numberOfDataFrames * 2
-          dataBytes <- do.call(what = c, Map(\(f) {
-            headers[[h]]$records[[f]][9:length(headers[[h]]$records[[f]])]
-          }, dataFrames))
 
           m <- array(
-            readBin(
-              dataBytes,
-              "double",
-              size = 4,
-              n = prod(headers[[h]]$dimensions)
+            har_payload_f32(
+              headers[[h]]$records[dataFrames],
+              8L,
+              prod(headers[[h]]$dimensions)
             ),
             dim = headers[[h]]$dimensions[1:headers[[h]]$usedDimensions],
             dimnames = dimNames
           )
         } else {
-          elements <- readBin(headers[[h]]$records[[dataStart]][5:8], "integer",
-            size =
-              4
+          dataVector <- har_spse_fill(
+            headers[[h]]$records[(dataStart + 1):length(headers[[h]]$records)],
+            16L,
+            prod(headers[[h]]$dimensions)
           )
-          dataVector <- rep(0, prod(headers[[h]]$dimensions))
-
-          for (rr in (dataStart + 1):length(headers[[h]]$records)) {
-            dataBytes <- headers[[h]]$records[[rr]][17:length(headers[[h]]$records[[rr]])]
-
-            currentPoints <- length(dataBytes) / 8
-
-            locations <- readBin(dataBytes[1:(4 * currentPoints)],
-              "integer",
-              size = 4,
-              n = currentPoints
-            )
-            values <- readBin(dataBytes[(4 * currentPoints + 1):(8 * currentPoints)],
-              "double",
-              size = 4,
-              n = currentPoints
-            )
-
-            dataVector[locations] <- values
-          }
 
           m <- array(dataVector,
             dim = headers[[h]]$dimensions[1:headers[[h]]$usedDimensions],

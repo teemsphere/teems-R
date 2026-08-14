@@ -5,6 +5,55 @@
 #include "cpp11/declarations.hpp"
 #include <R_ext/Visibility.h>
 
+// agg_array.cpp
+cpp11::doubles agg_array_sum(cpp11::sexp x, cpp11::list codes, cpp11::integers out_sizes);
+extern "C" SEXP _teems_agg_array_sum(SEXP x, SEXP codes, SEXP out_sizes) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(agg_array_sum(cpp11::as_cpp<cpp11::decay_t<cpp11::sexp>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(codes), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(out_sizes)));
+  END_CPP11
+}
+// har_read.cpp
+cpp11::list har_split_records(cpp11::raws cf);
+extern "C" SEXP _teems_har_split_records(SEXP cf) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(har_split_records(cpp11::as_cpp<cpp11::decay_t<cpp11::raws>>(cf)));
+  END_CPP11
+}
+// har_read.cpp
+cpp11::raws har_payload_concat(cpp11::list records, int offset);
+extern "C" SEXP _teems_har_payload_concat(SEXP records, SEXP offset) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(har_payload_concat(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(records), cpp11::as_cpp<cpp11::decay_t<int>>(offset)));
+  END_CPP11
+}
+// har_read.cpp
+cpp11::doubles har_payload_f32(cpp11::list records, int offset, double n);
+extern "C" SEXP _teems_har_payload_f32(SEXP records, SEXP offset, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(har_payload_f32(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(records), cpp11::as_cpp<cpp11::decay_t<int>>(offset), cpp11::as_cpp<cpp11::decay_t<double>>(n)));
+  END_CPP11
+}
+// har_read.cpp
+cpp11::integers har_payload_i32(cpp11::list records, int offset, double n);
+extern "C" SEXP _teems_har_payload_i32(SEXP records, SEXP offset, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(har_payload_i32(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(records), cpp11::as_cpp<cpp11::decay_t<int>>(offset), cpp11::as_cpp<cpp11::decay_t<double>>(n)));
+  END_CPP11
+}
+// har_read.cpp
+cpp11::doubles har_spse_fill(cpp11::list records, int offset, double n);
+extern "C" SEXP _teems_har_spse_fill(SEXP records, SEXP offset, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(har_spse_fill(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(records), cpp11::as_cpp<cpp11::decay_t<int>>(offset), cpp11::as_cpp<cpp11::decay_t<double>>(n)));
+  END_CPP11
+}
+// har_read.cpp
+cpp11::strings har_fixed_width_strings(cpp11::raws bytes, int width, bool trim);
+extern "C" SEXP _teems_har_fixed_width_strings(SEXP bytes, SEXP width, SEXP trim) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(har_fixed_width_strings(cpp11::as_cpp<cpp11::decay_t<cpp11::raws>>(bytes), cpp11::as_cpp<cpp11::decay_t<int>>(width), cpp11::as_cpp<cpp11::decay_t<bool>>(trim)));
+  END_CPP11
+}
 // parse_solution.cpp
 cpp11::list parse_solution_meta(std::string path_prefix);
 extern "C" SEXP _teems_parse_solution_meta(SEXP path_prefix) {
@@ -22,8 +71,15 @@ extern "C" SEXP _teems_parse_solution_bins(SEXP path_prefix, SEXP names_filter) 
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_teems_parse_solution_bins", (DL_FUNC) &_teems_parse_solution_bins, 2},
-    {"_teems_parse_solution_meta", (DL_FUNC) &_teems_parse_solution_meta, 1},
+    {"_teems_agg_array_sum",           (DL_FUNC) &_teems_agg_array_sum,           3},
+    {"_teems_har_fixed_width_strings", (DL_FUNC) &_teems_har_fixed_width_strings, 3},
+    {"_teems_har_payload_concat",      (DL_FUNC) &_teems_har_payload_concat,      2},
+    {"_teems_har_payload_f32",         (DL_FUNC) &_teems_har_payload_f32,         3},
+    {"_teems_har_payload_i32",         (DL_FUNC) &_teems_har_payload_i32,         3},
+    {"_teems_har_split_records",       (DL_FUNC) &_teems_har_split_records,       1},
+    {"_teems_har_spse_fill",           (DL_FUNC) &_teems_har_spse_fill,           3},
+    {"_teems_parse_solution_bins",     (DL_FUNC) &_teems_parse_solution_bins,     2},
+    {"_teems_parse_solution_meta",     (DL_FUNC) &_teems_parse_solution_meta,     1},
     {NULL, NULL, 0}
 };
 }
