@@ -21,7 +21,8 @@
     withmc66 = NULL,
     smllthreads = NULL,
     tempdir = NULL,
-    nowrites = NULL
+    nowrites = NULL,
+    condest = NULL
   )
 }
 
@@ -44,7 +45,8 @@
     withmc66 = c("NULL", "logical"),
     smllthreads = c("NULL", "numeric", "integer"),
     tempdir = c("NULL", "character"),
-    nowrites = c("NULL", "logical")
+    nowrites = c("NULL", "logical"),
+    condest = c("NULL", "logical")
   )
 }
 
@@ -68,7 +70,7 @@
       )
     }
   }
-  for (nme in c("fastrefac", "gpzerodivide", "withmc66", "nowrites")) {
+  for (nme in c("fastrefac", "gpzerodivide", "withmc66", "nowrites", "condest")) {
     x <- a[[nme]]
     if (!is.null(x) && (!is.logical(x) || length(x) != 1L || is.na(x))) {
       bad_arg <- nme
@@ -119,7 +121,8 @@
     if (!is.null(a$withmc66)) paste("-withmc66", as01(a$withmc66)),
     if (!is.null(a$smllthreads)) paste("-smllthreads", as.integer(a$smllthreads)),
     if (!is.null(a$tempdir)) paste("-tempdir", a$tempdir),
-    if (!is.null(a$nowrites)) paste("-nowrites", as01(a$nowrites))
+    if (!is.null(a$nowrites)) paste("-nowrites", as01(a$nowrites)),
+    if (!is.null(a$condest)) paste("-condest", as01(a$condest))
   )
   if (is.null(flags)) {
     return(NULL)

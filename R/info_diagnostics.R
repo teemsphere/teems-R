@@ -122,6 +122,16 @@
         stats$la_used$laA, stats$la_used$laDi, stats$la_used$laD
       )
     },
+    # -condest solve-quality record (run maxima; solver >= condest slice)
+    if (!is.null(stats$condest)) {
+      sprintf(
+        "Solve quality (condest): kappa_w1 max %s, kappa_w2 max %s, omega max %s (%s solve(s) measured, %s zero-rhs skip(s))",
+        format(stats$condest$kappa_w1_max, digits = 3),
+        format(stats$condest$kappa_w2_max, digits = 3),
+        format(stats$condest$omega_max, digits = 3),
+        stats$condest$solves, stats$condest$zero_rhs_skips
+      )
+    },
     sprintf(
       "Parallelism: %s MPI task(s), %s OpenMP thread(s)",
       stats$mpi_size, opt$max_threads

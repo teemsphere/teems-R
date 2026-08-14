@@ -149,3 +149,30 @@ test_that(".map_solver_errors classifies representative catalog lines", {
   expect_identical(mapped$manual[1], "11.2.1")
   expect_identical(mapped$manual[9], "10.11.1")
 })
+
+test_that("condest diagnostic lines do not trip the generic scans", {
+  paths <- local_solver_log(c(
+    "solver banner",
+    "condest: backward error omega1 0.00e+00 omega2 0.00e+00 (2 refinement passes), forward error bound 0.00e+00, kappa_w1 3.029e+04, kappa_w2 8.470e+08",
+    "all steps complete"
+  ))
+  expect_no_error(suppressMessages(check_log(paths)))
+})
+
+test_that("condest near-singularity warns without aborting the run", {
+  paths <- local_solver_log(c(
+    "solver banner",
+    "condest: backward error omega1 0.00e+00 omega2 0.00e+00 (0 refinement passes), forward error bound 0.00e+00, kappa_w1 6.179e-02, kappa_w2 1.753e+15",
+    "condest: WARNING: the linear system is numerically near-singular at the current values (kappa_w2 1.8e+15): solutions are unreliable; the structural probe may pass (-solmed probe) -- look for near-zero data flows carried by the closure",
+    "all steps complete"
+  ))
+  expect_warning(
+    suppressMessages(check_log(paths)),
+    "numerically near-singular"
+  )
+  # and the kappa value is surfaced in the warning text
+  expect_warning(
+    suppressMessages(check_log(paths)),
+    "1.8e\\+15"
+  )
+})

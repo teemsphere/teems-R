@@ -58,7 +58,7 @@ build_solve_err <- function() {
       expert solver flags ({.arg fastrefac}, {.arg gpzerodivide},
       {.arg cntl_3}, {.arg cntl_6}, {.arg nsbbdblocks},
       {.arg withmc66}, {.arg smllthreads}, {.arg tempdir},
-      {.arg nowrites})."
+      {.arg nowrites}, {.arg condest})."
     ),
     # test-solve_in_situ.R: solver_args must be a fully named list
     solver_args_list = c(
@@ -74,7 +74,8 @@ build_solve_err <- function() {
       {.arg laD}, {.arg laDi}) and the expert solver flags
       ({.arg fastrefac}, {.arg gpzerodivide}, {.arg cntl_3},
       {.arg cntl_6}, {.arg nsbbdblocks}, {.arg withmc66},
-      {.arg smllthreads}, {.arg tempdir}, {.arg nowrites}). The
+      {.arg smllthreads}, {.arg tempdir}, {.arg nowrites},
+      {.arg condest}). The
       Runge-Kutta step controls are formal arguments of
       {.fun solve_in_situ}."
     ),
@@ -90,6 +91,12 @@ build_solve_err <- function() {
       "Singularity detected during solution. See {.path {paths$diag_out}}.",
       "A square-but-singular system usually indicates a structurally deficient closure partition.",
       "Run {.fun teems::ems_probe} on the deployed model or re-solve with {.code pre_probe = TRUE} for a named structural diagnosis."
+    ),
+    # test-chk_solver_log.R: condest near-singularity is a warning
+    # (the run completed; the verdict is the modeller's to act on)
+    condest_nearsing = c(
+      "The {.code condest} diagnostic reports the linear system as numerically near-singular (kappa_w2 {kappa_w2}): solutions are unreliable.",
+      "The structural probe may pass -- look for near-zero data flows carried by the closure, or re-solve with {.code precision = \"f64\"}. See {.path {paths$diag_out}}."
     ),
     # test-chk_solver_log.R: "TAB errors map to the model-specification abort"
     # lines 2-4 filled by .check_solver_log; line 3 dropped when no

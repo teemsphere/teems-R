@@ -35,7 +35,24 @@
   diag_out <- normalizePath(paths$diag_out, "/")
   paths$diag_out <- diag_out
 
-  err_lines <- grep("Error:", model_log, value = TRUE, fixed = TRUE)
+  # `condest:` lines are structured solve-quality diagnostics whose
+  # vocabulary ("backward error", "near-singular") would trip the
+  # generic scans below; they are excluded from scanning, and the
+  # solver's near-singularity verdict is surfaced as an R-side warning
+  # (the run itself completed -- the results are the modeller's call)
+  condest_warn <- grep("condest: WARNING", model_log,
+    value = TRUE, fixed = TRUE
+  )
+  scan_log <- model_log[!startsWith(model_log, "condest:")]
+  if (length(condest_warn) > 0L) {
+    kappa_w2 <- sub(".*\\(kappa_w2 ([^)]*)\\).*", "\\1", condest_warn[1])
+    .cli_action(solve_err$condest_nearsing,
+      action = c("warn", "inform"),
+      call = call
+    )
+  }
+
+  err_lines <- grep("Error:", scan_log, value = TRUE, fixed = TRUE)
   if (length(err_lines) > 0L) {
     err_lines <- unique(sub(".*Error:\\s*", "", err_lines))
     mapped <- .map_solver_errors(err_lines)
@@ -75,13 +92,13 @@
     )
   }
 
-  if (any(grepl(pattern = "singular", model_log, ignore.case = TRUE))) {
+  if (any(grepl(pattern = "singular", scan_log, ignore.case = TRUE))) {
     .cli_action(solve_err$solution_sing,
       action = c("abort", "inform", "inform"),
       call = call
     )
   }
-  if (any(grepl("error", model_log, ignore.case = TRUE))) {
+  if (any(grepl("error", scan_log, ignore.case = TRUE))) {
     .cli_action(solve_err$solution_err,
       action = "abort",
       call = call

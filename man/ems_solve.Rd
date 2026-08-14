@@ -211,11 +211,17 @@ pivot/ordering thresholds, numeric), \code{nsbbdblocks} (SBBD
 block-count override, integer), \code{withmc66} (MC66 row ordering
 for SBBD, logical), \code{smllthreads} (OpenMP threads for small
 sections, integer), \code{tempdir} (container-side scratch directory,
-character) and \code{nowrites} (skip the solver-side output-file
+character), \code{nowrites} (skip the solver-side output-file
 dumps, logical; coefficient composition then has nothing to read
 — distinct from \code{suppress_outputs}, which only skips the R-side
-composition). Effective values of recorded flags land in
-\code{sol.stats.json} regardless of how they were passed.}
+composition) and \code{condest} (per-solve quality diagnostics on the
+\code{"LU"} matrix method, logical: componentwise backward error and
+scaled condition numbers via HSL MA60/MC71, logged per linear
+solve with run maxima recorded under \code{condest} in
+\code{sol.stats.json}; diagnostic-only — solutions are unchanged —
+and informative only for nonzero shocks). Effective values of
+recorded flags land in \code{sol.stats.json} regardless of how they
+were passed.}
 }
 \value{
 A tibble of model output variables and coefficients.

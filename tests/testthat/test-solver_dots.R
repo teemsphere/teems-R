@@ -93,7 +93,8 @@ test_that("expert flags render as solver CLI flags", {
     cntl_3 = 0.5,
     nsbbdblocks = 4L,
     withmc66 = FALSE,
-    nowrites = TRUE
+    nowrites = TRUE,
+    condest = TRUE
   ))
   cmd <- exec_cmd(d)
   expect_match(cmd, "-fastrefac 1", fixed = TRUE)
@@ -102,6 +103,7 @@ test_that("expert flags render as solver CLI flags", {
   expect_match(cmd, "-nsbbdblocks 4", fixed = TRUE)
   expect_match(cmd, "-withmc66 0", fixed = TRUE)
   expect_match(cmd, "-nowrites 1", fixed = TRUE)
+  expect_match(cmd, "-condest 1", fixed = TRUE)
   expect_no_match(cmd, "-cntl_6", fixed = TRUE)
   expect_no_match(cmd, "-tempdir", fixed = TRUE)
 })
@@ -127,6 +129,11 @@ test_that("dot-passed extras are validated", {
   expect_error(
     ems_solve(cmf, fastrefac = "yes"),
     "fastrefac",
+    class = "rlang_error"
+  )
+  expect_error(
+    ems_solve(cmf, condest = "yes"),
+    "condest",
     class = "rlang_error"
   )
   expect_error(

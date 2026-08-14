@@ -101,11 +101,17 @@
 #'   block-count override, integer), `withmc66` (MC66 row ordering
 #'   for SBBD, logical), `smllthreads` (OpenMP threads for small
 #'   sections, integer), `tempdir` (container-side scratch directory,
-#'   character) and `nowrites` (skip the solver-side output-file
+#'   character), `nowrites` (skip the solver-side output-file
 #'   dumps, logical; coefficient composition then has nothing to read
 #'   — distinct from `suppress_outputs`, which only skips the R-side
-#'   composition). Effective values of recorded flags land in
-#'   `sol.stats.json` regardless of how they were passed.
+#'   composition) and `condest` (per-solve quality diagnostics on the
+#'   `"LU"` matrix method, logical: componentwise backward error and
+#'   scaled condition numbers via HSL MA60/MC71, logged per linear
+#'   solve with run maxima recorded under `condest` in
+#'   `sol.stats.json`; diagnostic-only — solutions are unchanged —
+#'   and informative only for nonzero shocks). Effective values of
+#'   recorded flags land in `sol.stats.json` regardless of how they
+#'   were passed.
 #' @param n_threads Integer length 1 (default `1L`), OpenMP threads
 #'   per MPI task. Results with more than one thread are numerically
 #'   equivalent but not bit-reproducible across thread counts
