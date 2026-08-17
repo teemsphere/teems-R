@@ -271,6 +271,8 @@ test_that("matrix_method auto resolves by model type", {
 })
 
 test_that("matrix_method auto selects DBBD for large static deployments", {
+  # the size gate is deploy metadata (faked large here); the partition
+  # evidence is the real structural probe of the deployed system
   nest_temp("solve_auto_dbbd", write_dir)
   cmf_path <- ems_deploy(static_data, static_model)
   metadata_path <- file.path(dirname(cmf_path), "metadata.rds")
@@ -282,11 +284,66 @@ test_that("matrix_method auto selects DBBD for large static deployments", {
     transform = norm_cmd,
     variant = variant
   )
+  # the probe ran once and left its report next to the solution files
+  expect_true(file.exists(file.path(
+    dirname(cmf_path), "out", "variables", "bin", "sol.probe.json"
+  )))
+  # single task: no probe (LU is forced), metadata hint only
   expect_snapshot(
     ems_solve(cmf_path, terminal_run = TRUE),
     transform = norm_cmd,
     variant = variant
   )
+  # 4 tasks: the 3-block partition cannot serve them and the next
+  # candidate's border is too wide -> LU
+  expect_snapshot(
+    ems_solve(cmf_path, n_tasks = 4L, terminal_run = TRUE),
+    transform = norm_cmd,
+    variant = variant
+  )
+})
+
+test_that("matrix_method auto probes the deployed structure and records the decision", {
+  nest_temp("solve_auto_record", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  metadata_path <- file.path(dirname(cmf_path), "metadata.rds")
+  metadata <- readRDS(metadata_path)
+  metadata$system_size <- 2.5e6
+  saveRDS(metadata, metadata_path)
+  # pre_probe shares the auto method's probe: one probe run per solve
+  expect_snapshot(
+    out <- ems_solve(cmf_path, n_tasks = 2L, pre_probe = TRUE),
+    transform = norm_cmd,
+    variant = variant
+  )
+  expect_s3_class(out, "data.frame")
+  probe_logs <- list.files(
+    file.path(dirname(cmf_path), "out"),
+    pattern = "^solver_out_\\d{4}_probe\\.txt$"
+  )
+  expect_length(probe_logs, 1L)
+  record <- readLines(file.path(dirname(cmf_path), "model_diagnostics.txt"))
+  expect_true(any(grepl("^Matrix method: DBBD", record)))
+  expect_true(any(grepl(
+    "^Matrix method auto: DBBD \\(structural probe: 2,500,000 equations, no chain, partition reg \\(3 blocks, border 6.4%\\), n_tasks 2\\)$",
+    record
+  )))
+  expect_true(any(grepl("^  thresholds: probe_min_size 1500000", record)))
+})
+
+test_that("matrix_method auto skips the probe below the size threshold and records that", {
+  nest_temp("solve_auto_skip", write_dir)
+  cmf_path <- ems_deploy(static_data, static_model)
+  out <- ems_solve(cmf_path)
+  expect_s3_class(out, "data.frame")
+  expect_false(file.exists(file.path(
+    dirname(cmf_path), "out", "variables", "bin", "sol.probe.json"
+  )))
+  record <- readLines(file.path(dirname(cmf_path), "model_diagnostics.txt"))
+  expect_true(any(grepl(
+    "^Matrix method auto: LU \\(deploy metadata: 3,485 equations, n_tasks 1; structural probe skipped",
+    record
+  )))
 })
 
 test_that("deploy metadata records system size", {

@@ -42,8 +42,10 @@
 #' @return A `teems_probe` object: validity verdict and rank per
 #'   pattern, named defect tibble, statement-level incidence tibbles
 #'   (`statements`, `incidence`), core structure (`cores`), ordering
-#'   evidence (`structure`), the condensation verdict (`condense`), and
-#'   report paths.
+#'   evidence (`structure`: the chain dimension and the block-partition
+#'   candidate table the solver measured -- the evidence
+#'   `ems_solve(matrix_method = "auto")` decides from), the
+#'   condensation verdict (`condense`), and report paths.
 #' @examples
 #' \dontrun{
 #' # The following examples require the teems solver to be built.
@@ -115,7 +117,9 @@ ems_probe <- function(cmf_path,
 
 #' @description The probe run is always sequential (`-n 1`): the
 #'   MC79 diagnosis is serial solver-side and skips itself on more
-#'   ranks. The matrix method is irrelevant to the diagnosis.
+#'   ranks. The matrix method is irrelevant to the diagnosis, and the
+#'   solver's probe measures the system structure (chain dimension,
+#'   partition candidates) regardless of the `-matsol` passed.
 #' @keywords internal
 #' @noRd
 .construct_probe_cmd <- function(paths,
@@ -200,14 +204,19 @@ ems_probe <- function(cmf_path,
   )
 }
 
-#' @description `ems_solve(pre_probe = TRUE)` pre-flight: run the
-#'   structural probe (without the fine decomposition) and abort with
-#'   the named defect sets when the system is structurally singular.
+#' @description Run the structural probe (without the fine
+#'   decomposition) on a deployment and return the `teems_probe`
+#'   object. One run serves both consumers in `ems_solve()`: the
+#'   `pre_probe` singularity verdict (`.probe_verdict()`) and the
+#'   `matrix_method = "auto"` structure evidence (`probe$structure`;
+#'   the solver's probe measures the chain dimension and the
+#'   partition candidates irrespective of the `-matsol` it is
+#'   launched with).
 #' @keywords internal
 #' @noRd
-.probe_preflight <- function(cmf_path,
-                             timeID,
-                             call) {
+.run_probe <- function(cmf_path,
+                       timeID,
+                       call) {
   paths <- .get_solver_paths(
     cmf_path = cmf_path,
     timeID = paste0(timeID, "_probe"),
@@ -219,10 +228,29 @@ ems_probe <- function(cmf_path,
     fine = FALSE
   )
   .run_solver_cmd(probe_cmd)
-  probe <- .collect_probe(
+  .collect_probe(
     paths = paths,
     call = call
   )
+}
+
+#' @description `ems_solve(pre_probe = TRUE)` pre-flight: run the
+#'   structural probe (or reuse the one the auto method resolution
+#'   already ran) and abort with the named defect sets when the
+#'   system is structurally singular.
+#' @keywords internal
+#' @noRd
+.probe_preflight <- function(cmf_path,
+                             timeID,
+                             call,
+                             probe = NULL) {
+  if (is.null(probe)) {
+    probe <- .run_probe(
+      cmf_path = cmf_path,
+      timeID = timeID,
+      call = call
+    )
+  }
   .probe_verdict(
     probe = probe,
     cmf_path = cmf_path,

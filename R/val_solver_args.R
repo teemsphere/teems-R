@@ -4,7 +4,8 @@
 #' @noRd
 .validate_solver_args <- function(a,
                                   paths,
-                                  call) {
+                                  call,
+                                  timeID = NULL) {
   
   solution_method <- a$solution_method
   a$solution_method <- rlang::arg_match(
@@ -273,12 +274,23 @@
     a$enable_time <- FALSE
   }
 
+  # `auto` may run the structural probe; the probe object is kept so
+  # the pre_probe verdict reuses it (one probe run per solve) and the
+  # decision record is written to model_diagnostics.txt after the run
+  a$auto_decision <- NULL
+  a$probe <- NULL
   if (a$matrix_method %=% "auto") {
-    a$matrix_method <- .resolve_auto_method(
+    auto <- .resolve_auto_method(
       enable_time = a$enable_time,
       n_tasks = a$n_tasks,
-      cmf_path = paths$cmf
+      cmf_path = paths$cmf,
+      pre_probe = isTRUE(a$pre_probe),
+      timeID = timeID,
+      call = call
     )
+    a$matrix_method <- auto$method
+    a$auto_decision <- auto$decision
+    a$probe <- auto$probe
   }
 
   metadata <- .deploy_metadata(cmf_path = paths$cmf)

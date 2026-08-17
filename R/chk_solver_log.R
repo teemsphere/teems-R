@@ -31,7 +31,8 @@
                               solve_cmd,
                               paths,
                               call,
-                              status = 0L) {
+                              status = 0L,
+                              auto_decision = NULL) {
   model_log <- readLines(paths$diag_out)
   diag_out <- normalizePath(paths$diag_out, "/")
   paths$diag_out <- diag_out
@@ -125,7 +126,8 @@
   # validation and forced changes applied), rendered from the
   # solver-written sol.stats.json options object
   .solve_record_append(
-    run_dir = paths$run
+    run_dir = paths$run,
+    auto_decision = auto_decision
   )
 
   return(invisible(NULL))

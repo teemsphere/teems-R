@@ -54,8 +54,9 @@
   uncondensed <- vecsize + n_backsolve_ele
 
   condensed <- n_backsolve_ele > 0
-  # the probe runs under -matsol 0, so "bordered" here is the detected
-  # structure, not the method the run happened to use
+  # the solver's probe detects the structure irrespective of the -matsol
+  # it is launched with, so "bordered" here is the measured structure,
+  # not the method the run happened to use
   partitioned <- isTRUE(stats$bordered) && n_blocks > 1
 
   verdict <- "none"

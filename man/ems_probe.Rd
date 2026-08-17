@@ -27,8 +27,10 @@ Anything else is an error, never a silently ignored flag.}
 A \code{teems_probe} object: validity verdict and rank per
 pattern, named defect tibble, statement-level incidence tibbles
 (\code{statements}, \code{incidence}), core structure (\code{cores}), ordering
-evidence (\code{structure}), the condensation verdict (\code{condense}), and
-report paths.
+evidence (\code{structure}: the chain dimension and the block-partition
+candidate table the solver measured -- the evidence
+\code{ems_solve(matrix_method = "auto")} decides from), the
+condensation verdict (\code{condense}), and report paths.
 }
 \description{
 Runs the solver's structural probe (\verb{-solmed probe}) on

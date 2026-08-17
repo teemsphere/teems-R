@@ -17,7 +17,8 @@
   v <- .validate_solver_args(
     a = args_list,
     paths = paths,
-    call = call
+    call = call,
+    timeID = timeID
   )
 
   cmds <- .construct_cmd(
@@ -57,7 +58,8 @@
     .probe_preflight(
       cmf_path = args_list$cmf_path,
       timeID = timeID,
-      call = call
+      call = call,
+      probe = v$probe
     )
   }
 
@@ -82,7 +84,8 @@
     solve_cmd = cmds$solve,
     paths = paths,
     call = call,
-    status = status
+    status = status,
+    auto_decision = v$auto_decision
   )
   if (!v$suppress_outputs) {
     output <- ems_compose(cmf_path = v$cmf_path)

@@ -189,8 +189,10 @@ defective variable and equation elements named — if the deployed
 system is structurally singular, instead of failing mid-solve
 with an unnamed singularity. Adds a probe run's cost (the
 pre-solve pipeline plus a maximum matching: negligible below
-~10^5 equations, tens of seconds around 10^6). See
-\code{\link[=ems_probe]{ems_probe()}} for the full diagnosis.}
+~10^5 equations, tens of seconds around 10^6); with
+\code{matrix_method = "auto"} the same probe run also supplies the
+structural evidence for the method choice. See \code{\link[=ems_probe]{ems_probe()}}
+for the full diagnosis.}
 
 \item{...}{Additional named solver arguments; anything else is an
 error, never a silently ignored flag. Three groups are accepted:
@@ -239,12 +241,26 @@ and structures outputs with \code{\link[=ems_compose]{ems_compose()}}.
 \code{matrix_method = "auto"} selects \code{"SBBD"} for
 intertemporal models (fastest on every benchmarked shape,
 including single-task runs) and \code{"LU"} for static models,
-switching to \code{"DBBD"} when \code{n_tasks >= 2} and the deployed
-system is large (roughly 2 million or more equations, or 1.5
-million with 100+ regions). The selection is reported at run
-time; set \code{matrix_method} explicitly to override it. Runs
-without deploy metadata (e.g. \code{\link[=solve_in_situ]{solve_in_situ()}}) fall back
-to \code{"LU"} for static models regardless of size.
+switching to \code{"DBBD"} when \code{n_tasks >= 2}, the deployed system
+is large (roughly 2 million or more equations, or 1.5 million
+with 100+ diagonal blocks) and the solver's structural probe of
+the deployment finds a block partition with at least \code{n_tasks}
+blocks and a border below a tenth of the system. The probe (a
+sub-second run on small models; the same run \code{pre_probe} uses,
+never launched twice) is skipped when the deploy metadata already
+settles the choice: static single-task runs and static systems
+below 1.5 million equations resolve to \code{"LU"} without it. When it
+runs, its evidence -- chain dimension, chosen partition, block
+count and border share -- is reported with the selection and
+written, together with the threshold values used, into
+\code{model_diagnostics.txt}. A model that declares intertemporal sets
+but couples no equation through lead/lag offsets is measured as
+static. The thresholds are calibrated on 1-4 task benchmarks;
+the \code{"SBBD"} to \code{"NDBBD"} escalation is plumbed but disabled
+until measured. Set \code{matrix_method} explicitly to override the
+selection. Runs without deploy metadata (e.g.
+\code{\link[=solve_in_situ]{solve_in_situ()}}) probe when \code{n_tasks >= 2} and take the
+system size from the probe.
 
 Condensation interacts with that choice. Backsolving (see the
 \code{backsolve} argument of \code{\link[=ems_model]{ems_model()}}) substitutes variables

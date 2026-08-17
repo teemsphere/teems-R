@@ -252,8 +252,18 @@
     "ntime", "nreg", "ndblock", "netcut", "nintraeq", "border_neq"
   )
   out <- stats[intersect(keep, names(stats))]
-  if (!is.null(stats$partition_auto) && NROW(stats$partition_auto)) {
-    out$partition_auto <- tibble::as_tibble(stats$partition_auto)
+  # the candidate table the solver's partition detection scored (one
+  # row per eligible set) and the set it selected at the probe's rank
+  # count; the auto method replays the selection at the solve's
+  pa <- stats$partition_auto
+  if (!is.null(pa)) {
+    cand <- if (is.data.frame(pa)) pa else pa$candidates
+    if (!is.null(cand) && NROW(cand)) {
+      out$partition_auto <- tibble::as_tibble(cand)
+    }
+    if (!is.data.frame(pa) && !is.null(pa$chosen)) {
+      out$partition_chosen <- pa$chosen
+    }
   }
   return(out)
 }

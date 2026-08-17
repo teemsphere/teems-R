@@ -148,10 +148,16 @@
     dirname(cmf_path), "out", "variables", "bin", "sol.stats.json"
   )
   if (file.exists(stats_path)) {
-    used <- tryCatch(
-      jsonlite::read_json(stats_path, simplifyVector = TRUE)$la_used,
+    stats <- tryCatch(
+      jsonlite::read_json(stats_path, simplifyVector = TRUE),
       error = function(e) NULL
     )
+    # a structural probe run (ems_probe(), pre_probe, the auto method's
+    # probe) writes the same stats.json but never factorizes: its
+    # la_used is the launch default, not a measurement -- ignore it
+    if (!identical(stats$solution_method, "probe")) {
+      used <- stats$la_used
+    }
   }
   pick <- function(user, nm) {
     if (!is.null(user)) {

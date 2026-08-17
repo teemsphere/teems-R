@@ -159,7 +159,12 @@ build_solve_info <- function() {
     in_situ = "\"solve-in-situ\" mode activated.",
     # test-ems_solve.R: "matrix_method auto resolves by model type"
     auto_method = "{.arg matrix_method} {.val auto}: using {.val {chosen}} for this {model_type} model.",
+    # test-ems_solve.R: "matrix_method auto probes the deployed structure"
+    auto_evidence = "Structural evidence: {evidence}.",
     auto_dbbd_hint = "This static model's size favors {.val DBBD}: {.code n_tasks = 4} with {.arg matrix_method} {.val DBBD} (or {.val auto}) may solve faster than single-task {.val LU}.",
+    # test-ems_solve.R: "matrix_method auto probes the deployed structure"
+    auto_probe = "{.arg matrix_method} {.val auto}: probing the deployed system's structure (chain dimension, block partition) to choose the method.",
+    auto_no_chain = "The model declares intertemporal sets but no equation couples elements through lead/lag offsets; the chain methods ({.val SBBD}, {.val NDBBD}) do not apply and the static family is used.",
     # test-ems_solve.R: "condensed deployments advise against bordered methods"
     condense_bordered = c(
       "This deployment is condensed ({n_backsolve} backsolved variable{?s}, {share} of the uncondensed system) and {.val {matrix_method}} is a bordered method.",

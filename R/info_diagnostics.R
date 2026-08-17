@@ -82,7 +82,8 @@
 #'
 #' @keywords internal
 #' @noRd
-.solve_record_append <- function(run_dir) {
+.solve_record_append <- function(run_dir,
+                                 auto_decision = NULL) {
   diagnostic_file <- file.path(run_dir, "model_diagnostics.txt")
   stats_path <- file.path(run_dir, "out", "variables", "bin", "sol.stats.json")
   if (!file.exists(diagnostic_file) || !file.exists(stats_path)) {
@@ -114,6 +115,9 @@
       "Matrix method: %s (laA %s, laDi %s, laD %s; fastrefac %s)",
       stats$matrix_method, opt$laA, opt$laDi, opt$laD, onoff(opt$fastrefac)
     ),
+    # matrix_method = "auto" evidence and the placeholder thresholds it
+    # was decided against (ROADMAP 6.10)
+    .auto_record_lines(auto_decision),
     # effective MA48 workspace sizes after any in-solver growth
     # (solver >= la auto-sizing); the next run warm-starts from these
     if (!is.null(stats$la_used)) {
