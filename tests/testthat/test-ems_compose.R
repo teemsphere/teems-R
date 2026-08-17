@@ -92,6 +92,54 @@ test_that("ems_compose selects variable/coefficient mix", {
   expect_s3_class(result, "data.frame")
 })
 
+test_that("coefficients come from the binary dump; CSVs are opt-in and agree", {
+  bin_dir <- file.path(dirname(cmf_path), "out", "variables", "bin")
+  expect_true(file.exists(file.path(bin_dir, "sol.cof")))
+  expect_true(file.exists(file.path(bin_dir, "sol.cbin")))
+  expect_length(
+    list.files(file.path(dirname(cmf_path), "out", "coefficients")),
+    0L
+  )
+  from_bin <- ems_compose(cmf_path)
+  expect_equal(sum(from_bin$type == "coefficient"), n_coeff)
+
+  # the same deploy with the CSV pairs on: values agree to the CSVs'
+  # %f (six-decimal) rounding, structure identical
+  csv_dir <- file.path(write_dir, "compose_csv")
+  dir.create(csv_dir)
+  ems_option_set(tempdir = csv_dir)
+  cmf_csv <- ems_deploy(dat, model, write_coefficients = TRUE)
+  ems_solve(cmf_csv, suppress_outputs = TRUE)
+  ems_option_set(tempdir = write_dir)
+  expect_equal(
+    length(list.files(file.path(csv_dir, "out", "coefficients"))),
+    n_coeff
+  )
+  csv_bin <- file.path(csv_dir, "out", "variables", "bin")
+  file.rename(file.path(csv_bin, "sol.cof"), file.path(csv_bin, "sol.cof.off"))
+  from_csv <- ems_compose(cmf_csv)
+  file.rename(file.path(csv_bin, "sol.cof.off"), file.path(csv_bin, "sol.cof"))
+
+  cb <- from_bin[from_bin$type == "coefficient", ]
+  cc <- from_csv[from_csv$type == "coefficient", ]
+  expect_setequal(cb$name, cc$name)
+  for (nm in cb$name) {
+    a <- cb$dat[[nm]]
+    b <- cc$dat[[nm]]
+    expect_identical(names(a), names(b))
+    expect_identical(data.table::key(a), data.table::key(b))
+    # CSVs carry %f: six fixed decimals, so agreement is absolute
+    expect_lt(max(abs(a$Value - b$Value)), 5.1e-7)
+    keys <- setdiff(names(a), c("Value", "Year"))
+    if (length(keys)) {
+      expect_identical(
+        lapply(a[, keys, with = FALSE], as.vector),
+        lapply(b[, keys, with = FALSE], as.vector)
+      )
+    }
+  }
+})
+
 test_that("ems_compose errors when cmf_path does not exist", {
   expect_snapshot_error(ems_compose(cmf_path = file.path("not_a_path")))
 })

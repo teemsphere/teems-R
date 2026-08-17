@@ -68,6 +68,13 @@ extern "C" SEXP _teems_parse_solution_bins(SEXP path_prefix, SEXP names_filter) 
     return cpp11::as_sexp(parse_solution_bins(cpp11::as_cpp<cpp11::decay_t<std::string>>(path_prefix), cpp11::as_cpp<cpp11::decay_t<cpp11::strings>>(names_filter)));
   END_CPP11
 }
+// parse_solution.cpp
+cpp11::list parse_coefficients(std::string path_prefix, cpp11::strings names_filter, bool read_values);
+extern "C" SEXP _teems_parse_coefficients(SEXP path_prefix, SEXP names_filter, SEXP read_values) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(parse_coefficients(cpp11::as_cpp<cpp11::decay_t<std::string>>(path_prefix), cpp11::as_cpp<cpp11::decay_t<cpp11::strings>>(names_filter), cpp11::as_cpp<cpp11::decay_t<bool>>(read_values)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -78,6 +85,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_teems_har_payload_i32",         (DL_FUNC) &_teems_har_payload_i32,         3},
     {"_teems_har_split_records",       (DL_FUNC) &_teems_har_split_records,       1},
     {"_teems_har_spse_fill",           (DL_FUNC) &_teems_har_spse_fill,           3},
+    {"_teems_parse_coefficients",      (DL_FUNC) &_teems_parse_coefficients,      3},
     {"_teems_parse_solution_bins",     (DL_FUNC) &_teems_parse_solution_bins,     2},
     {"_teems_parse_solution_meta",     (DL_FUNC) &_teems_parse_solution_meta,     1},
     {NULL, NULL, 0}

@@ -176,3 +176,19 @@ test_that("condest near-singularity warns without aborting the run", {
     "1.8e\\+15"
   )
 })
+
+test_that("a non-zero exit status aborts even with a clean log", {
+  paths <- local_solver_log(c("solver banner", "Step time 0.01 s"))
+  expect_error(
+    .check_solver_log(
+      elapsed_time = proc.time(),
+      solve_cmd = "cmd",
+      paths = paths,
+      call = NULL,
+      status = 139L
+    ),
+    "exited with status 139"
+  )
+  # a zero status with a clean log passes as before
+  expect_no_error(check_log(paths))
+})

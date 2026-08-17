@@ -1,6 +1,7 @@
 #' @keywords internal
 #' @noRd
-.finalize_tab <- function(model) {
+.finalize_tab <- function(model,
+                          write_coefficients = FALSE) {
 
   if (is.null(model$postsim)) {
     model$postsim <- FALSE
@@ -24,8 +25,12 @@
   }
   model <- model[!omitted, ]
 
+  is_ps <- !is.na(model$postsim) & model$postsim
   set_extract <- model[model$type == "Set",]
-  coeff_extract <- model[model$type == "Coefficient",]
+  # PostSim coefficients are PostSim-only names (manual 12.2.1): they are
+  # declared inside the trailing section below and reach R through the
+  # solver's coefficient dump, never through ordinary Write pairs
+  coeff_extract <- model[model$type == "Coefficient" & !is_ps,]
 
   set_extract$name <- toupper(set_extract$name)
   set_writeout <- paste(
@@ -45,7 +50,9 @@
     paste0('"', trimws(gsub("#", "", set_extract$label)), '"', ";")
   )
 
-  coeff_writeout <- paste(
+  # coefficient values reach teems-R through the solver's binary dump
+  # (<sol>.cof/.cbin); the per-coefficient CSV Write pairs are opt-in
+  coeff_writeout <- if (write_coefficients) paste(
     "File",
     "(new)",
     coeff_extract$name,
@@ -59,15 +66,14 @@
     paste0('"', coeff_extract$name, '"'),
     "longname",
     paste0('"', trimws(gsub("#", "", coeff_extract$label)), '"', ";")
-  )
+  ) else NULL
 
-  # PostSim executables re-wrap in a single trailing section (sections
-  # are conceptually concatenated at end of file, manual 12.2); their
-  # declarations stay inline, and the write-all File/Write pairs below
-  # remain in the ordinary part so the solver dumps PostSim
-  # coefficients after the post-solve pass
-  ps_exec <- !is.na(model$postsim) & model$postsim &
-    tolower(model$type) %in% c("formula", "assertion", "zerodivide")
+  # PostSim statements re-wrap in a single trailing section (sections
+  # are conceptually concatenated at end of file, manual 12.2):
+  # coefficient declarations and executables alike, in model order --
+  # the solver classifies PostSim coefficients by where they are declared
+  ps_exec <- is_ps &
+    tolower(model$type) %in% c("coefficient", "formula", "assertion", "zerodivide")
   postsim_block <- NULL
   if (any(ps_exec)) {
     postsim_block <- c(

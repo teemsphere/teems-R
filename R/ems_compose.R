@@ -12,12 +12,17 @@
 #'   cumulative solution error, `|delta| / max(1, |Value|)`.
 #' @inheritParams ems_solve
 #' @param which Character vector of variable length (default
-#'   `"all"`). When `"all"`, all model variables are returned
-#'   plus all coefficients if any coefficient output files are
-#'   detected. Otherwise, a character vector of variable and/or
-#'   coefficient names to retrieve — an error is raised for any
-#'   name not found. Note that some coefficient names differ from
-#'   their associated headers (e.g., VTWR/VTMFSD).
+#'   `"all"`). When `"all"`, all model variables and all model
+#'   coefficients (updated, post-simulation values, plus any
+#'   PostSim coefficients typed `"postsim"`) are returned.
+#'   Otherwise, a character vector of variable and/or coefficient
+#'   names to retrieve — an error is raised for any name not
+#'   found. Note that some coefficient names differ from their
+#'   associated headers (e.g., VTWR/VTMFSD). Coefficient values
+#'   are read from the solver's binary coefficient dump
+#'   (`sol.cof`/`sol.cbin`), selectively for named coefficients;
+#'   the per-coefficient CSV files (see `write_coefficients` in
+#'   [`ems_deploy()`]) are used only when the dump is absent.
 #' @seealso [`ems_solve()`] for solving the CGE model.
 #' @examples
 #' \dontrun{

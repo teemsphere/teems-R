@@ -15,10 +15,36 @@
   meta <- .parse_solution_meta(sol_prefix = v$sol_prefix)
   avail_vars <- meta$var_union$cofname
   paths <- .get_output_paths(cmf_path = v$cmf_path)
-  avail_coeffs <- if (!is.null(paths$coeff)) {
-    tools::file_path_sans_ext(basename(paths$coeff))
+
+  # coefficient transport: the solver's binary dump (<sol>.cof/.cbin,
+  # every coefficient, selected on read) when present, else the
+  # per-coefficient CSVs written for TAB Write statements
+  cof_dump <- .has_coefficient_dump(v$sol_prefix)
+  if (cof_dump) {
+    cof_meta <- .parse_coefficient_bins(
+      sol_prefix = v$sol_prefix,
+      read_values = FALSE
+    )$cof_union
+    tab_coeffs <- .retrieve_tab_comp(
+      tab_path = paths[["tab"]],
+      type = "coefficient",
+      call = call
+    )$coefficient
+    avail_coeffs <- tab_coeffs$name[
+      tolower(tab_coeffs$name) %in% cof_meta$cofname
+    ]
   } else {
-    character(0)
+    avail_coeffs <- if (!is.null(paths$coeff)) {
+      tools::file_path_sans_ext(basename(paths$coeff))
+    } else {
+      character(0)
+    }
+    if (length(avail_coeffs) == 0L) {
+      .cli_action(compose_err$no_coefficients,
+        action = c("warn", "inform"),
+        call = call
+      )
+    }
   }
 
   var_names_sel <- character(0)
@@ -110,9 +136,20 @@
     bins <- list(var_union = NULL, xc = NULL)
   }
 
+  if (compose_coefficient && cof_dump) {
+    cof_bins <- .parse_coefficient_bins(
+      sol_prefix = v$sol_prefix,
+      coeff_names = tolower(coeff_names_sel)
+    )
+  } else {
+    cof_bins <- NULL
+  }
+
   output <- .retrieve_output(
     var_tbl      = bins$var_union,
     var_data     = bins$xc,
+    cof_tbl      = cof_bins$cof_union,
+    cof_data     = cof_bins$xc,
     type         = type,
     comp_extract = comp_extract,
     paths        = paths,

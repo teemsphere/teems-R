@@ -313,6 +313,11 @@ cpp11::list parse_solution_bins(std::string path_prefix, cpp11::strings names_fi
     bin_file.read(reinterpret_cast<char*>(REAL(bin_vec)),
                   sizeof(forreal) * nvarele);
   }
+  if (total_ele > 0 && !bin_file) {
+    // an empty .bin is what a probe run (-solmed probe) leaves behind
+    cpp11::stop("Truncated or empty .bin file (no solution written): %s",
+                bin_path.c_str());
+  }
   bin_file.close();
 
   // --- Build filtered var arrays ---
@@ -395,5 +400,132 @@ cpp11::list parse_solution_bins(std::string path_prefix, cpp11::strings names_fi
      "acc"_nm = (SEXP)acc_sexp}
   );
 
+  return result;
+}
+
+// --- parse_coefficients: reads .cof + .cbin (the coefficient twins of
+//     .var + .bin, ROADMAP 6.13). .cof = int64 header {version, ncof,
+//     ncofele, reserved} + ncof x hcge_cof + ncof x uint8 kind (bit 0
+//     PostSim, bit 1 parameter); .cbin = ncofele x double in begadd order.
+// names_filter: coefficient names (solver casing) to extract; empty
+// reads all. Values are read only when read_values is true.
+
+[[cpp11::register]]
+cpp11::list parse_coefficients(std::string path_prefix, cpp11::strings names_filter,
+                               bool read_values) {
+
+  std::string cof_path = path_prefix + "cof";
+  std::ifstream cof_file(cof_path, std::ios::binary);
+  if (!cof_file.is_open()) {
+    cpp11::stop("Cannot open .cof file: %s", cof_path.c_str());
+  }
+  uvadd hdr[4];
+  cof_file.read(reinterpret_cast<char*>(hdr), sizeof(uvadd) * 4);
+  if (hdr[0] != 1) {
+    cpp11::stop("Unsupported .cof version %lld in %s",
+                static_cast<long long>(hdr[0]), cof_path.c_str());
+  }
+  uvadd ncof    = hdr[1];
+  uvadd ncofele = hdr[2];
+
+  std::vector<hcge_cof> cof_structs(ncof);
+  cof_file.read(reinterpret_cast<char*>(cof_structs.data()),
+                sizeof(hcge_cof) * ncof);
+  std::vector<unsigned char> kind(ncof);
+  cof_file.read(reinterpret_cast<char*>(kind.data()), ncof);
+  if (!cof_file) {
+    cpp11::stop("Truncated .cof file: %s", cof_path.c_str());
+  }
+  cof_file.close();
+
+  bool filter = (names_filter.size() > 0);
+  std::vector<R_xlen_t> sel_idx;
+  if (filter) {
+    std::set<std::string> name_set;
+    for (R_xlen_t k = 0; k < names_filter.size(); k++) {
+      name_set.insert(std::string(names_filter[k]));
+    }
+    for (R_xlen_t i = 0; i < static_cast<R_xlen_t>(ncof); i++) {
+      if (name_set.count(std::string(cof_structs[i].cofname))) {
+        sel_idx.push_back(i);
+      }
+    }
+  } else {
+    sel_idx.resize(static_cast<size_t>(ncof));
+    std::iota(sel_idx.begin(), sel_idx.end(), 0);
+  }
+
+  using namespace cpp11::literals;
+
+  R_xlen_t nsel = static_cast<R_xlen_t>(sel_idx.size());
+  cpp11::writable::strings cof_cofname(nsel);
+  cpp11::writable::doubles cof_begadd(nsel);
+  cpp11::writable::integers cof_size(nsel);
+  cpp11::writable::doubles cof_matsize(nsel);
+  cpp11::writable::strings cof_setid(nsel);
+  cpp11::writable::strings cof_antidims(nsel);
+  cpp11::writable::logicals cof_postsim(nsel);
+  cpp11::writable::logicals cof_parameter(nsel);
+
+  uvadd total_ele = 0;
+  for (R_xlen_t j = 0; j < nsel; j++) {
+    R_xlen_t i = sel_idx[j];
+    cof_cofname[j] = std::string(cof_structs[i].cofname);
+    cof_begadd[j]  = static_cast<double>(cof_structs[i].begadd);
+    cof_size[j]    = cof_structs[i].size;
+    cof_matsize[j] = static_cast<double>(cof_structs[i].matsize);
+    int ndim = active_count(cof_structs[i].antidims);
+    cof_setid[j]    = pack_n(cof_structs[i].setid,    ndim);
+    cof_antidims[j] = pack_n(cof_structs[i].antidims, ndim);
+    cof_postsim[j]   = (kind[i] & 1u) != 0;
+    cof_parameter[j] = (kind[i] & 2u) != 0;
+    total_ele += cof_structs[i].matsize;
+  }
+
+  cpp11::writable::list cof_list(
+    {"cofname"_nm = (SEXP)cof_cofname,
+     "begadd"_nm = (SEXP)cof_begadd,
+     "size"_nm = (SEXP)cof_size,
+     "setid"_nm = (SEXP)cof_setid,
+     "antidims"_nm = (SEXP)cof_antidims,
+     "matsize"_nm = (SEXP)cof_matsize,
+     "postsim"_nm = (SEXP)cof_postsim,
+     "parameter"_nm = (SEXP)cof_parameter}
+  );
+
+  cpp11::sexp bin_sexp = R_NilValue;
+  if (read_values) {
+    std::string bin_path = path_prefix + "cbin";
+    std::ifstream bin_file(bin_path, std::ios::binary);
+    if (!bin_file.is_open()) {
+      cpp11::stop("Cannot open .cbin file: %s", bin_path.c_str());
+    }
+    cpp11::writable::doubles bin_vec(static_cast<R_xlen_t>(total_ele));
+    if (filter) {
+      R_xlen_t write_pos = 0;
+      for (auto i : sel_idx) {
+        uvadd beg = cof_structs[i].begadd;
+        uvadd mat = cof_structs[i].matsize;
+        bin_file.seekg(static_cast<std::streamoff>(beg) * sizeof(forreal),
+                       std::ios::beg);
+        bin_file.read(reinterpret_cast<char*>(REAL(bin_vec) + write_pos),
+                      sizeof(forreal) * mat);
+        write_pos += static_cast<R_xlen_t>(mat);
+      }
+    } else {
+      bin_file.read(reinterpret_cast<char*>(REAL(bin_vec)),
+                    sizeof(forreal) * ncofele);
+    }
+    if (!bin_file) {
+      cpp11::stop("Truncated .cbin file: %s", bin_path.c_str());
+    }
+    bin_file.close();
+    bin_sexp = (SEXP)bin_vec;
+  }
+
+  cpp11::writable::list result(
+    {"cof"_nm = (SEXP)cof_list,
+     "bin"_nm = bin_sexp}
+  );
   return result;
 }

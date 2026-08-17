@@ -131,12 +131,16 @@
       paste0("\\b(", paste(tolower(map_names), collapse = "|"), ")\\s*\\("),
       tolower(v$model$tab[v$model$type == "Equation"])
     ))
-  tab <- .finalize_tab(model = v$model)
+  tab <- .finalize_tab(
+    model = v$model,
+    write_coefficients = v$write_coefficients
+  )
   cmf <- .finalize_cmf(
     model = v$model,
     shock_file = attr(shocks, "file"),
     tab_file = attr(tab, "file"),
-    cls_file = attr(closure, "file")
+    cls_file = attr(closure, "file"),
+    write_coefficients = v$write_coefficients
   )
   cmf_path <- .write_input_files(
     tab = tab,

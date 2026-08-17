@@ -4,6 +4,8 @@
 #' @noRd
 .retrieve_output <- function(var_tbl,
                              var_data,
+                             cof_tbl = NULL,
+                             cof_data = NULL,
                              type,
                              comp_extract,
                              paths,
@@ -26,7 +28,18 @@
     )
   }
   
-  if (compose_coefficient) {
+  # binary coefficient dump: ordinary and PostSim coefficients in one
+  # tibble, typed per row
+  if (compose_coefficient && !is.null(cof_tbl)) {
+    output$coefficient <- .compose_coeff_bin(
+      data_dt = cof_data,
+      coeff_extract = comp_extract$coefficient,
+      cofs = cof_tbl,
+      sets = sets,
+      time_steps = time_steps,
+      call = call
+    )
+  } else if (compose_coefficient) {
     output$coefficient <- .compose_coeff(
       paths = paths$coeff,
       coeff_extract = comp_extract$coefficient,
@@ -39,7 +52,7 @@
   # PostSim coefficients (computed after the solve, dumped by the
   # solver into out/postsim/) compose like ordinary coefficients but
   # carry their own type
-  if (compose_coefficient && !is.null(paths$postsim)) {
+  if (compose_coefficient && is.null(cof_tbl) && !is.null(paths$postsim)) {
     output$postsim <- .compose_coeff(
       paths = paths$postsim,
       coeff_extract = comp_extract$coefficient,

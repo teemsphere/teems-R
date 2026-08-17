@@ -48,6 +48,13 @@ static_model <- ems_model(static_model_file, static_closure_file)
 
 variant <- Sys.info()["sysname"]
 
+# snapshot normaliser: the log stamp and the resolved image tag are
+# environment-specific
+norm_cmd <- function(lines) {
+  lines <- gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
+  gsub("teems:[A-Za-z0-9._-]+ /bin/bash", "teems:TAG /bin/bash", lines)
+}
+
 test_that("ems_solve suppress_outputs returns cmf_path character", {
   nest_temp("solve_suppress", write_dir)
   cmf_path <- ems_deploy(static_data, static_model)
@@ -199,9 +206,7 @@ test_that("ems_solve errors when solution errors detected", {
   cmf_path <- ems_deploy(static_data, static_model, shock)
   expect_snapshot(ems_solve(cmf_path),
     error = TRUE,
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
 })
@@ -237,9 +242,7 @@ test_that("ems_solve informs terminal run", {
   cmf_path <- ems_deploy(static_data, static_model)
   expect_snapshot(
     ems_solve(cmf_path, terminal_run = TRUE),
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
 })
@@ -249,9 +252,7 @@ test_that("matrix_method auto resolves by model type", {
   cmf_path <- ems_deploy(static_data, static_model)
   expect_snapshot(
     ems_solve(cmf_path, matrix_method = "auto", terminal_run = TRUE),
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
   nest_temp("solve_auto_dynamic", write_dir)
@@ -262,9 +263,7 @@ test_that("matrix_method auto resolves by model type", {
       matrix_method = "auto",
       terminal_run = TRUE
     ),
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
 })
@@ -278,16 +277,12 @@ test_that("matrix_method auto selects DBBD for large static deployments", {
   saveRDS(metadata, metadata_path)
   expect_snapshot(
     ems_solve(cmf_path, n_tasks = 2L, terminal_run = TRUE),
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
   expect_snapshot(
     ems_solve(cmf_path, terminal_run = TRUE),
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
 })
@@ -605,9 +600,7 @@ test_that("condensed deployments are advised against bordered methods (roadmap 6
       n_tasks = 2L,
       terminal_run = TRUE
     ),
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
 
@@ -640,9 +633,7 @@ test_that("condensed intertemporal deployments are advised against (roadmap 6.2)
       matrix_method = "SBBD",
       terminal_run = TRUE
     ),
-    transform = function(lines) {
-      gsub("solver_out_\\d{4}\\.txt", "solver_out_HHMM.txt", lines)
-    },
+    transform = norm_cmd,
     variant = variant
   )
 })

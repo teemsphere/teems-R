@@ -30,7 +30,8 @@
 .check_solver_log <- function(elapsed_time,
                               solve_cmd,
                               paths,
-                              call) {
+                              call,
+                              status = 0L) {
   model_log <- readLines(paths$diag_out)
   diag_out <- normalizePath(paths$diag_out, "/")
   paths$diag_out <- diag_out
@@ -100,6 +101,14 @@
   }
   if (any(grepl("error", scan_log, ignore.case = TRUE))) {
     .cli_action(solve_err$solution_err,
+      action = "abort",
+      call = call
+    )
+  }
+  # the log carried no recognisable error but the process still failed
+  # (crash, kill, container failure): the exit status is the only signal
+  if (!identical(as.integer(status), 0L)) {
+    .cli_action(solve_err$solver_exit,
       action = "abort",
       call = call
     )

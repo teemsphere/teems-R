@@ -111,6 +111,44 @@ test_that("ems_deploy errors when shock_file and shock are both provided", {
   )
 })
 
+test_that("write_coefficients must be a logical scalar", {
+  nest_temp("deploy_write_coefficients_arg", write_dir)
+  expect_snapshot_error(ems_deploy(dat, model, write_coefficients = NA))
+  expect_error(
+    ems_deploy(dat, model, write_coefficients = c(TRUE, FALSE)),
+    class = "rlang_error"
+  )
+  expect_error(
+    ems_deploy(dat, model, write_coefficients = "yes"),
+    class = "rlang_error"
+  )
+})
+
+test_that("coefficient CSV Write pairs are opt-in (default off)", {
+  nest_temp("deploy_write_coefficients_off", write_dir)
+  cmf <- ems_deploy(dat, model)
+  tab <- readLines(attr(cmf, "tab_path"))
+  cmf_lines <- readLines(cmf)
+  n_coeff <- sum(model$type == "Coefficient")
+  # sets still get their Write pairs and outdata lines
+  expect_true(any(grepl("^Write \\(set\\) REG to file REG ", tab)))
+  expect_true(any(grepl("^outdata \"REG\"", cmf_lines)))
+  # coefficients do not
+  expect_false(any(grepl("^Write SAVE to file SAVE ", tab)))
+  expect_false(any(grepl("out/coefficients/", cmf_lines, fixed = TRUE)))
+  expect_lt(sum(grepl("^outdata ", cmf_lines)), n_coeff)
+
+  nest_temp("deploy_write_coefficients_on", write_dir)
+  cmf <- ems_deploy(dat, model, write_coefficients = TRUE)
+  tab <- readLines(attr(cmf, "tab_path"))
+  cmf_lines <- readLines(cmf)
+  expect_true(any(grepl("^Write SAVE to file SAVE ", tab)))
+  expect_equal(
+    sum(grepl("out/coefficients/", cmf_lines, fixed = TRUE)),
+    n_coeff
+  )
+})
+
 test_that("ems_deploy errors when read-in headers not present in data", {
   mod_data <- ems_data(
     dat_input,

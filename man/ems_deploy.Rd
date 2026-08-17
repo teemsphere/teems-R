@@ -10,7 +10,8 @@ ems_deploy(
   shock = NULL,
   swap_in = NULL,
   swap_out = NULL,
-  shock_file = NULL
+  shock_file = NULL,
+  write_coefficients = FALSE
 )
 }
 \arguments{
@@ -38,6 +39,13 @@ endogenous.}
 \code{NULL}). Path to a file with .shf extension representing a
 fully prepared shock file. No checks or modifications are
 carried out on this file.}
+
+\item{write_coefficients}{Logical of length 1 (default \code{FALSE}).
+Coefficient values return to R through the solver's binary
+coefficient dump, read selectively by \code{\link[=ems_compose]{ems_compose()}}. Set
+\code{TRUE} to also emit the GEMPACK-style per-coefficient CSV files
+(\verb{out/coefficients/}, \verb{out/postsim/}) via auto-generated
+\code{File}/\code{Write} statements, e.g. for inspection outside R.}
 }
 \value{
 Path to the CMF file, to be passed to \code{\link[=ems_solve]{ems_solve()}}.

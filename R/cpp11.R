@@ -35,3 +35,7 @@ parse_solution_meta <- function(path_prefix) {
 parse_solution_bins <- function(path_prefix, names_filter) {
   .Call(`_teems_parse_solution_bins`, path_prefix, names_filter)
 }
+
+parse_coefficients <- function(path_prefix, names_filter, read_values) {
+  .Call(`_teems_parse_coefficients`, path_prefix, names_filter, read_values)
+}

@@ -18,6 +18,10 @@
 
     x No additional shocks are accepted if a shock file is provided.
 
+# write_coefficients must be a logical scalar
+
+    x `write_coefficients` must be logical of length 1.
+
 # ems_deploy errors when read-in headers not present in data
 
     x Read-in headers missing from loaded data: "SAVE".

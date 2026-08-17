@@ -23,6 +23,12 @@
 #'   `NULL`). Path to a file with .shf extension representing a
 #'   fully prepared shock file. No checks or modifications are
 #'   carried out on this file.
+#' @param write_coefficients Logical of length 1 (default `FALSE`).
+#'   Coefficient values return to R through the solver's binary
+#'   coefficient dump, read selectively by [`ems_compose()`]. Set
+#'   `TRUE` to also emit the GEMPACK-style per-coefficient CSV files
+#'   (`out/coefficients/`, `out/postsim/`) via auto-generated
+#'   `File`/`Write` statements, e.g. for inspection outside R.
 #' @seealso [`ems_data()`] for loading and preparing data inputs.
 #'   [`ems_model()`] for parsing and modifying model and closure
 #'   files. [`ems_uniform_shock()`], [`ems_custom_shock()`], and
@@ -64,7 +70,8 @@ ems_deploy <- function(.data,
                        shock = NULL,
                        swap_in = NULL,
                        swap_out = NULL,
-                       shock_file = NULL
+                       shock_file = NULL,
+                       write_coefficients = FALSE
 ) {
 if (missing(.data)) {
   .cli_missing(.data)

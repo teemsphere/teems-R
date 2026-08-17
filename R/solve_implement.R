@@ -62,14 +62,16 @@
   }
 
 
+  status <- 0L
   if (Sys.info()[["sysname"]] == "Windows") {
     captured <- character(0)
     elapsed_time <- system.time(captured <- system(cmds$solve, intern = TRUE))
     if (.o_verbose()) cat(captured, sep = "\n")
+    status <- attr(captured, "status") %|||% 0L
   } else if (.o_verbose()) {
-    elapsed_time <- system.time(system(cmds$solve))
+    elapsed_time <- system.time(status <- system(cmds$solve))
   } else {
-    elapsed_time <- system.time(system(cmds$solve,
+    elapsed_time <- system.time(status <- system(cmds$solve,
       ignore.stdout = TRUE,
       ignore.stderr = TRUE
     ))
@@ -79,7 +81,8 @@
     elapsed_time = elapsed_time,
     solve_cmd = cmds$solve,
     paths = paths,
-    call = call
+    call = call,
+    status = status
   )
   if (!v$suppress_outputs) {
     output <- ems_compose(cmf_path = v$cmf_path)

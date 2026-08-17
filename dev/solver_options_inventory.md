@@ -71,7 +71,8 @@ not CMF — they belong to the model author and are out of scope here.
 | `-cntl_6` | HSL default | ordering CNTL(6) threshold | **escape hatch** (expert HSL; documented) |
 | `-nsbbdblocks` | derived | SBBD block-count override | **escape hatch** (partition auto-selection is the designed path) |
 | `-withmc66` | 0 (off) | MC66 row ordering for SBBD | **escape hatch** (documented) |
-| `-nowrites` | 0 | skip the post-solve output-file dumps (outputs_write_csv; solution binaries unaffected). Distinct from `suppress_outputs` (R-side compose skip); passing it breaks coefficient composition | **escape hatch** (documented with the distinction); promote to a named arg only with compose-narrowing plumbing |
+| `-nowrites` | 0 | skip the post-solve CSV output-file dumps (outputs_write_csv; solution binaries and the coefficient dump unaffected). Since the coefficient dump (2026-08-17) it only matters for `ems_deploy(write_coefficients = TRUE)` runs. Distinct from `suppress_outputs` (R-side compose skip) | **escape hatch** (documented with the distinction) |
+| `-cofdump` | 1 | write `<sol>.cof`/`.cbin`, the binary coefficient dump `ems_compose()` reads (all coefficients, selected on read); recorded in stats.json `options` | **not exposed** — off would silently drop coefficients from compose; no use case |
 | `-tempdir` | TMPDIR/scratch | container-side scratch directory for !inmemory spills | **escape hatch** (container-internal path; documented) |
 
 ## 3. Suggested buckets (recommendations only, nothing decided)

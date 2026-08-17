@@ -5,7 +5,8 @@
 .finalize_cmf <- function(model,
                           shock_file,
                           tab_file,
-                          cls_file) {
+                          cls_file,
+                          write_coefficients = FALSE) {
 
   write_dir   <- normalizePath(.o_tempdir(), "/")
   input_names <- paste0(unique(model[!is.na(model$file), "file"][[1]]))
@@ -24,7 +25,8 @@
   )
 
   writeout <- .writeout(model = model,
-                        write_dir = write_dir)
+                        write_dir = write_dir,
+                        coeff = write_coefficients)
 
   input_data <- paste(
     "iodata",

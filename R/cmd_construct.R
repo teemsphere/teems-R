@@ -40,9 +40,10 @@
   } else {
     "/opt/teems-solver/solver/teems-solver"
   }
+  # pipefail: the pipeline's status is the solver's, not tee's
   exec_preamble <- paste(
     docker_preamble,
-    '"/opt/teems-solver/lib/mpi/bin/mpiexec',
+    '"set -o pipefail; /opt/teems-solver/lib/mpi/bin/mpiexec',
     "-n", n_tasks,
     solver_bin,
     "-cmdfile", paths$docker_cmf

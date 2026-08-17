@@ -69,7 +69,9 @@ build_deploy_err <- function() {
     # test-ems_deploy.R: "ems_deploy errors when shock_file and shock are both provided"
     shk_file_shocks = c(
       "No additional shocks are accepted if a shock file is provided."
-    )
+    ),
+    # test-ems_deploy.R: "write_coefficients must be a logical scalar"
+    write_coefficients = "{.arg write_coefficients} must be logical of length 1."
   )
 }
 

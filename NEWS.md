@@ -1,4 +1,6 @@
 # teems (development version)
+* Coefficients return through the solver's binary coefficient dump (`sol.cof`/`sol.cbin`) instead of per-coefficient CSV files: `ems_compose()` reads them selectively and exactly (the CSVs carried six fixed decimals); `ems_deploy(write_coefficients = TRUE)` restores the CSV `Write` pairs
+* `ems_solve()` checks the solver's exit status in addition to scanning its log
 * `ems_model(auto_omit = TRUE)` omits unshocked, wholly exogenous variables at deploy time
 * `ems_solve()` reports when a condensed deployment meets a bordered method, or is intertemporal
 * `ems_probe()` returns a condensation verdict read from the measured block structure

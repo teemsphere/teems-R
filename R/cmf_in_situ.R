@@ -83,7 +83,8 @@
   )
   cmf_writeout <- .writeout(
     model = model,
-    write_dir = model_dir
+    write_dir = model_dir,
+    coeff = FALSE
   )
   cmf <- c(cmf, cmf_writeout)
 

@@ -46,15 +46,21 @@ test_that("finalized TAB re-wraps PostSim executables in a trailing section", {
   inside <- lines[(begin + 1):(end - 1)]
   expect_true(any(grepl("^Formula PSKBSUM", inside)))
   expect_true(any(grepl("^Assertion PSKBSUM", inside)))
-  # declarations and the write-all pair stay in the ordinary part
-  expect_false(any(grepl("^Coefficient PSKBSUM", inside)))
-  expect_true(any(grepl("^Write PSKBSUM to file", lines[seq_len(begin - 1)])))
+  # the PostSim coefficient is declared inside the section (the solver
+  # classifies PostSim coefficients by declaration site, 12.2.1) and,
+  # being a PostSim-only name, never gets an ordinary Write pair
+  expect_true(any(grepl("^Coefficient PSKBSUM", inside)))
+  expect_false(any(grepl("PSKBSUM", lines[seq_len(begin - 1)])))
+  tab_csv <- .finalize_tab(model, write_coefficients = TRUE)
+  csv_lines <- strsplit(tab_csv, "\n")[[1]]
+  expect_true(any(grepl("^Write VKB to file", csv_lines)))
+  expect_false(any(grepl("^Write PSKBSUM to file", csv_lines)))
 })
 
-test_that("PostSim coefficients get out/postsim outdata entries", {
+test_that("PostSim coefficients get no outdata entries (dump only)", {
   w <- .writeout(model = model, write_dir = write_dir)
-  expect_true(any(grepl("out/postsim/PSKBSUM\\.csv", w)))
-  expect_false(any(grepl("out/coefficients/PSKBSUM\\.csv", w)))
+  expect_false(any(grepl("PSKBSUM", w)))
+  expect_true(any(grepl("out/coefficients/VKB\\.csv", w)))
 })
 
 test_that("forbidden statements in a PostSim section abort", {
@@ -82,7 +88,7 @@ test_that("PostSim runs end-to-end through deploy, solve and compose", {
     REG = "big3", ACTS = "macro_sector", ENDW = "labor_agg"
   )
   cmf_path <- ems_deploy(dat, model)
-  expect_true(any(grepl("out/postsim/PSKBSUM", readLines(cmf_path))))
+  expect_false(any(grepl("PSKBSUM", readLines(cmf_path))))
   out <- ems_solve(cmf_path)
   ps <- out[out$type == "postsim", ]
   expect_identical(nrow(ps), 1L)

@@ -139,7 +139,9 @@ build_solve_err <- function() {
     # test-ems_solve.R: "ems_solve errors when inmemory is not a logical scalar"
     logical_scalar = "{.arg {arg}} must be logical of length 1.",
     # test-ems_solve.R: "ems_solve errors when verbosity is out of range"
-    verbosity_range = "{.arg verbosity} must be 0, 1, or 2."
+    verbosity_range = "{.arg verbosity} must be 0, 1, or 2.",
+    # test-chk_solver_log.R: "a non-zero exit status aborts even with a clean log"
+    solver_exit = "The solver exited with status {status} without a recognised error in its log. See {.path {paths$diag_out}}."
   )
 }
 

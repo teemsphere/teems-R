@@ -12,7 +12,8 @@
     shock = c("NULL", "list"),
     swap_in = c("NULL", "character", "list"),
     swap_out = c("NULL", "character", "list"),
-    shock_file = c("NULL", "character")
+    shock_file = c("NULL", "character"),
+    write_coefficients = "logical"
   )
   
   .check_arg_class(
@@ -62,6 +63,13 @@
     a$shock <- .check_input(
       file = a$shock_file,
       valid_ext = "shf",
+      call = call
+    )
+  }
+
+  if (length(a$write_coefficients) %!=% 1L || is.na(a$write_coefficients)) {
+    .cli_action(deploy_err$write_coefficients,
+      action = "abort",
       call = call
     )
   }
