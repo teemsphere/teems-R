@@ -50,14 +50,12 @@
     )
   }
 
+  # the dump holds every solver coefficient, including ones the solver
+  # synthesizes from the TAB (levels variables' level coefficients, which
+  # carry the variable's name); only TAB-declared coefficients compose
   ce_idx <- match(cofs$cofname, tolower(coeff_extract$name))
-  if (anyNA(ce_idx)) {
-    .cli_action(compose_err$coeff_check,
-      action = "abort",
-      .internal = TRUE,
-      call = call
-    )
-  }
+  cofs <- cofs[!is.na(ce_idx), ]
+  ce_idx <- ce_idx[!is.na(ce_idx)]
   coeff_extract <- coeff_extract[ce_idx, ]
 
   offsets <- purrr::map2(cofs$pack_begadd, cofs$matsize, function(b, m) {
