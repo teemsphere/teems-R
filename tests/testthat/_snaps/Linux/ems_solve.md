@@ -1,3 +1,16 @@
+# ems_solve errors when solution errors detected
+
+    Code
+      ems_solve(cmf_path, range_test_updated = "fatal")
+    Message
+      i `matrix_method` "auto": using "LU" for this static model.
+    Condition
+      Error in `ems_solve()`:
+      x The solver stopped on 1 runtime error while evaluating model values:
+      i coefficient vdgb has a value below its declared lower bound 0.000000
+      i See GEMPACK manual section "25.4.4".
+      i Full log: '/home/mpc/.cache/R/teems/solve/solve_err_error/out/solver_out_HHMM.txt'.
+
 # ems_deploy errors when the closure does not square the system
 
     Code

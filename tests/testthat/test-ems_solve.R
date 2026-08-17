@@ -204,7 +204,9 @@ test_that("ems_solve errors when solution errors detected", {
   nest_temp("solve_err_error", write_dir)
   shock <- ems_uniform_shock("pop", 1e6)
   cmf_path <- ems_deploy(static_data, static_model, shock)
-  expect_snapshot(ems_solve(cmf_path),
+  # the range test on updated values is a warning by default (manual
+  # 25.4.4); make it fatal so the bound violations abort the run
+  expect_snapshot(ems_solve(cmf_path, range_test_updated = "fatal"),
     error = TRUE,
     transform = norm_cmd,
     variant = variant
@@ -463,15 +465,8 @@ test_that("IF equations solve identically to their hand adaptations", {
   attr(b2, "row.names") <- attr(i2, "row.names") <- seq_along(common)
   expect_equal(i2, b2)
 
-  run_dir <- dirname(cmf_if)
-  probe <- read.csv(
-    file.path(run_dir, "out", "coefficients", "IFELEM.csv"),
-    skip = 1,
-    header = FALSE
-  )
-  reg <- readLines(file.path(run_dir, "out", "sets", "REG.csv"))[-1]
-  reg <- reg[nzchar(reg)]
-  expect_equal(probe[[1]], ifelse(reg == "chn", 3, 2))
+  probe <- if_out$dat[["IFELEM"]]
+  expect_equal(probe$Value, ifelse(probe$REGr == "chn", 3, 2))
 })
 
 test_that("netcut proxy rewrite solves identically to a hand proxy (roadmap 6.5 E2)", {
