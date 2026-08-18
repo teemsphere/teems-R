@@ -69,11 +69,10 @@
 
     x Read statements missing "from file" detected.
 
-# invalid binary set switch statement
+# a set builder on an undeclared/unread coefficient aborts
 
-    x Unsupported binary switch detected in a Set definition.
-    i Declare sets explicitly within the Tablo file or using `...` within `teems::ems_model()`.
-    i For example, Set ENDWM # mobile endowment # (capital,unsklab,sklab); not Set ENDWM # mobile endowments # = (all,e,ENDW:ENDOWFLAG(e,"mobile") ne 0);.
+    x Set builder "ENDWM" conditions on "ENDOWFLAG", which is not Read from an input file.
+    i Formula-computed operands cannot drive set resolution (the condition is evaluated ahead of formulas, GEMPACK manual 10.1.2).
 
 # intertemporal set equality
 
@@ -88,20 +87,60 @@
 
     x Invalid set qualifier detected: (static).
 
+# conditional set builders (GEMPACK manual 10.1.2)
+
+    x Unsupported condition in the Set builder "BADX": "= (all,c,COMM: VDFB(c,\"crops\",\"chn\",\"t0\") > 0 and VDFB(c,\"food\",\"chn\",\"t0\") > 0)".
+    i Supported: `(all,i,SRC: COEF(i[,"ele"...]) <op> <constant>)` and `(all,i,SRC: sum{j,S2: MAP(j) = i, COEF2(j)} <op> <constant>)` with <op> one of `= <> < > <= >=` or `eq ne lt gt le ge`; compound conditions are not supported.
+
+---
+
+    x Unsupported condition in the Set builder "BADX": "= (all,c,COMM: VDFB(c,\"crops\",\"chn\",\"t0\") > VDB(c,\"chn\",\"t0\"))".
+    i Supported: `(all,i,SRC: COEF(i[,"ele"...]) <op> <constant>)` and `(all,i,SRC: sum{j,S2: MAP(j) = i, COEF2(j)} <op> <constant>)` with <op> one of `= <> < > <= >=` or `eq ne lt gt le ge`; compound conditions are not supported.
+
+---
+
+    x Set builder "BADX" conditions on "VDB", which is not Read from an input file.
+    i Formula-computed operands cannot drive set resolution (the condition is evaluated ahead of formulas, GEMPACK manual 10.1.2).
+
+---
+
+    x Set referenced before declaration in "Set BADX = (all,c,NOSET: VDFB(c,\"crops\",\"chn\",\"t0\") > 0)": "NOSET".
+    i Sets must be declared before they are used in a definition or Subset statement (GEMPACK manual 10.1).
+
+# a Set built from an excluded coefficient aborts
+
+    x Set "ENDWMX" depends on coefficient "ENDOWFLAG" (header "EFLG"), which is excluded from the data by `full_exclude`.
+    i The flag-header approach (GTAP `ENDOWFLAG`/`SLUG`) is not supported through the R package (the solver alone accepts it): declare the set explicitly, e.g. `Set ENDWM (capital, labor);`.
+
+# set products and $POS are rejected by name
+
+    x Set product `x` is not supported: Set UCOM = UNITC x COMM.
+    i The upstream GTAPv7 report block builds UACT/UCOM/ALLOCEFF this way (with `$POS` mapping formulas); teems' R-side aggregation supplies the identity, so drop that PostSim block or list the elements explicitly.
+
+---
+
+    x The `$POS` intrinsic is not supported: "Formula (all,c,COMM) UCOM2COMM(c) = $POS(c)"
+    i teems' R-side aggregation supplies set-position identities (the upstream GTAPv7 UCOM2COMM/UACT2ACTS report mappings); drop the statement or the PostSim report block.
+
+# expression IF conditions (LULC shape, manual 11.4.5/11.4.6)
+
+    x IF condition references variable "PDS": Equation E_ifbad (all,c,COMM)(all,r,REG)(all,t,ALLTIME) ifbad(c,r,t) = IF[VDB(c,r,t)*pds(c,r,t) > 0, pds(c,r,t)].
+    i Conditions are evaluated from coefficient values only (GEMPACK manual 11.4.6/11.4.8).
+
+---
+
+    x Unsupported IF condition detected: VDB(c,r,t) > 0 and VST(c,r,t) > 0.
+    i Supported forms: <index> in <set>, <index> = "<element>", and <expression> <op> <expression> over coefficients (no AND/OR/NOT compounds).
+
 # unsupported IF placement
 
     x Unsupported IF placement detected: Formula (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) = 2 * IF[r in REG, VTRPROV(r,t)].
     i IF terms must enter Formula and Equation statements additively at the top level of an expression.
 
-# unsupported IF condition
-
-    x Unsupported IF condition detected: VTRPROV(r,t) gt VT(t).
-    i Supported forms: <index> in <set>, <index> = "<element>", and <coefficient> <op> <constant>.
-
 # multiple membership IF conditions in an equation
 
-    x Multiple set-membership or element IF conditions detected in one Equation: Equation E_iftest # bad # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) = IF[c in MARG, qst(c,r,t)] + IF[r in REG, pds(c,r,t)].
-    i An Equation supports one such condition (it splits the equation domain); comparison conditions are unrestricted.
+    x Set-membership or element IF conditions on different indices detected in one Equation: Equation E_iftest # bad # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) = IF[c in MARG, qst(c,r,t)] + IF[r in REG, pds(c,r,t)].
+    i An Equation supports any number of such conditions on one index (they partition the equation domain); comparison conditions are unrestricted.
 
 # netcut inflation warning (roadmap 6.5 E1)
 

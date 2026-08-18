@@ -4,10 +4,13 @@
                             call) {
 
   reads <- extract[tolower(extract$type) %in% "read", ]
-  # (by_elements) assigns mapping values (GEMPACK manual 11.9.3); any
-  # other parenthesized form is a partial (indexed) read
-  byele <- grepl("^\\s*\\(\\s*by_elements\\s*\\)", reads$remainder, ignore.case = TRUE)
-  reads$remainder <- sub("^\\s*\\(\\s*by_elements\\s*\\)\\s*", "", reads$remainder, ignore.case = TRUE)
+  # (by_elements) assigns mapping values (GEMPACK manual 11.9.3);
+  # (IfHeaderExists) makes the read optional (manual 10.6: an absent
+  # header is skipped, the coefficient keeps its formula/default value
+  # -- solver-side semantics); any other parenthesized form is a
+  # partial (indexed) read
+  qual <- .read_qualifier(reads$remainder)
+  reads$remainder <- .strip_read_qualifier(reads$remainder)
   if (any(grepl("\\(", reads$remainder))) {
     .cli_action(model_err$invalid_read,
       action = "abort",
@@ -42,7 +45,7 @@
   reads$file <- trimws(reads$remainder)
   reads$remainder <- NULL
   reads$label <- NA
-  reads$qualifier_list <- ifelse(byele, "(by_elements)", NA_character_)
+  reads$qualifier_list <- qual
   reads$ls_upper_idx <- NA
   reads$ls_mixed_idx <- NA
   reads$definition <- NA
@@ -66,4 +69,25 @@
     "row_id"
   )]
   return(reads)
+}
+#' Recognised Read qualifiers: the leading (by_elements) / (IfHeaderExists)
+#' group, normalised to a lowercase "(qualifier)" tag (NA when absent)
+#'
+#' @keywords internal
+#' @noRd
+.read_qualifier <- function(remainder) {
+  m <- regmatches(
+    remainder,
+    regexpr("^\\s*\\(\\s*(by_elements|ifheaderexists)\\s*\\)", remainder, ignore.case = TRUE)
+  )
+  out <- rep(NA_character_, length(remainder))
+  hit <- grepl("^\\s*\\(\\s*(by_elements|ifheaderexists)\\s*\\)", remainder, ignore.case = TRUE)
+  out[hit] <- paste0("(", tolower(gsub("[\\s()]", "", m, perl = TRUE)), ")")
+  out
+}
+
+#' @keywords internal
+#' @noRd
+.strip_read_qualifier <- function(remainder) {
+  sub("^\\s*\\(\\s*(by_elements|ifheaderexists)\\s*\\)\\s*", "", remainder, ignore.case = TRUE)
 }

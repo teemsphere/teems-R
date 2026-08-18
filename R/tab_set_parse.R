@@ -205,7 +205,53 @@
     )
   }
 
-  if (any(grepl(":", sets$definition))) {
+  # conditional set builders `Set X = (all,i,SRC: <cond>);` (manual
+  # 10.1.2): the solver evaluates the data-dependent condition from
+  # the deployed input files ahead of set resolution
+  # (tab_setbuilder_transform); R mirrors it at deploy from the same
+  # aggregated tables (.eval_set_builder) so closure/shock validation
+  # and compose see the elements. Parsed here for shape only.
+  is_builder <- !is.na(sets$definition) &
+    grepl("^\\s*=\\s*\\(\\s*all\\s*,", sets$definition, ignore.case = TRUE)
+  for (i in which(is_builder)) {
+    bad_set <- sets$name[i]
+    bad_def <- trimws(sets$definition[i])
+    b <- .parse_set_builder(sets$definition[i])
+    if (is.null(b)) {
+      .cli_action(model_err$set_builder_cond,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    if (tolower(sets$qualifier_list[i]) %=% "(intertemporal)") {
+      .cli_action(model_err$set_builder_int,
+        action = "abort",
+        call = call
+      )
+    }
+    if (tolower(b$src) %=% tolower(sets$name[i])) {
+      .cli_action(model_err$set_self_ref,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    src_idx <- match(tolower(b$src), tolower(sets$name))
+    if (is.na(src_idx)) {
+      bad_stmt <- paste("Set", sets$name[i], bad_def)
+      bad_refs <- b$src
+      .cli_action(model_err$set_undeclared,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    # canonical spelling of the source set for the downstream exact
+    # matches; the deployed statement is the author's text
+    sets$definition[i] <- sprintf(
+      "= (all,%s,%s: %s)", b$idx, sets$name[src_idx], b$cond
+    )
+  }
+
+  if (any(grepl(":", sets$definition[!is_builder]))) {
     .cli_action(model_err$binary_switch,
                 action = c("abort", "inform", "inform"),
                 call = call)
@@ -253,7 +299,19 @@
     }
   }
 
-  lapply(sets$definition[!is_set_eq], function(entry) {
+  # set product (manual 10.1.1.2): intentional reject
+  is_product <- !is.na(sets$definition) &
+    grepl("^\\s*=.*\\s[Xx]\\s", sets$definition)
+  if (any(is_product)) {
+    bad_set <- sets$name[is_product][1]
+    bad_def <- trimws(sets$definition[is_product][1])
+    .cli_action(model_err$set_product,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
+
+  lapply(sets$definition[!is_set_eq & !is_builder], function(entry) {
     if (!is.na(entry)) {
       if (!any(grepl(
         '\\+|\\-|\\^|&|\\(|\\)|"|union|intersect',
@@ -272,15 +330,15 @@
   })
 
   is_expr <- .is_set_expr(sets$definition) &
-    sets$qualifier_list != "(intertemporal)"
+    sets$qualifier_list != "(intertemporal)" & !is_builder
   sets$definition <- ifelse(is_expr & !is_set_eq,
     trimws(sub("^\\s*=\\s*", "", sets$definition)),
-    ifelse(is_set_eq,
+    ifelse(is_set_eq | is_builder,
       trimws(sets$definition),
       trimws(gsub("\\(|=|\\)", "", sets$definition))
     )
   )
-  sets$definition <- ifelse(!is_expr & grepl(",", sets$definition),
+  sets$definition <- ifelse(!is_expr & !is_builder & grepl(",", sets$definition),
     strsplit(sets$definition, ","),
     sets$definition
   )
@@ -340,6 +398,10 @@
   sets$comp1 <- purrr::map_chr(expr_info, function(fo) {
     if (is.list(fo) && length(fo$named) >= 1L) fo$named[1] else NA_character_
   })
+  # a builder's source set is its (implied) superset
+  for (i in which(is_builder)) {
+    sets$comp1[i] <- .parse_set_builder(sets$definition[[i]])$src
+  }
   sets$comp2 <- purrr::map_chr(expr_info, function(fo) {
     if (is.list(fo) && length(fo$named) >= 2L) fo$named[2] else NA_character_
   })
@@ -404,8 +466,14 @@
   }
   for (i in seq_len(nrow(sets))) {
     fo <- expr_info[[i]]
-    if (!is.list(fo)) next
     nm <- sets$name[i]
+    if (is_builder[i]) {
+      # the solver emits "subset NAME is subset of SRC" with the
+      # rewritten element list
+      sets <- add_subs(sets, sets$comp1[i], nm)
+      next
+    }
+    if (!is.list(fo)) next
     if (is_set_eq[i]) {
       # set equality generates SUBSET statements both ways (manual 10.1.2.1)
       sets <- add_subs(sets, nm, fo$named[1])

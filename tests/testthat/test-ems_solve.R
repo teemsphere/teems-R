@@ -408,6 +408,130 @@ test_that("set equality solves identically through an equation quantifier", {
   expect_equal(eq_out, base)
 })
 
+test_that("conditional set builders resolve identically in R and the solver (manual 10.1.2)", {
+  numeraire <- ems_uniform_shock("pfactwld", 5)
+  nest_temp("solve_setbuild_base", write_dir)
+  cmf_base <- ems_deploy(static_data, static_model, numeraire)
+  base <- ems_solve(cmf_base)
+  base_size <- readRDS(file.path(dirname(cmf_base), "metadata.rds"))$system_size
+
+  # expected selection from the aggregated data R deploys
+  evfb <- static_data[["EVFB"]]
+  expected <- unique(evfb$ENDW[evfb$ACTS == "food" & evfb$REG == "chn" & evfb$Value > 0])
+  expect_gt(length(expected), 0L)
+  expect_lt(length(expected), length(unique(evfb$ENDW)))
+
+  nest_temp("solve_setbuild", write_dir)
+  sb_file <- write_modified_model(
+    static_model_file,
+    paste(
+      'Set ENDWX # endowments used by food in chn # = (all,e,ENDW: EVFB(e,"food","chn") > 0);',
+      "Variable (all,e,ENDWX) sbx(e) # builder-domain probe #;",
+      'Equation E_sbx (all,e,ENDWX) sbx(e) = qfe(e,"food","chn");',
+      sep = "\n"
+    )
+  )
+  sb_model <- ems_model(sb_file, static_closure_file)
+  # the builder statement reaches the solver verbatim; R mirrors it
+  expect_true(any(grepl("= (all,e,ENDW: EVFB", sb_model$tab, fixed = TRUE)))
+  cmf_sb <- ems_deploy(static_data, sb_model, numeraire)
+  # R-side elements size the system
+  sb_size <- readRDS(file.path(dirname(cmf_sb), "metadata.rds"))$system_size
+  expect_equal(sb_size, base_size + length(expected))
+  # solver-side elements agree: the probe equation resolves over the
+  # same elements and the base solution is untouched
+  sb_out <- ems_solve(cmf_sb)
+  # the extra rows reorder the factorization: the base solution agrees
+  # to solver noise, not bit-for-bit as in the pure set-rewrite tests
+  rest <- sb_out[sb_out$name != "sbx", ]
+  expect_identical(rest[c("name", "label", "type")], base[c("name", "label", "type")])
+  for (k in seq_len(nrow(base))) {
+    a <- rest$dat[[k]]
+    b <- base$dat[[k]]
+    expect_identical(names(a), names(b))
+    expect_lt(max(abs(a$Value - b$Value)), 1e-6)
+  }
+  sbx <- sb_out$dat[[which(sb_out$name == "sbx")]]
+  expect_setequal(sbx$ENDWXe, expected)
+  qfe <- sb_out$dat[[which(sb_out$name == "qfe")]]
+  qfe <- qfe[qfe$ACTSa == "food" & qfe$REGr == "chn" & qfe$ENDWe %in% expected, ]
+  expect_true(any(qfe$Value != 0))
+  expect_equal(
+    sbx$Value[match(expected, sbx$ENDWXe)],
+    qfe$Value[match(expected, qfe$ENDWe)]
+  )
+})
+
+test_that("expression IF conditions solve identically to a hand-staged helper (LULC shape)", {
+  numeraire <- ems_uniform_shock("pfactwld", 5)
+  probe <- function(cond_a, cond_b, extra = character(0)) {
+    write_modified_model(
+      static_model_file,
+      paste(
+        c(
+          extra,
+          "Variable (all,c,COMM)(all,r,REG) ifxv(c,r) # expression-condition probe #;",
+          paste0(
+            "Equation E_ifxv (all,c,COMM)(all,r,REG) ifxv(c,r) = IF[", cond_a,
+            ", pds(c,r)] + IF[", cond_b, ", pms(c,r)];"
+          ),
+          "Coefficient (all,c,COMM)(all,r,REG) IFXF(c,r) # formula probe #;",
+          paste0("Formula (initial) (all,c,COMM)(all,r,REG) IFXF(c,r) = IF[", cond_a, ", VDB(c,r)];")
+        ),
+        collapse = "\n"
+      )
+    )
+  }
+  nest_temp("solve_ifexpr_hand", write_dir)
+  # 5e11 splits the big3/macro_sector data (helper values span 1e10-1e14)
+  hand_file <- probe(
+    "PRDX(c,r) > 5e11", "PRDX(c,r) <= 5e11",
+    c(
+      "Coefficient (all,c,COMM)(all,r,REG) PRDX(c,r) # hand-staged condition #;",
+      "Formula (all,c,COMM)(all,r,REG) PRDX(c,r) = VDB(c,r)*VST(c,r);"
+    )
+  )
+  hand_model <- ems_model(hand_file, static_closure_file)
+  hand_out_cmf <- ems_deploy(static_data, hand_model, numeraire)
+  hand_out <- ems_solve(hand_out_cmf)
+
+  nest_temp("solve_ifexpr", write_dir)
+  expr_file <- probe(
+    "VDB(c,r)*VST(c,r) > 5e11", "VDB(c,r)*VST(c,r) <= 5e11"
+  )
+  expr_model <- ems_model(expr_file, static_closure_file)
+  # one (always) helper shared by the equation's two conditions, one
+  # (initial) helper for the formula host
+  expect_true(any(grepl("Formula (all,c,COMM)(all,r,REG) IFX1(c,r) = VDB(c,r)*VST(c,r)", expr_model$tab, fixed = TRUE)))
+  expect_true(any(grepl("Formula (initial) (all,c,COMM)(all,r,REG) IFX2(c,r) = VDB(c,r)*VST(c,r)", expr_model$tab, fixed = TRUE)))
+  expect_false(any(grepl("IFX3", expr_model$tab, fixed = TRUE)))
+  cmf_expr <- ems_deploy(static_data, expr_model, numeraire)
+  expr_out <- ems_solve(cmf_expr)
+
+  ifxv <- expr_out$dat[[which(expr_out$name == "ifxv")]]
+  expect_true(any(ifxv$Value != 0))
+  expect_equal(ifxv, hand_out$dat[[which(hand_out$name == "ifxv")]])
+  expect_equal(
+    expr_out$dat[[which(expr_out$name == "pds")]],
+    hand_out$dat[[which(hand_out$name == "pds")]]
+  )
+  # both branches fire somewhere in the data
+  pds <- expr_out$dat[[which(expr_out$name == "pds")]]
+  pms <- expr_out$dat[[which(expr_out$name == "pms")]]
+  key <- paste(ifxv$COMMc, ifxv$REGr)
+  a <- abs(ifxv$Value - pds$Value[match(key, paste(pds$COMMc, pds$REGr))]) < 1e-8
+  b <- abs(ifxv$Value - pms$Value[match(key, paste(pms$COMMc, pms$REGr))]) < 1e-8
+  helper <- expr_out$dat[[which(expr_out$name == "IFX1")]]
+  hv <- helper$Value[match(key, paste(helper$COMMc, helper$REGr))]
+  expect_true(any(hv > 5e11) && any(hv <= 5e11))
+  expect_true(all(a[hv > 5e11]) && all(b[hv <= 5e11]))
+  # the formula probe (initial IF over the same condition) composes
+  # identically to the hand-staged one
+  cf_expr <- ems_compose(cmf_expr, "IFXF")
+  cf_hand <- ems_compose(file.path(dirname(hand_out_cmf), basename(hand_out_cmf)), "IFXF")
+  expect_equal(cf_expr, cf_hand)
+})
+
 test_that("IF formulas solve identically to their hand adaptations", {
   nest_temp("solve_if_base", write_dir)
   cmf_base <- ems_deploy(static_data, static_model)

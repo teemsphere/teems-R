@@ -21,7 +21,8 @@
     reference_year = metadata$reference_year,
     call = call,
     data_call = data_call,
-    model_call = model_call
+    model_call = model_call,
+    coeff_data = args_list$.data[!purrr::map_lgl(args_list$.data, inherits, "set")]
   )
   .check_subset_containment(
     sets = sets,

@@ -4,6 +4,21 @@ build_deploy_err <- function() {
     missing_header = "Read-in headers missing from loaded data: {.val {missing_headers}}.",
     # not in tests
     while_loop = "Construction of dependent sets has failed on: {null_sets}.",
+    # conditional set builders evaluated at deploy (.eval_set_builder,
+    # mirror of the solver's tab_setbuilder_transform fatals);
+    # test-ems_deploy.R: "conditional set builders"
+    set_builder_data = "{.field Set} builder {.val {bad_set}}: no loaded data for its condition coefficient {.val {cond_coef}}.",
+    set_builder_args = "{.field Set} builder {.val {bad_set}}: condition coefficient {.val {cond_coef}} has {n_dims} dimension{?s} but {n_args} argument{?s} were given.",
+    set_builder_ele = "{.field Set} builder {.val {bad_set}}: element {.val {bad_ele}} is not in the {.field {dim_set}} dimension of {.val {cond_coef}} under the current aggregation.",
+    set_builder_dim = "{.field Set} builder {.val {bad_set}}: the loop index {.val {loop_idx}} must range over {.val {cond_coef}}'s dimension set {.field {dim_set}} exactly (source set {.field {src_set}} differs).",
+    set_builder_empty = c(
+      "{.field Set} builder {.val {bad_set}} selected no elements of {.field {src_set}} with {.code {builder_cond}}.",
+      "An empty set cannot enter the model (GEMPACK manual 10.1.2); check the condition against the aggregated data."
+    ),
+    set_builder_mapsum = c(
+      "{.field Set} builder {.val {bad_set}} uses the mapping-conditional sum form, which teems cannot evaluate at deploy yet.",
+      "The solver evaluates it; teems needs the elements ahead of the run for closure/shock validation. Declare the set explicitly for now."
+    ),
     # test-ems_deploy.R: "ems_deploy errors when read-in headers are missing mapping"
     missing_mapping = "Some read-in model sets have no mappings: {.field {m_map}}.",
     # test-ems_deploy.R: "ems_deploy errors when timesteps provided to static model"

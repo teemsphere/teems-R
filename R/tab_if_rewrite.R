@@ -13,6 +13,9 @@
 #'                        singleton set "element" & <range>
 #'   <coefref> <op> <c>   a conditional quantifier ':' is appended to
 #'                        the statement's last quantifier
+#'   <expr> <op> <expr>   a helper coefficient IFX<n> = <expr> [- <expr>]
+#'                        is synthesized ahead of the statement and the
+#'                        condition takes the <coefref> route above
 #' Compound conditions (AND/OR/NOT), non-additive IF placement, and IF
 #' nested below the top level abort.
 #'
@@ -190,7 +193,191 @@
       num = m[5]
     ))
   }
+  # general comparison of two arithmetic expressions (manual 11.4.5:
+  # "conditions must be logical expressions ... typically comparison
+  # operators"): carried by a synthesized helper coefficient, see
+  # .if_expr_helper
+  sp <- .split_comparison(cond)
+  if (!is.null(sp)) {
+    return(list(kind = "expr", lhs = sp$lhs, op = sp$op, rhs = sp$rhs))
+  }
   NULL
+}
+
+#' Split a condition at its top-level comparison operator. Symbol ops
+#' (= <> < > <= >=) and word ops (eq ne lt gt le ge, identifier-
+#' bounded); AND/OR/NOT compounds are not split (NULL). Returns
+#' list(lhs, op, rhs) with op in symbol form, or NULL.
+#'
+#' @keywords internal
+#' @noRd
+.split_comparison <- function(cond) {
+  scan <- .tab_scan(cond)
+  chs <- scan$chs
+  top <- scan$depth_before == 0L & !scan$in_quote
+  n <- length(chs)
+  if (grepl("(^|[^A-Za-z0-9_])(and|or|not)([^A-Za-z0-9_]|$)", cond, ignore.case = TRUE)) {
+    return(NULL)
+  }
+  words <- c(eq = "=", ne = "<>", gt = ">", lt = "<", ge = ">=", le = "<=")
+  is_id <- function(ch) grepl("[A-Za-z0-9_]", ch)
+  i <- 1L
+  while (i <= n) {
+    if (top[i]) {
+      c1 <- chs[i]
+      c2 <- if (i < n) chs[i + 1L] else ""
+      if (c1 %in% c("<", ">")) {
+        len <- if (c2 %in% c("=", ">")) 2L else 1L
+        return(list(
+          lhs = trimws(substr(cond, 1L, i - 1L)),
+          op = substr(cond, i, i + len - 1L),
+          rhs = trimws(substring(cond, i + len))
+        ))
+      }
+      if (c1 == "=") {
+        return(list(
+          lhs = trimws(substr(cond, 1L, i - 1L)),
+          op = "=",
+          rhs = trimws(substring(cond, i + 1L))
+        ))
+      }
+      w <- tolower(paste0(c1, c2))
+      if (w %in% names(words) &&
+        (i == 1L || !is_id(chs[i - 1L])) &&
+        (i + 1L >= n || !is_id(chs[i + 2L]))) {
+        return(list(
+          lhs = trimws(substr(cond, 1L, i - 1L)),
+          op = words[[w]],
+          rhs = trimws(substring(cond, i + 2L))
+        ))
+      }
+    }
+    i <- i + 1L
+  }
+  NULL
+}
+
+#' Names declared by statements of one type in the raw statement
+#' vector (Variable/Coefficient ...): leading qualifier and quantifier
+#' groups stripped, first identifier taken.
+#'
+#' @keywords internal
+#' @noRd
+.tab_declared_names <- function(tab, type) {
+  stmts <- tab[grepl(paste0("^\\s*", type, "\\b"), tab, ignore.case = TRUE)]
+  if (length(stmts) == 0L) {
+    return(character(0))
+  }
+  x <- sub(paste0("^\\s*", type, "\\s*"), "", stmts, ignore.case = TRUE)
+  x <- gsub("#[^#]*#", "", x)
+  x <- gsub("\\(all\\s*,[^)]*\\)", "", x, ignore.case = TRUE)
+  x <- gsub("^\\s*(\\([^)]*\\)\\s*)*", "", x)
+  toupper(sub("^\\s*([A-Za-z_][A-Za-z0-9_]*).*$", "\\1", x))
+}
+
+#' Helper coefficient for an expression-valued IF condition
+#'
+#' `IF[<lhs> <op> <rhs>, value]` where a side is an arithmetic
+#' expression (the LULC family's `THETAi(j,r)*YDONOFF(j,r) <= 0`) is
+#' carried by a synthesized coefficient IFX<n>, quantified over the
+#' host indices the expression uses, assigned `<lhs>` (numeric-
+#' constant rhs) or `<lhs> - <rhs>` right before the host statement,
+#' inheriting the host Formula's (initial)/(always) qualifier (an
+#' Equation host gets the ALWAYS default, re-evaluated every step like
+#' the equation itself). The condition then takes the existing
+#' `<coefref> <op> <constant>` route. Zerodivide defaults active at
+#' the host apply to the helper alike. Cached by expression and
+#' index-set signature. Returns list(pre, cond_info) with cond_info of
+#' kind "cmp".
+#'
+#' @keywords internal
+#' @noRd
+.if_expr_helper <- function(cond_info,
+                            quant,
+                            q_idx,
+                            qual_groups,
+                            synth,
+                            if_cond,
+                            stmt,
+                            call) {
+  expr <- if (grepl("^[-+]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][-+]?[0-9]+)?$", cond_info$rhs)) {
+    num <- cond_info$rhs
+    cond_info$lhs
+  } else {
+    num <- "0"
+    paste0("[", cond_info$lhs, "] - [", cond_info$rhs, "]")
+  }
+  # variables cannot enter a condition (11.4.6/11.4.8): the helper is a
+  # Formula
+  var_names <- .tab_declared_names(synth$tab, "variable")
+  toks <- toupper(unique(regmatches(expr, gregexpr("[A-Za-z_][A-Za-z0-9_]*", expr))[[1]]))
+  if (any(toks %in% var_names)) {
+    if_statement <- stmt
+    bad_vars <- toks[toks %in% var_names]
+    .cli_action(model_err$if_cond_variable,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
+  live <- !is.na(q_idx)
+  used <- vapply(q_idx[live], function(ix) {
+    grepl(paste0("(^|[^A-Za-z0-9_])", ix, "([^A-Za-z0-9_]|$)"), expr, ignore.case = TRUE)
+  }, logical(1))
+  dims <- q_idx[live][used]
+  sets <- purrr::map_chr(quant[live][used], "set")
+  canon <- toupper(gsub("\\s", "", expr))
+  for (k in seq_along(dims)) {
+    canon <- gsub(
+      paste0("(^|[^A-Za-z0-9_])", dims[k], "([^A-Za-z0-9_]|$)"),
+      paste0("\\1<", sets[k], ">\\2"),
+      canon,
+      ignore.case = TRUE
+    )
+  }
+  key <- paste0(
+    "EXPR|", canon, "|", paste(toupper(sets), collapse = ","), "|",
+    paste(qual_groups, collapse = "")
+  )
+  nm <- synth[[key]]
+  pre <- character(0)
+  if (is.null(nm)) {
+    nm <- .synth_expr_name(synth)
+    synth[[key]] <- nm
+    quants <- paste0(sprintf("(all,%s,%s)", dims, sets), collapse = "")
+    dimargs <- if (length(dims) > 0L) paste0("(", paste(dims, collapse = ","), ")") else ""
+    qual <- if (length(qual_groups) > 0L) paste0(paste(qual_groups, collapse = ""), " ") else ""
+    pre <- c(
+      sprintf(
+        "Coefficient %s%s%s # if-rewrite condition %s #",
+        quants, if (nzchar(quants)) " " else "", paste0(nm, dimargs), if_cond
+      ),
+      sprintf("Formula %s%s%s%s = %s", qual, quants, if (nzchar(quants)) " " else "", paste0(nm, dimargs), expr)
+    )
+    pre <- gsub("\\s{2,}", " ", pre)
+  }
+  ref <- if (length(dims) > 0L) paste0(nm, "(", paste(dims, collapse = ","), ")") else nm
+  list(
+    pre = pre,
+    cond_info = list(kind = "cmp", ref = ref, op = cond_info$op, num = num)
+  )
+}
+
+#' A fresh helper-coefficient name unused anywhere in the model.
+#'
+#' @keywords internal
+#' @noRd
+.synth_expr_name <- function(synth) {
+  if (is.null(synth$nx)) {
+    synth$nx <- 0L
+  }
+  repeat {
+    synth$nx <- synth$nx + 1L
+    nm <- paste0("IFX", synth$nx)
+    hit <- paste0("(^|[^A-Za-z0-9_])", nm, "([^A-Za-z0-9_]|$)")
+    if (!any(grepl(hit, synth$tab, ignore.case = TRUE))) {
+      return(nm)
+    }
+  }
 }
 
 #' A fresh set name unused anywhere in the model.
@@ -316,12 +503,12 @@
   list(pre = pre, ref = sprintf("%s(%s)", ind, paste(dims, collapse = ",")))
 }
 
-#' Two fresh equation names for a domain split.
+#' Fresh equation names for a domain split (A, B, C, ... suffixes).
 #'
 #' @keywords internal
 #' @noRd
-.synth_eq_names <- function(name, synth) {
-  purrr::map_chr(c("A", "B"), function(suffix) {
+.synth_eq_names <- function(name, synth, n = 2L) {
+  purrr::map_chr(LETTERS[seq_len(n)], function(suffix) {
     nm <- paste0(name, suffix)
     hit <- paste0("(^|[^A-Za-z0-9_])", nm, "([^A-Za-z0-9_]|$)")
     while (any(grepl(hit, synth$tab, ignore.case = TRUE))) {
@@ -335,12 +522,19 @@
 #' Rewrite one Equation statement. Data-comparison IF terms become 0/1
 #' indicator coefficients distributed over the value's top-level terms
 #' (the value must already be valid over the full domain, as in
-#' GEMPACK, where only IN conditions relax index checking). A set-
-#' membership or element IF term splits the equation into two
+#' GEMPACK, where only IN conditions relax index checking). Set-
+#' membership or element IF terms split the equation into
 #' complementary-domain equations (manual 11.4.7 rule 2: inside the
 #' value the index is deemed to range over the condition's set, so the
 #' value may reference arrays declared only there and must not be
-#' evaluated elsewhere). Returns the replacement statements.
+#' evaluated elsewhere): one equation per membership term over
+#' operand & range (that term kept, the other membership terms
+#' dropped) plus one over range - (S1 + S2 + ...) with every membership
+#' term dropped. All membership terms must condition the same index;
+#' the '+' union is disjointness-checked by the solver (manual 10.1.1),
+#' so overlapping conditions (the GTAPv7 partitions "domestic"/
+#' "imported", ACTS/"hhld"/"govt"/"invt" never overlap) fail loudly
+#' rather than dropping a term. Returns the replacement statements.
 #'
 #' @keywords internal
 #' @noRd
@@ -401,7 +595,7 @@
 
   if_pattern <- "(^|[^A-Za-z0-9_])[Ii][Ff]\\s*[][({]"
   pre <- character(0)
-  membership <- NULL
+  membership <- list()
 
   # pass 1: indicators for data comparisons; collect membership terms
   side_terms <- vector("list", 2L)
@@ -426,6 +620,12 @@
           call = call
         )
       }
+      if (cond_info$kind %=% "expr") {
+        # an Equation host: the helper is an ordinary (always) Formula
+        hx <- .if_expr_helper(cond_info, quant, q_idx, character(0), synth, if_cond, stmt, call)
+        pre <- c(pre, hx$pre)
+        cond_info <- hx$cond_info
+      }
       if (cond_info$kind %=% "cmp") {
         ind <- .if_indicator(cond_info, quant, q_idx, synth, if_cond, call)
         pre <- c(pre, ind$pre)
@@ -436,14 +636,7 @@
           collapse = " "
         )
       } else {
-        if (!is.null(membership)) {
-          if_statement <- stmt
-          .cli_action(model_err$invalid_if_multi,
-            action = c("abort", "inform"),
-            call = call
-          )
-        }
-        membership <- list(
+        membership[[length(membership) + 1L]] <- list(
           side = h, term = k, cond_info = cond_info,
           sign = terms$sign[k], value = parsed[[k]]$value,
           if_cond = if_cond
@@ -465,60 +658,101 @@
     )
   }
 
-  if (is.null(membership)) {
+  if (length(membership) %=% 0L) {
     return(c(pre, assemble(side_terms, quant, name)))
   }
 
-  # pass 2: split the equation on the membership condition's domain
-  cond_info <- membership$cond_info
-  at <- match(tolower(cond_info$idx), tolower(q_idx))
-  if (is.na(at) || isTRUE(quant[[at]]$cond) ||
-    (cond_info$kind %=% "in_set" &&
-      toupper(cond_info$set) %in% toupper(q_idx[!is.na(q_idx)]))) {
-    if_cond <- membership$if_cond
-    .cli_action(model_err$invalid_if_cond,
-      action = c("abort", "inform"),
-      call = call
-    )
+  # pass 2: split the equation on the membership conditions' domains
+  at <- NA_integer_
+  inter_names <- character(0)
+  for (m in membership) {
+    cond_info <- m$cond_info
+    at_m <- match(tolower(cond_info$idx), tolower(q_idx))
+    if (is.na(at_m) || isTRUE(quant[[at_m]]$cond) ||
+      (cond_info$kind %=% "in_set" &&
+        toupper(cond_info$set) %in% toupper(q_idx[!is.na(q_idx)]))) {
+      if_cond <- m$if_cond
+      .cli_action(model_err$invalid_if_cond,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    if (!is.na(at) && at_m != at) {
+      # membership terms on different indices would need a nested
+      # (product) split; no measured model demand
+      if_statement <- stmt
+      .cli_action(model_err$invalid_if_multi,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    at <- at_m
+    range_set <- quant[[at]]$set
+    operand <- if (cond_info$kind %=% "in_set") {
+      cond_info$set
+    } else {
+      paste0('"', cond_info$elem, '"')
+    }
+    inter <- .synth_intersect_set(operand, range_set, synth)
+    pre <- c(pre, inter$pre)
+    inter_names <- c(inter_names, inter$name)
   }
+  idx_name <- membership[[1]]$cond_info$idx
   range_set <- quant[[at]]$set
-  operand <- if (cond_info$kind %=% "in_set") {
-    cond_info$set
+
+  # remainder domain: range - S1 (one term) or range - (S1 + S2 + ...);
+  # the '+' is disjointness-checked at set resolution
+  union_expr <- if (length(inter_names) %=% 1L) {
+    inter_names
   } else {
-    paste0('"', cond_info$elem, '"')
+    paste0("(", paste(inter_names, collapse = " + "), ")")
   }
-  inter <- .synth_intersect_set(operand, range_set, synth)
-  pre <- c(pre, inter$pre)
-  comp_key <- toupper(paste0(range_set, "-", inter$name))
+  comp_key <- toupper(paste0(range_set, "-", union_expr))
   comp <- synth[[comp_key]]
   if (is.null(comp)) {
     comp <- .synth_set_name(synth)
     synth[[comp_key]] <- comp
     pre <- c(pre, sprintf(
       "Set %s # if-rewrite %s minus %s # = %s - %s",
-      comp, range_set, inter$name, range_set, inter$name
+      comp, range_set, union_expr, range_set, union_expr
     ))
   }
 
-  names2 <- .synth_eq_names(name, synth)
-  q_in <- quant
-  q_in[[at]]$text <- sprintf("(all,%s,%s)", cond_info$idx, inter$name)
+  n_m <- length(membership)
+  eq_names <- .synth_eq_names(name, synth, n_m + 1L)
+
+  # equation k keeps membership term k as [value] and drops the others;
+  # the remainder equation drops all of them
+  split_eq <- function(keep) {
+    chunks <- side_terms
+    drop <- list(integer(0), integer(0))
+    for (j in seq_len(n_m)) {
+      m <- membership[[j]]
+      if (identical(j, keep)) {
+        chunks[[m$side]][m$term] <- paste(m$sign, paste0("[", m$value, "]"))
+      } else {
+        drop[[m$side]] <- c(drop[[m$side]], m$term)
+      }
+    }
+    for (h in 1:2) {
+      if (length(drop[[h]]) > 0L) {
+        chunks[[h]] <- chunks[[h]][-drop[[h]]]
+      }
+    }
+    chunks
+  }
+
+  out <- character(0)
+  for (k in seq_len(n_m)) {
+    q_k <- quant
+    q_k[[at]]$text <- sprintf("(all,%s,%s)", idx_name, inter_names[k])
+    out <- c(out, assemble(split_eq(k), q_k, eq_names[k]))
+  }
   q_out <- quant
-  q_out[[at]]$text <- sprintf("(all,%s,%s)", cond_info$idx, comp)
+  q_out[[at]]$text <- sprintf("(all,%s,%s)", idx_name, comp)
+  out <- c(out, assemble(split_eq(0L), q_out, eq_names[n_m + 1L]))
 
-  chunks_in <- side_terms
-  chunks_in[[membership$side]][membership$term] <- paste(
-    membership$sign, paste0("[", membership$value, "]")
-  )
-  chunks_out <- side_terms
-  chunks_out[[membership$side]] <-
-    chunks_out[[membership$side]][-membership$term]
-
-  c(
-    pre,
-    assemble(chunks_in, q_in, names2[1]),
-    assemble(chunks_out, q_out, names2[2])
-  )
+  c(pre, out)
 }
 .rewrite_formula_if <- function(stmt,
                                 synth,
@@ -613,6 +847,7 @@
     q2
   }
 
+  qual_groups <- purrr::map_chr(quant[!purrr::map_lgl(quant, "is_quant")], "text")
   for (k in which(is_if)) {
     if_cond <- parsed[[k]]$cond
     cond_info <- .classify_if_cond(if_cond)
@@ -621,6 +856,11 @@
         action = c("abort", "inform"),
         call = call
       )
+    }
+    if (cond_info$kind %=% "expr") {
+      hx <- .if_expr_helper(cond_info, quant, q_idx, qual_groups, synth, if_cond, stmt, call)
+      pre <- c(pre, hx$pre)
+      cond_info <- hx$cond_info
     }
     if (cond_info$kind %in% c("in_set", "elem")) {
       if (cond_info$kind %=% "in_set" &&

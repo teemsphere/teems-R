@@ -8,12 +8,32 @@
 .check_statements <- function(tab,
                               call) {
 
-  n_comments <- paste(unlist(strsplit(tab, "![^!]*!", perl = TRUE)), collapse = "")
+  # block comments ![[! ... !]]! first (they may legally contain
+  # single "!" characters), then ordinary ! ... ! comments (manual
+  # 10.1); mirrors the solver's tab_preprocess
+  n_comments <- gsub("(?s)!\\[\\[!.*?!\\]\\]!", "", tab, perl = TRUE)
+  n_comments <- paste(unlist(strsplit(n_comments, "![^!]*!", perl = TRUE)), collapse = "")
   statements <- unlist(strsplit(n_comments, ";", perl = TRUE))
 
   statements <- gsub("\r|\n", " ", statements, perl = TRUE)
   statements <- gsub("\\s{2,}", " ", statements)
-  statements <- trimws(statements[statements != " "])
+  statements <- trimws(statements)
+  # empty statements (";;", trailing whitespace after the last ";") are
+  # legal no-ops
+  statements <- statements[nzchar(statements)]
+
+  # canonical "Keyword (" spelling: GEMPACK accepts the keyword glued
+  # to its first qualifier/quantifier group ("Coefficient(all,r,REG)",
+  # "Formula(Initial)", "Read(IfHeaderExists)"); every downstream
+  # parser takes the statement type as the first space-delimited token
+  state_kw <- c(supported_state, ignored_state, invalid_state)
+  statements <- sub(
+    paste0("^(", paste(state_kw, collapse = "|"), ")\\("),
+    "\\1 (",
+    statements,
+    ignore.case = TRUE,
+    perl = TRUE
+  )
 
   # Formula&Equation is the 10.9.1 double statement: expand it into its
   # two halves here so classification, equation counting and the
@@ -30,6 +50,18 @@
       statements[[s]] <- .expand_formula_equation(statements[[s]], call = call)
     }
     statements <- unlist(statements)
+  }
+
+  # a statement opening with "#" is label text that escaped its
+  # statement (label after the ";"): folding it as an implicit
+  # continuation would corrupt the next declaration
+  stray <- startsWith(statements, "#")
+  if (any(stray)) {
+    bad_stmt <- substr(statements[stray][1], 1L, 80L)
+    .cli_action(model_err$stray_label,
+      action = c("abort", "inform"),
+      call = call
+    )
   }
 
   state_decl <- tolower(unique(purrr::map_chr(strsplit(statements, " ", perl = TRUE), 1)))

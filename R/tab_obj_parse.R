@@ -144,6 +144,7 @@
 
   if (obj_type %=% "coefficient") {
     r <- extract[tolower(extract$type) == "read",]
+    r$remainder <- .strip_read_qualifier(r$remainder)
 
     if (!all(grepl("from file", tolower(r$remainder)))) {
       .cli_action(model_err$missing_file,

@@ -13,8 +13,47 @@
                                  call) {
   .chk_tab_names(model, call = call)
   .chk_tab_reads(model, call = call)
+  .chk_tab_setbuilders(model, call = call)
   .chk_tab_postsim(model, call = call)
   .chk_tab_comp(model, call = call)
+  return(invisible(NULL))
+}
+
+#' Conditional set builders: the condition operands must be file-Read
+#' (solver tab_setbuilder_transform fatal; GEMPACK manual 10.1.2)
+#'
+#' @keywords internal
+#' @noRd
+.chk_tab_setbuilders <- function(model,
+                                 call) {
+  typ <- tolower(model$type)
+  read_names <- tolower(model$name[typ == "read"])
+  byele <- typ == "read" & !is.na(model$qualifier_list) &
+    grepl("by_elements", model$qualifier_list, ignore.case = TRUE)
+  map_read <- tolower(model$name[byele])
+  map_names <- tolower(model$name[typ == "mapping"])
+  for (i in which(typ == "set")) {
+    d <- model$definition[[i]]
+    if (!.is_set_builder(d)) next
+    b <- .parse_set_builder(d)
+    bad_set <- model$name[i]
+    cond_coef <- b$coef
+    if (!tolower(b$coef) %in% read_names) {
+      .cli_action(model_err$set_builder_noread,
+        action = c("abort", "inform"),
+        call = call
+      )
+    }
+    if (b$form == "mapsum") {
+      cond_map <- b$map
+      if (!tolower(b$map) %in% map_names || !tolower(b$map) %in% map_read) {
+        .cli_action(model_err$set_builder_nomap,
+          action = c("abort", "inform"),
+          call = call
+        )
+      }
+    }
+  }
   return(invisible(NULL))
 }
 
@@ -55,6 +94,15 @@
       call = call
     )
   }
+  # $POS (set-position intrinsic): intentional reject
+  pos <- grepl("\\$pos\\s*\\(", gsub("#[^#]*#", "", statements), ignore.case = TRUE)
+  if (any(pos)) {
+    bad_stmt <- trimws(statements[pos][1])
+    .cli_action(model_err$dollar_pos,
+      action = c("abort", "inform"),
+      call = call
+    )
+  }
   .chk_tab_defaults(statements, call = call)
   .chk_tab_qualifiers(statements, call = call)
   .chk_raw_reads(statements, call = call)
@@ -79,9 +127,10 @@
       call = call
     )
   }
-  # (by_elements) mapping reads are legal (manual 11.9.3); any other
-  # parenthesized form is a partial (indexed) read
-  reads_nq <- sub("^(\\s*read)\\s*\\(\\s*by_elements\\s*\\)", "\\1",
+  # (by_elements) mapping reads (manual 11.9.3) and (IfHeaderExists)
+  # optional reads (manual 10.6) are legal; any other parenthesized
+  # form is a partial (indexed) read
+  reads_nq <- sub("^(\\s*read)\\s*\\(\\s*(by_elements|ifheaderexists)\\s*\\)", "\\1",
     reads,
     ignore.case = TRUE
   )
@@ -351,10 +400,13 @@
 #' @noRd
 .chk_tab_defaults <- function(statements,
                               call) {
-  idx <- grep("\\(\\s*default", statements, ignore.case = TRUE)
+  # "# label #" text is free-form and may contain "(default ...)"
+  # (gtapv7-mrio): scan the label-stripped statement only
+  no_label <- gsub("#[^#]*#", "", statements)
+  idx <- grep("\\(\\s*default", no_label, ignore.case = TRUE)
   for (i in idx) {
-    stmt <- statements[i]
-    bad_stmt <- trimws(stmt)
+    stmt <- no_label[i]
+    bad_stmt <- trimws(statements[i])
     kw <- tolower(sub("^\\s*([A-Za-z_]+).*$", "\\1", stmt))
     bad_val <- sub(".*?\\(\\s*default\\s*=?\\s*([^);]*).*$", "\\1", stmt, ignore.case = TRUE)
     bad_val <- tolower(gsub("[[:space:]]", "", bad_val))

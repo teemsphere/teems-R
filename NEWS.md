@@ -1,4 +1,9 @@
 # teems (development version)
+* Conditional set builders `Set X = (all,i,SRC: COEF(i,...) <op> <constant>);` (GEMPACK manual 10.1.2) are supported: the elements are evaluated from the deployed data at `ems_deploy()` and re-evaluated by the solver
+* `Read (IfHeaderExists)` is supported; absent headers are not required in the loaded data
+* IF conditions may compare two coefficient expressions (`IF[THETA(j,r)*ONOFF(j,r) <= 0, ...]`), and several set-membership/element IF terms may partition one Equation on a shared index
+* Tablo source conventions accepted by GEMPACK are normalised: keywords glued to their bracket (`Coefficient(all,r,REG)`), `![[! !]]!` block comments, empty statements and labels, Latin-1/CRLF/BOM files
+* Set products (`x`), `$POS`, and Sets built from a `full_exclude`d coefficient abort with named messages (the latter was silently dropped before)
 * Coefficients return through the solver's binary coefficient dump (`sol.cof`/`sol.cbin`) instead of per-coefficient CSV files: `ems_compose()` reads them selectively and exactly (the CSVs carried six fixed decimals); `ems_deploy(write_coefficients = TRUE)` restores the CSV `Write` pairs
 * `ems_solve()` checks the solver's exit status in addition to scanning its log
 * `ems_model(auto_omit = TRUE)` omits unshocked, wholly exogenous variables at deploy time

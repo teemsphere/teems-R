@@ -145,6 +145,12 @@ build_model_err <- function() {
       unrecognized keyword that was read as an implicit {stmt_kw}
       continuation."
     ),
+    # test-chk_statements.R: "stray label text outside a statement aborts"
+    stray_label = c(
+      "Statement starting with label text: {.val {bad_stmt}}",
+      "A {.code # label #} outside any statement (usually a label placed
+      after the terminating {.code ;}) is not valid TABLO."
+    ),
     read_terminal = "Read from terminal is not supported; read from a
     file instead: {.val {bad_stmt}}",
     read_no_header = "{cli::qty(bad_reads)}Read{?s} without a header
@@ -293,6 +299,24 @@ build_model_err <- function() {
     binary_switch = c("Unsupported binary switch detected in a {.field Set} definition.",
                       "Declare sets explicitly within the Tablo file or using {.arg ...} within {.fun teems::ems_model}.",
                       "For example, {.field Set ENDWM # mobile endowment # (capital,unsklab,sklab);} {.emph not} {.field Set ENDWM # mobile endowments # = (all,e,ENDW:ENDOWFLAG(e,\"mobile\") ne 0);}."),
+    # conditional set builders (GEMPACK manual 10.1.2; solver
+    # tab_setbuilder_transform); test-ems_model.R: "conditional set builders"
+    set_builder_cond = c(
+      "Unsupported condition in the {.field Set} builder {.val {bad_set}}: {.val {bad_def}}.",
+      "Supported: {.code (all,i,SRC: COEF(i[,\"ele\"...]) <op> <constant>)} and
+      {.code (all,i,SRC: sum{{j,S2: MAP(j) = i, COEF2(j)}} <op> <constant>)}
+      with {.code <op>} one of {.code = <> < > <= >=} or
+      {.code eq ne lt gt le ge}; compound conditions are not supported."
+    ),
+    set_builder_int = "{.field Set} builder {.val {bad_set}} is intertemporal; builders are supported for static sets only.",
+    set_builder_noread = c(
+      "{.field Set} builder {.val {bad_set}} conditions on {.val {cond_coef}}, which is not Read from an input file.",
+      "Formula-computed operands cannot drive set resolution (the condition is evaluated ahead of formulas, GEMPACK manual 10.1.2)."
+    ),
+    set_builder_nomap = c(
+      "{.field Set} builder {.val {bad_set}} sums over {.val {cond_map}}, which is not a {.field Mapping} with a {.code (by_elements)} Read.",
+      "The mapping-conditional sum form needs a file-Read mapping and a file-Read summed coefficient (GEMPACK manual 10.1.2)."
+    ),
     # test-ems_model.R: "intertemporal set equality"
     int_set_eq_fail = c(
       "Set equality involving an intertemporal set detected: {.field {eq_statement}}.",
@@ -300,6 +324,21 @@ build_model_err <- function() {
     ),
     # test-ems_model.R: "unparseable set definition"
     invalid_set_def = "Unparseable {.field Set} definition detected: {.field {bad_def}}.",
+    # intentional rejects (GTAPv7 upstream PostSim welfare report):
+    # test-ems_model.R: "set products and $POS are rejected by name"
+    # test-ems_model.R: "a Set built from an excluded coefficient aborts"
+    exclude_set_dep = c(
+      "{.field Set} {.val {bad_set}} depends on coefficient {.val {excl_coeff}} (header {.val {excl_header}}), which is excluded from the data by {.arg full_exclude}.",
+      "The flag-header approach (GTAP {.code ENDOWFLAG}/{.code SLUG}) is not supported through the R package (the solver alone accepts it): declare the set explicitly, e.g. {.code Set ENDWM (capital, labor);}."
+    ),
+    set_product = c(
+      "{.field Set} product {.code x} is not supported: {.field Set {bad_set} {bad_def}}.",
+      "The upstream GTAPv7 report block builds UACT/UCOM/ALLOCEFF this way (with {.code $POS} mapping formulas); teems' R-side aggregation supplies the identity, so drop that PostSim block or list the elements explicitly."
+    ),
+    dollar_pos = c(
+      "The {.code $POS} intrinsic is not supported: {.val {bad_stmt}}",
+      "teems' R-side aggregation supplies set-position identities (the upstream GTAPv7 UCOM2COMM/UACT2ACTS report mappings); drop the statement or the PostSim report block."
+    ),
     # test-chk_tab_preflight.R: "self-referential set expressions abort"
     set_self_ref = c(
       "Set {.field {bad_set}} references itself in its defining
@@ -358,12 +397,17 @@ build_model_err <- function() {
     # test-ems_model.R: "unsupported IF condition"
     invalid_if_cond = c(
       "Unsupported {.field IF} condition detected: {.field {if_cond}}.",
-      "Supported forms: {.field <index> in <set>}, {.field <index> = \"<element>\"}, and {.field <coefficient> <op> <constant>}."
+      "Supported forms: {.field <index> in <set>}, {.field <index> = \"<element>\"}, and {.field <expression> <op> <expression>} over coefficients (no AND/OR/NOT compounds)."
+    ),
+    # test-ems_model.R: "expression IF conditions"
+    if_cond_variable = c(
+      "{.field IF} condition references {cli::qty(bad_vars)}variable{?s} {.val {bad_vars}}: {.field {if_statement}}.",
+      "Conditions are evaluated from coefficient values only (GEMPACK manual 11.4.6/11.4.8)."
     ),
     # test-ems_model.R: "multiple membership IF conditions in an equation"
     invalid_if_multi = c(
-      "Multiple set-membership or element {.field IF} conditions detected in one {.field Equation}: {.field {if_statement}}.",
-      "An {.field Equation} supports one such condition (it splits the equation domain); comparison conditions are unrestricted."
+      "Set-membership or element {.field IF} conditions on different indices detected in one {.field Equation}: {.field {if_statement}}.",
+      "An {.field Equation} supports any number of such conditions on one index (they partition the equation domain); comparison conditions are unrestricted."
     ),
     # test-ems_model.R: "invalid set qualifier"
     invalid_set_qual = "Invalid set qualifier detected: {.field {invalid_qual}}.",

@@ -12,7 +12,8 @@
                            reference_year,
                            call,
                            data_call,
-                           model_call) {
+                           model_call,
+                           coeff_data = list()) {
   
   if (!all(stats::na.omit(set_extract$header) %in% names(sets))) {
     m_map <- setdiff(stats::na.omit(set_extract$header), names(sets))
@@ -114,7 +115,18 @@
         set_extract$name
       ),
       function(m, d, nm) {
-        if (is.null(m)) {
+        if (is.null(m) && .is_set_builder(d)) {
+          # data-dependent selection from the deployed coefficient
+          # values (mirror of the solver's tab_setbuilder_transform)
+          m <- .eval_set_builder(
+            b = .parse_set_builder(d),
+            owner = nm,
+            mappings = set_extract$mapping,
+            coeff_data = coeff_data,
+            coeff_extract = coeff_extract,
+            call = data_call
+          )
+        } else if (is.null(m)) {
           m <- .eval_set_expr(
             d = d,
             mappings = set_extract$mapping,

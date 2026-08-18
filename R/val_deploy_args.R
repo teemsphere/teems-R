@@ -87,6 +87,14 @@
     grepl("by_elements", a$model$qualifier_list, ignore.case = TRUE)
   non_int_req <- setdiff(non_int_req, a$model$header[byele])
 
+  # (IfHeaderExists) reads are optional by definition (manual 10.6):
+  # an absent header is skipped by the solver and the coefficient keeps
+  # its formula/default value
+  optional <- a$model$type == "Read" &
+    !is.na(a$model$qualifier_list) &
+    grepl("ifheaderexists", a$model$qualifier_list, ignore.case = TRUE)
+  non_int_req <- setdiff(non_int_req, a$model$header[optional])
+
   model_headers <- attr(a$model, "header")
   if (!is.null(model_headers)) {
     non_int_req <- setdiff(non_int_req, model_headers)

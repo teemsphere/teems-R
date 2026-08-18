@@ -248,7 +248,7 @@ test_that("invalid read statement", {
   expect_snapshot_error(ems_model(err_model, closure_file))
 })
 
-test_that("invalid binary set switch statement", {
+test_that("a set builder on an undeclared/unread coefficient aborts", {
   err_model <- write_modified_model(
     model_file,
     "Set ENDWM # mobile endowments # = (all,e,ENDW:ENDOWFLAG(e,\"mobile\") ne 0);"
@@ -290,6 +290,85 @@ test_that("multiple set operators", {
   expect_no_error(ems_model(ok_model, closure_file))
 })
 
+test_that("conditional set builders (GEMPACK manual 10.1.2)", {
+  # the accepted shapes parse; the source set becomes the implied
+  # superset and the statement is kept verbatim for the solver
+  ok_model <- write_modified_model(
+    model_file,
+    paste(
+      'Set COMMX # builder, quoted args # = (all,c,COMM: VDFB(c,"crops","chn","t0") > 0);',
+      "Set COMMY # builder, word op # = (all,c,COMM: VDFB(c,\"crops\",\"chn\",\"t0\") GE 0);",
+      "Coefficient (all,a,ACTS) ACW(a) # activity weights #;",
+      'Read ACW from file GTAPDATA header "ACW";',
+      "Set COMMZ # builder, mapping sum # = (all,c,COMM: sum{a,ACTS: MAPCA(a) = c, ACW(a)} > 0);",
+      "Mapping MAPCA from ACTS to COMM;",
+      'Read (by_elements) MAPCA from file GTAPSETS header "MAPC";',
+      sep = "\n"
+    )
+  )
+  model <- ems_model(ok_model, closure_file)
+  sb <- model[model$name %in% c("COMMX", "COMMY", "COMMZ"), ]
+  expect_equal(sb$comp1, rep("COMM", 3L))
+  expect_true(all(grepl("^= \\(all,c,COMM: ", unlist(sb$definition))))
+  expect_true(any(grepl('COMMX # builder, quoted args # = (all,c,COMM: VDFB(c,"crops","chn","t0") > 0)', model$tab, fixed = TRUE)))
+  comm <- model[which(model$name %in% "COMM"), ]
+  expect_true(all(c("COMMX", "COMMY", "COMMZ") %in% comm$subsets[[1]]))
+
+  # unsupported condition shapes are named
+  expect_snapshot_error(ems_model(
+    write_modified_model(model_file, 'Set BADX = (all,c,COMM: VDFB(c,"crops","chn","t0") > 0 and VDFB(c,"food","chn","t0") > 0);'),
+    closure_file
+  ))
+  expect_snapshot_error(ems_model(
+    write_modified_model(model_file, 'Set BADX = (all,c,COMM: VDFB(c,"crops","chn","t0") > VDB(c,"chn","t0"));'),
+    closure_file
+  ))
+  # formula-computed operands cannot drive set resolution (solver fatal)
+  expect_snapshot_error(ems_model(
+    write_modified_model(model_file, 'Set BADX = (all,c,COMM: VDB(c,"chn","t0") > 0);'),
+    closure_file
+  ))
+  # the source set must be declared
+  expect_snapshot_error(ems_model(
+    write_modified_model(model_file, 'Set BADX = (all,c,NOSET: VDFB(c,"crops","chn","t0") > 0);'),
+    closure_file
+  ))
+})
+
+test_that("a Set built from an excluded coefficient aborts", {
+  # ENDOWFLAG "EFLG" is in the default full_exclude: the upstream
+  # GTAPv7 ENDWM/ENDWS builders cannot be evaluated
+  err_model <- write_modified_model(
+    model_file,
+    paste(
+      "Set ENDWT # endowment types # (mobile, sluggish);",
+      "Coefficient (all,e,ENDW)(all,k,ENDWT) ENDOWFLAG(e,k) # flags #;",
+      'Read ENDOWFLAG from file GTAPDATA header "EFLG";',
+      'Set ENDWMX # mobile # = (all,e,ENDW: ENDOWFLAG(e,"mobile") ne 0);',
+      sep = "\n"
+    )
+  )
+  expect_snapshot_error(ems_model(err_model, closure_file))
+})
+
+test_that("set products and $POS are rejected by name", {
+  expect_snapshot_error(ems_model(
+    write_modified_model(model_file, "Set UNITC (c);\nSet UCOM = UNITC x COMM;"),
+    closure_file
+  ))
+  expect_snapshot_error(ems_model(
+    write_modified_model(
+      model_file,
+      paste(
+        "Mapping UCOM2COMM from COMM to COMM;",
+        "Formula (all,c,COMM) UCOM2COMM(c) = $POS(c);",
+        sep = "\n"
+      )
+    ),
+    closure_file
+  ))
+})
+
 test_that("set expressions parse (GEMPACK manual 10.1.1.1)", {
   expr_model <- write_modified_model(
     model_file,
@@ -322,6 +401,63 @@ test_that("IF in formula RHS (GEMPACK manual 11.4.6)", {
   expect_true(all(c("IFS1", "IFS2") %in% model$name))
 })
 
+test_that("expression IF conditions (LULC shape, manual 11.4.5/11.4.6)", {
+  ok_model <- write_modified_model(
+    model_file,
+    paste(
+      "Coefficient (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFXT(c,r,t) # expr cond #;",
+      "Formula (initial) (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFXT(c,r,t) = IF[VDB(c,r,t)*VST(c,r,t) <= 0, VDB(c,r,t)] + IF[VDB(c,r,t)*VST(c,r,t) > 0, VST(c,r,t)/[VDB(c,r,t) + 1]];",
+      "Coefficient (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFXU(c,r,t) # two-sided expr cond #;",
+      "Formula (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFXU(c,r,t) = IF[VDB(c,r,t) GE VST(c,r,t) + VDPB(c,r,t), 1];",
+      "Variable (all,c,COMM)(all,r,REG)(all,t,ALLTIME) ifxv(c,r,t) # expr cond in an equation #;",
+      "Equation E_ifxv (all,c,COMM)(all,r,REG)(all,t,ALLTIME) ifxv(c,r,t) = IF[VDB(c,r,t)*VST(c,r,t) > 0, pds(c,r,t)];",
+      sep = "\n"
+    )
+  )
+  model <- ems_model(ok_model, closure_file)
+  tab <- model$tab
+  # one shared helper for the two <= 0 / > 0 terms, inheriting (initial)
+  h1 <- tab[grepl("Formula (initial) (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFX1(c,r,t) = VDB(c,r,t)*VST(c,r,t)", tab, fixed = TRUE)]
+  expect_length(h1, 1L)
+  expect_true(any(grepl("(all,t,ALLTIME: IFX1(c,r,t) <= 0) IFXT(c,r,t) = IFXT(c,r,t) + [VDB(c,r,t)]", tab, fixed = TRUE)))
+  expect_true(any(grepl("(all,t,ALLTIME: IFX1(c,r,t) > 0) IFXT(c,r,t) = IFXT(c,r,t) + [VST(c,r,t)/[VDB(c,r,t) + 1]]", tab, fixed = TRUE)))
+  # two-sided comparison: helper = lhs - rhs against 0, (always) like its host
+  h2 <- tab[grepl("Formula (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFX2(c,r,t) = [VDB(c,r,t)] - [VST(c,r,t) + VDPB(c,r,t)]", tab, fixed = TRUE)]
+  expect_length(h2, 1L)
+  expect_true(any(grepl("(all,t,ALLTIME: IFX2(c,r,t) >= 0) IFXU(c,r,t)", tab, fixed = TRUE)))
+  # an Equation host: (always) helper + the indicator route
+  h3 <- tab[grepl("Formula (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFX3(c,r,t) = VDB(c,r,t)*VST(c,r,t)", tab, fixed = TRUE)]
+  expect_length(h3, 1L)
+  expect_true(any(grepl("IFX3(c,r,t) > 0", tab[grepl("^Formula .*IFC1", tab)], fixed = TRUE)))
+  expect_true(any(grepl("E_ifxv", tab, fixed = TRUE) & grepl("= IFC1(c,r,t) * pds(c,r,t)", tab, fixed = TRUE)))
+  expect_true(all(c("IFX1", "IFX2", "IFX3", "IFC1") %in% model$name))
+
+  # a variable inside a condition is named
+  expect_snapshot_error(ems_model(
+    write_modified_model(
+      model_file,
+      paste(
+        "Variable (all,c,COMM)(all,r,REG)(all,t,ALLTIME) ifbad(c,r,t) # bad #;",
+        "Equation E_ifbad (all,c,COMM)(all,r,REG)(all,t,ALLTIME) ifbad(c,r,t) = IF[VDB(c,r,t)*pds(c,r,t) > 0, pds(c,r,t)];",
+        sep = "\n"
+      )
+    ),
+    closure_file
+  ))
+  # compounds stay named
+  expect_snapshot_error(ems_model(
+    write_modified_model(
+      model_file,
+      paste(
+        "Coefficient (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFBAD(c,r,t) # bad #;",
+        "Formula (all,c,COMM)(all,r,REG)(all,t,ALLTIME) IFBAD(c,r,t) = IF[VDB(c,r,t) > 0 and VST(c,r,t) > 0, VDB(c,r,t)];",
+        sep = "\n"
+      )
+    ),
+    closure_file
+  ))
+})
+
 test_that("unsupported IF placement", {
   err_model <- write_modified_model(
     model_file,
@@ -334,16 +470,18 @@ test_that("unsupported IF placement", {
   expect_snapshot_error(ems_model(err_model, closure_file))
 })
 
-test_that("unsupported IF condition", {
-  err_model <- write_modified_model(
+test_that("coefficient-vs-coefficient IF conditions parse", {
+  ok_model <- write_modified_model(
     model_file,
     paste(
-      "Coefficient (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) # bad if #;",
-      "Formula (all,r,REG)(all,t,ALLTIME) IFBAD(r,t) = IF[VTRPROV(r,t) gt VT(t), VTRPROV(r,t)];",
+      "Coefficient (all,r,REG)(all,t,ALLTIME) IFCC(r,t) # coefref vs coefref #;",
+      "Formula (all,r,REG)(all,t,ALLTIME) IFCC(r,t) = IF[VTRPROV(r,t) gt VT(t), VTRPROV(r,t)];",
       sep = "\n"
     )
   )
-  expect_snapshot_error(ems_model(err_model, closure_file))
+  model <- ems_model(ok_model, closure_file)
+  expect_true(any(grepl("IFX1(r,t) = [VTRPROV(r,t)] - [VT(t)]", model$tab, fixed = TRUE)))
+  expect_true(any(grepl("(all,t,ALLTIME: IFX1(r,t) > 0) IFCC(r,t)", model$tab, fixed = TRUE)))
 })
 
 test_that("IF in equation RHS (GEMPACK manual 11.4.7)", {
@@ -373,6 +511,35 @@ test_that("multiple membership IF conditions in an equation", {
     )
   )
   expect_snapshot_error(ems_model(err_model, closure_file))
+})
+
+test_that("same-index membership IF partition in an equation (GTAPv7 E_CNTqfr shape)", {
+  ok_model <- write_modified_model(
+    model_file,
+    paste(
+      "Variable (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) # if test var #;",
+      paste0(
+        "Equation E_iftest # partition # (all,c,COMM)(all,r,REG)(all,t,ALLTIME) iftest(c,r,t) = ",
+        'IF[c="crops", pds(c,r,t)] + IF[c in MARG, qst(c,r,t)] - IF[c="svces", 2*pds(c,r,t)];'
+      ),
+      sep = "\n"
+    )
+  )
+  model <- ems_model(ok_model, closure_file)
+  expect_s3_class(model, "data.frame")
+  # one equation per membership term over its intersect set plus the
+  # remainder over COMM - (S1 + S2 + S3)
+  expect_true(all(paste0("E_iftest", c("A", "B", "C", "D")) %in% model$name))
+  eqs <- model$tab[grepl("^Equation E_iftest[A-D] ", model$tab)]
+  expect_length(eqs, 4L)
+  expect_match(eqs[1], "[pds(c,r,t)]", fixed = TRUE)
+  expect_no_match(eqs[1], "qst", fixed = TRUE)
+  expect_match(eqs[2], "[qst(c,r,t)]", fixed = TRUE)
+  expect_match(eqs[3], "- [2*pds(c,r,t)]", fixed = TRUE)
+  expect_no_match(eqs[4], "pds|qst")
+  rem <- model$tab[grepl("if-rewrite COMM minus \\(", model$tab)]
+  expect_length(rem, 1L)
+  expect_match(rem, "= COMM - (IFS", fixed = TRUE)
 })
 
 test_that("netcut inflation warning (roadmap 6.5 E1)", {
