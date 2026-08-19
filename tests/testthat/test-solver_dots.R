@@ -94,9 +94,11 @@ test_that("expert flags render as solver CLI flags", {
     nsbbdblocks = 4L,
     withmc66 = FALSE,
     nowrites = TRUE,
-    condest = TRUE
+    condest = TRUE,
+    ma48u = 0.01
   ))
   cmd <- exec_cmd(d)
+  expect_match(cmd, "-ma48u 0.01", fixed = TRUE)
   expect_match(cmd, "-fastrefac 1", fixed = TRUE)
   expect_match(cmd, "-gpzerodivide 1", fixed = TRUE)
   expect_match(cmd, "-cntl_3 0.5", fixed = TRUE)
@@ -129,6 +131,16 @@ test_that("dot-passed extras are validated", {
   expect_error(
     ems_solve(cmf, fastrefac = "yes"),
     "fastrefac",
+    class = "rlang_error"
+  )
+  expect_error(
+    ems_solve(cmf, ma48u = 1.5),
+    "ma48u",
+    class = "rlang_error"
+  )
+  expect_error(
+    ems_solve(cmf, ma48u = 0),
+    "ma48u",
     class = "rlang_error"
   )
   expect_error(

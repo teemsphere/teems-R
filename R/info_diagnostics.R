@@ -112,8 +112,9 @@
       sprintf("Adaptive stepping: %s (eps tolerance %s)", opt$adaptive, opt$eps_tolerance)
     },
     sprintf(
-      "Matrix method: %s (laA %s, laDi %s, laD %s; fastrefac %s)",
-      stats$matrix_method, opt$laA, opt$laDi, opt$laD, onoff(opt$fastrefac)
+      "Matrix method: %s (laA %s, laDi %s, laD %s; fastrefac %s; ma48u %s)",
+      stats$matrix_method, opt$laA, opt$laDi, opt$laD, onoff(opt$fastrefac),
+      if (is.null(opt$ma48u)) "default" else opt$ma48u
     ),
     # matrix_method = "auto" evidence and the placeholder thresholds it
     # was decided against (ROADMAP 6.10)

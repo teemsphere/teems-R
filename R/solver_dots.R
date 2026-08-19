@@ -22,7 +22,8 @@
     smllthreads = NULL,
     tempdir = NULL,
     nowrites = NULL,
-    condest = NULL
+    condest = NULL,
+    ma48u = NULL
   )
 }
 
@@ -46,7 +47,8 @@
     smllthreads = c("NULL", "numeric", "integer"),
     tempdir = c("NULL", "character"),
     nowrites = c("NULL", "logical"),
-    condest = c("NULL", "logical")
+    condest = c("NULL", "logical"),
+    ma48u = c("NULL", "numeric")
   )
 }
 
@@ -92,6 +94,18 @@
       )
     }
   }
+  # MA48/MP48 pivot threshold CNTL(2): absent = each library's default
+  # (MA48 0.1, HSL_MP48 0.01); the solver validates the same range
+  if (!is.null(a$ma48u) &&
+    (!is.numeric(a$ma48u) || length(a$ma48u) != 1L || is.na(a$ma48u) ||
+      a$ma48u <= 0 || a$ma48u > 1)) {
+    bad_arg <- "ma48u"
+    requirement <- "a numeric of length 1 in (0, 1]"
+    .cli_action(solve_err$comp_arg_type,
+      action = "abort",
+      call = call
+    )
+  }
   if (!is.null(a$tempdir) &&
     (!is.character(a$tempdir) || length(a$tempdir) != 1L || is.na(a$tempdir))) {
     bad_arg <- "tempdir"
@@ -122,7 +136,8 @@
     if (!is.null(a$smllthreads)) paste("-smllthreads", as.integer(a$smllthreads)),
     if (!is.null(a$tempdir)) paste("-tempdir", a$tempdir),
     if (!is.null(a$nowrites)) paste("-nowrites", as01(a$nowrites)),
-    if (!is.null(a$condest)) paste("-condest", as01(a$condest))
+    if (!is.null(a$condest)) paste("-condest", as01(a$condest)),
+    if (!is.null(a$ma48u)) paste("-ma48u", format(a$ma48u, digits = 15))
   )
   if (is.null(flags)) {
     return(NULL)

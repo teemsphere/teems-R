@@ -109,9 +109,11 @@
 #'   scaled condition numbers via HSL MA60/MC71, logged per linear
 #'   solve with run maxima recorded under `condest` in
 #'   `sol.stats.json`; diagnostic-only — solutions are unchanged —
-#'   and informative only for nonzero shocks). Effective values of
-#'   recorded flags land in `sol.stats.json` regardless of how they
-#'   were passed.
+#'   and informative only for nonzero shocks), and `ma48u` (MA48/HSL_MP48
+#'   pivot threshold `CNTL(2)`, numeric in (0, 1]; absent = each
+#'   library's default, MA48 0.1 and MP48 0.01 — a calibration knob,
+#'   not a tuning recommendation). Effective values of recorded flags
+#'   land in `sol.stats.json` regardless of how they were passed.
 #' @param n_threads Integer length 1 (default `1L`), OpenMP threads
 #'   per MPI task. Results with more than one thread are numerically
 #'   equivalent but not bit-reproducible across thread counts
