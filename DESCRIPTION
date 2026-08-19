@@ -1,6 +1,6 @@
 Package: teems
 Title: Trade and Environment Equilibrium Modeling System
-Version: 0.1.2
+Version: 1.0.0
 Authors@R: c(
     person(
       given = "Matthew",
